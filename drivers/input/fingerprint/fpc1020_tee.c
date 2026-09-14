@@ -39,6 +39,8 @@
 //#include <linux/wakelock.h>
 #include <linux/proc_fs.h>
 #include <linux/fb.h>
+#include <linux/seq_file.h>
+#include <linux/pinctrl/consumer.h>
 
 #define FPC_TTW_HOLD_TIME 2000
 #define FP_UNLOCK_REJECTION_TIMEOUT (FPC_TTW_HOLD_TIME - 500)

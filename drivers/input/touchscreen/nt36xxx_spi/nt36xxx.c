@@ -26,6 +26,7 @@
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
 #include <linux/pm_runtime.h>
+#include <linux/msm_drm_notify.h>
 
 #if defined(CONFIG_FB)
 #ifdef CONFIG_DRM_MSM

@@ -28,6 +28,7 @@
 #include <linux/debugfs.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
+#include <linux/pinctrl/consumer.h>
 #include <asm/uaccess.h>
 #include <linux/syscalls.h>
 #include <linux/power_supply.h>

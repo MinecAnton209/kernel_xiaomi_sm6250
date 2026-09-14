@@ -18,6 +18,7 @@
 #include <linux/init.h>
 #include <linux/gpio/driver.h>
 #include <linux/gpio/consumer.h>
+#include <linux/pinctrl/consumer.h>
 #include <linux/list.h>
 #include <linux/device.h>
 #include <linux/spinlock.h>

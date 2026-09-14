@@ -45,6 +45,8 @@
 #include "gf_spi.h"
 #include <linux/unistd.h>
 #include <linux/delay.h>
+#include <linux/seq_file.h>
+#include <linux/pinctrl/consumer.h>
 
 #if defined(USE_SPI_BUS)
 #include <linux/spi/spi.h>

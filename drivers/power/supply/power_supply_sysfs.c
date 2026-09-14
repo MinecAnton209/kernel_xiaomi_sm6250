@@ -95,97 +95,97 @@ static const char * const power_supply_typec_src_rp_text[] = {
 };
 
 static ssize_t power_supply_show_property(struct device *dev,
-					  struct device_attribute *attr,
-					  char *buf) {
-	ssize_t ret = 0;
-	struct power_supply *psy = dev_get_drvdata(dev);
-	const ptrdiff_t off = attr - power_supply_attrs;
-	union power_supply_propval value;
+            struct device_attribute *attr,
+            char *buf) {
+  ssize_t ret = 0;
+  struct power_supply *psy = dev_get_drvdata(dev);
+  const ptrdiff_t off = attr - power_supply_attrs;
+  union power_supply_propval value;
 
-	if (off == POWER_SUPPLY_PROP_TYPE) {
-		value.intval = psy->desc->type;
-	} else {
-		ret = power_supply_get_property(psy, off, &value);
+  if (off == POWER_SUPPLY_PROP_TYPE) {
+    value.intval = psy->desc->type;
+  } else {
+    ret = power_supply_get_property(psy, off, &value);
 
-		if (ret < 0) {
-			if (ret == -ENODATA)
-				dev_dbg_ratelimited(dev,
-					"driver has no data for `%s' property\n",
-					attr->attr.name);
-			else if (ret != -ENODEV && ret != -EAGAIN)
-				dev_err_ratelimited(dev,
-					"driver failed to report `%s' property: %zd\n",
-					attr->attr.name, ret);
-			return ret;
-		}
-	}
+    if (ret < 0) {
+      if (ret == -ENODATA)
+        dev_dbg_ratelimited(dev,
+          "driver has no data for `%s' property\n",
+          attr->attr.name);
+      else if (ret != -ENODEV && ret != -EAGAIN)
+        dev_err_ratelimited(dev,
+          "driver failed to report `%s' property: %zd\n",
+          attr->attr.name, ret);
+      return ret;
+    }
+  }
 
-	if (off == POWER_SUPPLY_PROP_STATUS)
-		return sprintf(buf, "%s\n",
-			       power_supply_status_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_CHARGE_TYPE)
-		return sprintf(buf, "%s\n",
-			       power_supply_charge_type_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_HEALTH)
-		return sprintf(buf, "%s\n",
-			       power_supply_health_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_TECHNOLOGY)
-		return sprintf(buf, "%s\n",
-			       power_supply_technology_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_CAPACITY_LEVEL)
-		return sprintf(buf, "%s\n",
-			       power_supply_capacity_level_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_TYPE ||
-			off == POWER_SUPPLY_PROP_REAL_TYPE)
-		return sprintf(buf, "%s\n",
-			       power_supply_type_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_SCOPE)
-		return sprintf(buf, "%s\n",
-			       power_supply_scope_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_TYPEC_MODE)
-		return scnprintf(buf, PAGE_SIZE, "%s\n",
-			       power_supply_usbc_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_TYPEC_POWER_ROLE)
-		return scnprintf(buf, PAGE_SIZE, "%s\n",
-			       power_supply_usbc_pr_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_TYPEC_SRC_RP)
-		return scnprintf(buf, PAGE_SIZE, "%s\n",
-			       power_supply_typec_src_rp_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_DIE_HEALTH)
-		return scnprintf(buf, PAGE_SIZE, "%s\n",
-			       power_supply_health_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_CONNECTOR_HEALTH)
-		return scnprintf(buf, PAGE_SIZE, "%s\n",
-			       power_supply_health_text[value.intval]);
-	else if (off == POWER_SUPPLY_PROP_SKIN_HEALTH)
-		return scnprintf(buf, PAGE_SIZE, "%s\n",
-			       power_supply_health_text[value.intval]);
-	else if (off >= POWER_SUPPLY_PROP_MODEL_NAME)
-		return sprintf(buf, "%s\n", value.strval);
-	else if (board_33w_supported) {
-	if ((off == POWER_SUPPLY_PROP_ROMID) || (off == POWER_SUPPLY_PROP_DS_STATUS))
-		return scnprintf(buf, PAGE_SIZE, "%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
-			value.arrayval[0], value.arrayval[1], value.arrayval[2], value.arrayval[3],
-			value.arrayval[4], value.arrayval[5], value.arrayval[6], value.arrayval[7]);
-	else if ((off == POWER_SUPPLY_PROP_PAGE0_DATA) ||
-			(off == POWER_SUPPLY_PROP_PAGE1_DATA) ||
-			(off == POWER_SUPPLY_PROP_PAGEDATA))
-		return scnprintf(buf, PAGE_SIZE, "%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
-			value.arrayval[0], value.arrayval[1], value.arrayval[2], value.arrayval[3],
-			value.arrayval[4], value.arrayval[5], value.arrayval[6], value.arrayval[7],
-			value.arrayval[8], value.arrayval[9], value.arrayval[10], value.arrayval[11],
-			value.arrayval[12], value.arrayval[13], value.arrayval[14], value.arrayval[15]);
-	else if (off == POWER_SUPPLY_PROP_VERIFY_MODEL_NAME)
-		return sprintf(buf, "%s\n", value.strval);
-	}
+  if (off == POWER_SUPPLY_PROP_STATUS)
+    return sprintf(buf, "%s\n",
+             power_supply_status_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_CHARGE_TYPE)
+    return sprintf(buf, "%s\n",
+             power_supply_charge_type_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_HEALTH)
+    return sprintf(buf, "%s\n",
+             power_supply_health_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_TECHNOLOGY)
+    return sprintf(buf, "%s\n",
+             power_supply_technology_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_CAPACITY_LEVEL)
+    return sprintf(buf, "%s\n",
+             power_supply_capacity_level_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_TYPE ||
+      off == POWER_SUPPLY_PROP_REAL_TYPE)
+    return sprintf(buf, "%s\n",
+             power_supply_type_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_SCOPE)
+    return sprintf(buf, "%s\n",
+             power_supply_scope_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_TYPEC_MODE)
+    return scnprintf(buf, PAGE_SIZE, "%s\n",
+             power_supply_usbc_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_TYPEC_POWER_ROLE)
+    return scnprintf(buf, PAGE_SIZE, "%s\n",
+             power_supply_usbc_pr_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_TYPEC_SRC_RP)
+    return scnprintf(buf, PAGE_SIZE, "%s\n",
+             power_supply_typec_src_rp_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_DIE_HEALTH)
+    return scnprintf(buf, PAGE_SIZE, "%s\n",
+             power_supply_health_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_CONNECTOR_HEALTH)
+    return scnprintf(buf, PAGE_SIZE, "%s\n",
+             power_supply_health_text[value.intval]);
+  else if (off == POWER_SUPPLY_PROP_SKIN_HEALTH)
+    return scnprintf(buf, PAGE_SIZE, "%s\n",
+             power_supply_health_text[value.intval]);
+  else if (off >= POWER_SUPPLY_PROP_MODEL_NAME)
+    return sprintf(buf, "%s\n", value.strval);
+#ifdef CONFIG_BATT_VERIFY_BY_DS28E16
+  else if ((off == POWER_SUPPLY_PROP_ROMID) || (off == POWER_SUPPLY_PROP_DS_STATUS))
+    return scnprintf(buf, PAGE_SIZE, "%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
+            value.arrayval[0], value.arrayval[1], value.arrayval[2], value.arrayval[3],
+            value.arrayval[4], value.arrayval[5], value.arrayval[6], value.arrayval[7]);
+  else if ((off == POWER_SUPPLY_PROP_PAGE0_DATA) ||
+            (off == POWER_SUPPLY_PROP_PAGE1_DATA) ||
+            (off == POWER_SUPPLY_PROP_PAGEDATA))
+    return scnprintf(buf, PAGE_SIZE, "%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
+            value.arrayval[0], value.arrayval[1], value.arrayval[2], value.arrayval[3],
+            value.arrayval[4], value.arrayval[5], value.arrayval[6], value.arrayval[7],
+            value.arrayval[8], value.arrayval[9], value.arrayval[10], value.arrayval[11],
+            value.arrayval[12], value.arrayval[13], value.arrayval[14], value.arrayval[15]);
+  else if (off == POWER_SUPPLY_PROP_VERIFY_MODEL_NAME)
+    return sprintf(buf, "%s\n", value.strval);
+#endif
 
-	if (off == POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT)
-		return sprintf(buf, "%lld\n", value.int64val);
-	else if (off == POWER_SUPPLY_PROP_TYPE_RECHECK)
-		return scnprintf(buf, PAGE_SIZE, "0x%x\n",
-				value.intval);
-	else
-		return sprintf(buf, "%d\n", value.intval);
+  if (off == POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT)
+    return sprintf(buf, "%lld\n", value.int64val);
+  else if (off == POWER_SUPPLY_PROP_TYPE_RECHECK)
+    return scnprintf(buf, PAGE_SIZE, "0x%x\n",
+        value.intval);
+  else
+    return sprintf(buf, "%d\n", value.intval);
 }
 
 static ssize_t power_supply_store_property(struct device *dev,
