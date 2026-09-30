@@ -92,6 +92,19 @@ zip -r9 ../miatoll-kernel-$(date +%F).zip .
 # flash the zip through TWRP/OFR
 ```
 
+## Enabling specific options (`scripts/config`)
+
+For a single, well‑known toggle the full `menuconfig`/`nconfig` UI is overkill.
+The tree ships a tiny helper that flips one symbol in `out/.config` and leaves
+the tracked source tree untouched (only the gitignored `out/` changes):
+
+```bash
+scripts/config --file out/.config --enable CONFIG_FOO
+make -j$(nproc) O=out ARCH=arm64 olddefconfig   # resolve dependencies, then build
+```
+
+Run `scripts/config --help` for the other verbs (--disable, --set-str, --set-val).
+
 ## Notes
 
 - **Defconfig sync.** To regenerate `miatoll_defconfig` so it stays in sync with a configured `.config` (without dumping 5000+ lines of kernel defaults), use the kernel's own `savedefconfig`:
