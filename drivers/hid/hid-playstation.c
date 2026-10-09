@@ -12,6 +12,7 @@
 #include <linux/hid.h>
 #include <linux/idr.h>
 #include <linux/input/mt.h>
+#include <linux/leds.h>
 #include <linux/module.h>
 
 #include <asm/unaligned.h>
@@ -181,11 +182,19 @@ struct dualsense {
 	uint8_t motor_left;
 	uint8_t motor_right;
 
-	/* RGB lightbar */
+	/* RGB lightbar. update_lightbar + rgb state feed the output worker;
+	 * the three led_classdev channels expose them to /sys/class/leds.
+	 */
 	bool update_lightbar;
 	uint8_t lightbar_red;
 	uint8_t lightbar_green;
 	uint8_t lightbar_blue;
+	struct led_classdev lightbar_red_led;
+	struct led_classdev lightbar_green_led;
+	struct led_classdev lightbar_blue_led;
+
+	/* Microphone mute button LED. */
+	struct led_classdev mic_mute_led;
 
 	/* Microphone */
 	bool update_mic_mute;
@@ -685,9 +694,42 @@ static ssize_t hardware_version_show(struct device *dev,
 
 static DEVICE_ATTR_RO(hardware_version);
 
+static void dualsense_set_player_leds(struct dualsense *ds);
+
+static ssize_t player_id_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct hid_device *hdev = to_hid_device(dev);
+	struct ps_device *ps_dev = hid_get_drvdata(hdev);
+
+	return snprintf(buf, PAGE_SIZE, "%u\n", ps_dev->player_id);
+}
+
+static ssize_t player_id_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct hid_device *hdev = to_hid_device(dev);
+	struct dualsense *ds = hid_get_drvdata(hdev);
+	unsigned int id;
+	int ret;
+
+	ret = kstrtouint(buf, 10, &id);
+	if (ret || id > 4)
+		return -EINVAL;
+
+	ds->base.player_id = id;
+	dualsense_set_player_leds(ds);
+
+	return count;
+}
+
+static DEVICE_ATTR_RW(player_id);
+
 static struct attribute *ps_device_attributes[] = {
 	&dev_attr_firmware_version.attr,
 	&dev_attr_hardware_version.attr,
+	&dev_attr_player_id.attr,
 	NULL
 };
 
@@ -1327,6 +1369,148 @@ static void dualsense_set_lightbar(struct dualsense *ds, uint8_t red, uint8_t gr
 	dualsense_schedule_work(ds);
 }
 
+static struct dualsense *dualsense_from_led(struct led_classdev *led)
+{
+	struct hid_device *hdev = to_hid_device(led->dev->parent);
+
+	return hid_get_drvdata(hdev);
+}
+
+static void dualsense_lightbar_channel_set(struct led_classdev *led,
+					   enum led_brightness value)
+{
+	struct dualsense *ds = dualsense_from_led(led);
+
+	if (led == &ds->lightbar_red_led)
+		dualsense_set_lightbar(ds, value, ds->lightbar_green, ds->lightbar_blue);
+	else if (led == &ds->lightbar_green_led)
+		dualsense_set_lightbar(ds, ds->lightbar_red, value, ds->lightbar_blue);
+	else
+		dualsense_set_lightbar(ds, ds->lightbar_red, ds->lightbar_green, value);
+}
+
+static enum led_brightness dualsense_lightbar_channel_get(struct led_classdev *led)
+{
+	struct dualsense *ds = dualsense_from_led(led);
+
+	if (led == &ds->lightbar_red_led)
+		return ds->lightbar_red;
+	else if (led == &ds->lightbar_green_led)
+		return ds->lightbar_green;
+	return ds->lightbar_blue;
+}
+
+static enum led_brightness dualsense_player_led_get(struct led_classdev *led)
+{
+	struct dualsense *ds = dualsense_from_led(led);
+
+	return !!(ds->player_leds_state & BIT(led - ds->player_leds));
+}
+
+static void dualsense_player_led_set(struct led_classdev *led,
+				     enum led_brightness value)
+{
+	struct dualsense *ds = dualsense_from_led(led);
+	unsigned long flags;
+	unsigned int index;
+
+	spin_lock_irqsave(&ds->base.lock, flags);
+	index = led - ds->player_leds;
+	if (value == LED_OFF)
+		ds->player_leds_state &= ~BIT(index);
+	else
+		ds->player_leds_state |= BIT(index);
+	ds->update_player_leds = true;
+	spin_unlock_irqrestore(&ds->base.lock, flags);
+
+	dualsense_schedule_work(ds);
+}
+
+static void dualsense_mic_mute_led_set(struct led_classdev *led,
+				       enum led_brightness value)
+{
+	struct dualsense *ds = dualsense_from_led(led);
+	unsigned long flags;
+
+	spin_lock_irqsave(&ds->base.lock, flags);
+	ds->update_mic_mute = true;
+	ds->mic_muted = !!value;
+	spin_unlock_irqrestore(&ds->base.lock, flags);
+
+	dualsense_schedule_work(ds);
+}
+
+static enum led_brightness dualsense_mic_mute_led_get(struct led_classdev *led)
+{
+	struct dualsense *ds = dualsense_from_led(led);
+
+	return ds->mic_muted ? LED_FULL : LED_OFF;
+}
+
+static int dualsense_led_register(struct dualsense *ds, struct led_classdev *led,
+				  const char *name, const char *color,
+				  enum led_brightness max_brightness)
+{
+	struct hid_device *hdev = ds->base.hdev;
+
+	led->name = devm_kasprintf(&hdev->dev, GFP_KERNEL, "%s:%s:%s",
+				   dev_name(&ds->gamepad->dev), color, name);
+	if (!led->name)
+		return -ENOMEM;
+
+	led->max_brightness = max_brightness;
+	led->flags = LED_CORE_SUSPENDRESUME;
+
+	return devm_led_classdev_register(&hdev->dev, led);
+}
+
+static int dualsense_leds_register(struct dualsense *ds)
+{
+	static const char * const player_names[] = {
+		"player1", "player2", "player3", "player4", "player5"
+	};
+	int i, ret;
+
+	ds->lightbar_red_led.brightness_set = dualsense_lightbar_channel_set;
+	ds->lightbar_red_led.brightness_get = dualsense_lightbar_channel_get;
+	ret = dualsense_led_register(ds, &ds->lightbar_red_led,
+				      "lightbar", "red", 255);
+	if (ret)
+		return ret;
+
+	ds->lightbar_green_led.brightness_set = dualsense_lightbar_channel_set;
+	ds->lightbar_green_led.brightness_get = dualsense_lightbar_channel_get;
+	ret = dualsense_led_register(ds, &ds->lightbar_green_led,
+				      "lightbar", "green", 255);
+	if (ret)
+		return ret;
+
+	ds->lightbar_blue_led.brightness_set = dualsense_lightbar_channel_set;
+	ds->lightbar_blue_led.brightness_get = dualsense_lightbar_channel_get;
+	ret = dualsense_led_register(ds, &ds->lightbar_blue_led,
+				      "lightbar", "blue", 255);
+	if (ret)
+		return ret;
+
+	for (i = 0; i < ARRAY_SIZE(ds->player_leds); i++) {
+		ds->player_leds[i].brightness_set = dualsense_player_led_set;
+		ds->player_leds[i].brightness_get = dualsense_player_led_get;
+		ret = dualsense_led_register(ds, &ds->player_leds[i],
+					       player_names[i], "white", 1);
+		if (ret)
+			return ret;
+	}
+
+	ds->mic_mute_led.brightness_set = dualsense_mic_mute_led_set;
+	ds->mic_mute_led.brightness_get = dualsense_mic_mute_led_get;
+	ret = dualsense_led_register(ds, &ds->mic_mute_led,
+				       "mic-mute", "red", 1);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
 static void dualsense_set_player_leds(struct dualsense *ds)
 {
 	/*
@@ -1472,6 +1656,12 @@ static struct ps_device *dualsense_create(struct hid_device *hdev)
 
 	/* Set player LEDs to our player id. */
 	dualsense_set_player_leds(ds);
+
+	ret = dualsense_leds_register(ds);
+	if (ret) {
+		hid_err(hdev, "Failed to register LEDs for DualSense: %d\n", ret);
+		goto err;
+	}
 
 	/*
 	 * Reporting hardware and firmware is important as there are frequent updates, which
