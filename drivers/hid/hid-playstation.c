@@ -44,6 +44,7 @@ struct ps_device {
 	uint32_t fw_version;
 
 	int (*parse_report)(struct ps_device *dev, struct hid_report *report, u8 *data, int size);
+	void (*remove)(struct ps_device *dev);
 };
 
 /* Calibration data for playstation motion sensors. */
@@ -157,6 +158,7 @@ struct dualsense {
 	struct input_dev *gamepad;
 	struct input_dev *sensors;
 	struct input_dev *touchpad;
+	struct input_dev *jack;
 
 	/* True if this is a DualSense Edge (product 0x0df2). */
 	bool is_edge;
@@ -190,12 +192,21 @@ struct dualsense {
 	bool mic_muted;
 	bool last_btn_mic_state;
 
+	/* Audio jack plugged state. Zero-initialized by devm_kzalloc in
+	 * dualsense_create, so the first input report always takes the
+	 * initialization branch in dualsense_parse_report.
+	 */
+	uint8_t plugged_state;
+	uint8_t prev_plugged_state;
+	bool prev_plugged_state_valid;
+
 	/* Player leds */
 	bool update_player_leds;
 	uint8_t player_leds_state;
 	struct led_classdev player_leds[5];
 
 	struct work_struct output_worker;
+	bool output_worker_initialized;
 	void *output_report_dmabuf;
 	uint8_t output_seq; /* Sequence number for output report. */
 };
@@ -684,6 +695,35 @@ static const struct attribute_group ps_device_attribute_group = {
 	.attrs = ps_device_attributes,
 };
 
+static struct input_dev *ps_headset_jack_create(struct hid_device *hdev)
+{
+	struct input_dev *jack;
+	int ret;
+
+	jack = ps_allocate_input_dev(hdev, "Headset Jack");
+	if (IS_ERR(jack))
+		return ERR_CAST(jack);
+
+	input_set_capability(jack, EV_SW, SW_HEADPHONE_INSERT);
+	input_set_capability(jack, EV_SW, SW_MICROPHONE_INSERT);
+
+	ret = input_register_device(jack);
+	if (ret)
+		return ERR_PTR(ret);
+
+	return jack;
+}
+
+static inline void dualsense_schedule_work(struct dualsense *ds)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&ds->base.lock, flags);
+	if (ds->output_worker_initialized)
+		schedule_work(&ds->output_worker);
+	spin_unlock_irqrestore(&ds->base.lock, flags);
+}
+
 static int dualsense_get_calibration_data(struct dualsense *ds)
 {
 	short gyro_pitch_bias, gyro_pitch_plus, gyro_pitch_minus;
@@ -929,6 +969,53 @@ static void dualsense_output_worker(struct work_struct *work)
 		ds->update_player_leds = false;
 	}
 
+	if (ds->plugged_state != ds->prev_plugged_state) {
+		uint8_t val = ds->plugged_state & DS_STATUS1_HP_DETECT;
+
+		if (val != (ds->prev_plugged_state & DS_STATUS1_HP_DETECT)) {
+			/* Unlike upstream (plain =), keep other
+			 * valid_flag0 bits: rumble may share this pass.
+			 */
+			common->valid_flag0 |= DS_OUTPUT_VALID_FLAG0_AUDIO_CONTROL_ENABLE;
+			if (val) {
+				/* Mute SP and route L+R channels to HP.
+				 * No flag1 needed, report starts zeroed.
+				 */
+				common->audio_control = 0;
+			} else {
+				/* Mute HP and route R channel to SP. */
+				common->audio_control =
+					FIELD_PREP(DS_OUTPUT_AUDIO_FLAGS_OUTPUT_PATH_SEL,
+						   0x3);
+				/* SP hardware volume to 100% ([0x3d..0x64]). */
+				common->valid_flag0 |=
+					DS_OUTPUT_VALID_FLAG0_SPEAKER_VOLUME_ENABLE;
+				common->speaker_volume = 0x64;
+				/* SP preamp gain +6dB. Unlike upstream
+				 * (plain =), keep player/lightbar bits.
+				 */
+				common->valid_flag1 |=
+					DS_OUTPUT_VALID_FLAG1_AUDIO_CONTROL2_ENABLE;
+				common->audio_control2 =
+					FIELD_PREP(DS_OUTPUT_AUDIO_FLAGS2_SP_PREAMP_GAIN,
+						   0x2);
+			}
+
+			if (ds->jack)
+				input_report_switch(ds->jack, SW_HEADPHONE_INSERT, val);
+		}
+
+		val = ds->plugged_state & DS_STATUS1_MIC_DETECT;
+		if (val != (ds->prev_plugged_state & DS_STATUS1_MIC_DETECT)) {
+			if (ds->jack)
+				input_report_switch(ds->jack, SW_MICROPHONE_INSERT, val);
+		}
+
+		if (ds->jack)
+			input_sync(ds->jack);
+		ds->prev_plugged_state = ds->plugged_state;
+	}
+
 	if (ds->update_mic_mute) {
 		common->valid_flag1 |= DS_OUTPUT_VALID_FLAG1_MIC_MUTE_LED_CONTROL_ENABLE;
 		common->mute_button_led = ds->mic_muted;
@@ -1041,9 +1128,34 @@ static int dualsense_parse_report(struct ps_device *ps_dev, struct hid_report *r
 		spin_unlock_irqrestore(&ps_dev->lock, flags);
 
 		/* Schedule updating of microphone state at hardware level. */
-		schedule_work(&ds->output_worker);
+		dualsense_schedule_work(ds);
 	}
 	ds->last_btn_mic_state = btn_mic_state;
+
+	/*
+	 * Parse HP/MIC plugged state for USB, Bluetooth audio is not supported.
+	 * Force an initial diff so the output worker runs audio routing once.
+	 */
+	if (hdev->bus == BUS_USB) {
+		value = ds_report->status[1] & DS_STATUS1_JACK_DETECT;
+
+		if (!ds->prev_plugged_state_valid) {
+			spin_lock_irqsave(&ps_dev->lock, flags);
+			ds->plugged_state = (~value) & DS_STATUS1_JACK_DETECT;
+			ds->prev_plugged_state_valid = true;
+			spin_unlock_irqrestore(&ps_dev->lock, flags);
+		}
+
+		if (value != ds->plugged_state) {
+			spin_lock_irqsave(&ps_dev->lock, flags);
+			ds->prev_plugged_state = ds->plugged_state;
+			ds->plugged_state = value;
+			spin_unlock_irqrestore(&ps_dev->lock, flags);
+
+			/* Schedule audio routing towards active endpoint. */
+			dualsense_schedule_work(ds);
+		}
+	}
 
 	/* Parse and calibrate gyroscope data. */
 	for (i = 0; i < ARRAY_SIZE(ds_report->gyro); i++) {
@@ -1156,8 +1268,28 @@ static int dualsense_play_effect(struct input_dev *dev, void *data, struct ff_ef
 	ds->motor_right = effect->u.rumble.weak_magnitude / 256;
 	spin_unlock_irqrestore(&ds->base.lock, flags);
 
-	schedule_work(&ds->output_worker);
+	dualsense_schedule_work(ds);
 	return 0;
+}
+
+static void dualsense_remove(struct ps_device *ps_dev)
+{
+	struct dualsense *ds = container_of(ps_dev, struct dualsense, base);
+	unsigned long flags;
+
+	/* Block new work first, then wait. Lock order matters: flag under
+	 * lock, cancel outside (worker takes the same lock).
+	 */
+	spin_lock_irqsave(&ds->base.lock, flags);
+	ds->output_worker_initialized = false;
+	spin_unlock_irqrestore(&ds->base.lock, flags);
+
+	cancel_work_sync(&ds->output_worker);
+
+	/* devm frees input devices, just drop the pointer under lock. */
+	spin_lock_irqsave(&ds->base.lock, flags);
+	ds->jack = NULL;
+	spin_unlock_irqrestore(&ds->base.lock, flags);
 }
 
 static int dualsense_reset_leds(struct dualsense *ds)
@@ -1192,7 +1324,7 @@ static void dualsense_set_lightbar(struct dualsense *ds, uint8_t red, uint8_t gr
 	ds->lightbar_green = green;
 	ds->lightbar_blue = blue;
 
-	schedule_work(&ds->output_worker);
+	dualsense_schedule_work(ds);
 }
 
 static void dualsense_set_player_leds(struct dualsense *ds)
@@ -1215,7 +1347,7 @@ static void dualsense_set_player_leds(struct dualsense *ds)
 
 	ds->update_player_leds = true;
 	ds->player_leds_state = player_ids[player_id];
-	schedule_work(&ds->output_worker);
+	dualsense_schedule_work(ds);
 }
 
 static struct ps_device *dualsense_create(struct hid_device *hdev)
@@ -1243,7 +1375,9 @@ static struct ps_device *dualsense_create(struct hid_device *hdev)
 	ps_dev->battery_capacity = 100; /* initial value until parse_report. */
 	ps_dev->battery_status = POWER_SUPPLY_STATUS_UNKNOWN;
 	ps_dev->parse_report = dualsense_parse_report;
+	ps_dev->remove = dualsense_remove;
 	INIT_WORK(&ds->output_worker, dualsense_output_worker);
+	ds->output_worker_initialized = true;
 	hid_set_drvdata(hdev, ds);
 
 	max_output_report_size = sizeof(struct dualsense_output_report_bt);
@@ -1304,6 +1438,15 @@ static struct ps_device *dualsense_create(struct hid_device *hdev)
 	if (IS_ERR(ds->touchpad)) {
 		ret = PTR_ERR(ds->touchpad);
 		goto err;
+	}
+
+	/* Bluetooth audio is not supported. devm frees jack on err/remove. */
+	if (hdev->bus == BUS_USB) {
+		ds->jack = ps_headset_jack_create(hdev);
+		if (IS_ERR(ds->jack)) {
+			ret = PTR_ERR(ds->jack);
+			goto err;
+		}
 	}
 
 	ret = ps_device_register_battery(ps_dev);
@@ -1407,9 +1550,16 @@ static void ps_remove(struct hid_device *hdev)
 {
 	struct ps_device *dev = hid_get_drvdata(hdev);
 
+	if (!dev)
+		goto hw_stop;
+
+	if (dev->remove)
+		dev->remove(dev);
+
 	ps_devices_list_remove(dev);
 	ps_device_release_player_id(dev);
 
+hw_stop:
 	hid_hw_close(hdev);
 	hid_hw_stop(hdev);
 }
