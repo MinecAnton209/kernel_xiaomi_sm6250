@@ -99,6 +99,12 @@ struct ps_calibration_data {
 #define DS_EDGE_BUTTONS_LEFT_PADDLE	BIT(6)
 #define DS_EDGE_BUTTONS_RIGHT_PADDLE	BIT(7)
 
+/* Jack/mic detect bits in DualSense input report status[1]. */
+#define DS_STATUS1_HP_DETECT			BIT(0)
+#define DS_STATUS1_MIC_DETECT			BIT(1)
+#define DS_STATUS1_JACK_DETECT			(DS_STATUS1_HP_DETECT | DS_STATUS1_MIC_DETECT)
+#define DS_STATUS1_MIC_MUTE			BIT(2)
+
 /* Status field of DualSense input report. */
 #define DS_STATUS_BATTERY_CAPACITY	GENMASK(3, 0)
 #define DS_STATUS_CHARGING		GENMASK(7, 4)
@@ -122,14 +128,20 @@ struct ps_calibration_data {
 /* Flags for DualSense output report. */
 #define DS_OUTPUT_VALID_FLAG0_COMPATIBLE_VIBRATION BIT(0)
 #define DS_OUTPUT_VALID_FLAG0_HAPTICS_SELECT BIT(1)
+#define DS_OUTPUT_VALID_FLAG0_SPEAKER_VOLUME_ENABLE BIT(5)
+#define DS_OUTPUT_VALID_FLAG0_MIC_VOLUME_ENABLE BIT(6)
+#define DS_OUTPUT_VALID_FLAG0_AUDIO_CONTROL_ENABLE BIT(7)
 #define DS_OUTPUT_VALID_FLAG1_MIC_MUTE_LED_CONTROL_ENABLE BIT(0)
 #define DS_OUTPUT_VALID_FLAG1_POWER_SAVE_CONTROL_ENABLE BIT(1)
 #define DS_OUTPUT_VALID_FLAG1_LIGHTBAR_CONTROL_ENABLE BIT(2)
 #define DS_OUTPUT_VALID_FLAG1_RELEASE_LEDS BIT(3)
 #define DS_OUTPUT_VALID_FLAG1_PLAYER_INDICATOR_CONTROL_ENABLE BIT(4)
+#define DS_OUTPUT_VALID_FLAG1_AUDIO_CONTROL2_ENABLE BIT(7)
 #define DS_OUTPUT_VALID_FLAG2_LIGHTBAR_SETUP_CONTROL_ENABLE BIT(1)
 #define DS_OUTPUT_VALID_FLAG2_COMPATIBLE_VIBRATION2 BIT(2)
 #define DS_OUTPUT_POWER_SAVE_CONTROL_MIC_MUTE BIT(4)
+#define DS_OUTPUT_AUDIO_FLAGS_OUTPUT_PATH_SEL GENMASK(5, 4)
+#define DS_OUTPUT_AUDIO_FLAGS2_SP_PREAMP_GAIN GENMASK(2, 0)
 #define DS_OUTPUT_LIGHTBAR_SETUP_LIGHT_OUT BIT(1)
 
 /* DualSense hardware limits */
@@ -214,8 +226,8 @@ struct dualsense_input_report {
 	struct dualsense_touch_point points[2];
 
 	uint8_t reserved3[12];
-	uint8_t status;
-	uint8_t reserved4[10];
+	uint8_t status[3];
+	uint8_t reserved4[8];
 } __packed;
 
 /* Common data between DualSense BT/USB main output report. */
@@ -228,11 +240,15 @@ struct dualsense_output_report_common {
 	uint8_t motor_left;
 
 	/* Audio controls */
-	uint8_t reserved[4];
+	uint8_t headphone_volume;	/* 0x0 - 0x7f */
+	uint8_t speaker_volume;	/* 0x0 - 0xff */
+	uint8_t mic_volume;		/* 0x0 - 0x40 */
+	uint8_t audio_control;
 	uint8_t mute_button_led;
 
 	uint8_t power_save_control;
-	uint8_t reserved2[28];
+	uint8_t reserved2[27];
+	uint8_t audio_control2;
 
 	/* LEDs and lightbar */
 	uint8_t valid_flag2;
@@ -259,6 +275,22 @@ struct dualsense_output_report_usb {
 	struct dualsense_output_report_common common;
 	uint8_t reserved[15];
 } __packed;
+
+/* Wire layout guards. USB report (64) = reportID(1) + input struct;
+ * output common must match firmware byte offsets exactly.
+ */
+static inline void dualsense_report_size_check(void)
+{
+	BUILD_BUG_ON(sizeof(struct dualsense_input_report) != DS_INPUT_REPORT_USB_SIZE - 1);
+	BUILD_BUG_ON(sizeof(struct dualsense_output_report_usb) != DS_OUTPUT_REPORT_USB_SIZE);
+	BUILD_BUG_ON(sizeof(struct dualsense_output_report_bt) != DS_OUTPUT_REPORT_BT_SIZE);
+	BUILD_BUG_ON(sizeof(struct dualsense_output_report_common) != 47);
+	BUILD_BUG_ON(offsetof(struct dualsense_output_report_common, audio_control2) != 37);
+	BUILD_BUG_ON(offsetof(struct dualsense_output_report_common, valid_flag2) != 38);
+	BUILD_BUG_ON(offsetof(struct dualsense_output_report_common, lightbar_red) != 44);
+	BUILD_BUG_ON(offsetof(struct dualsense_input_report, status) + 3 !=
+			offsetof(struct dualsense_input_report, reserved4));
+}
 
 /*
  * The DualSense has a main output report used to control most features. It is
@@ -1070,8 +1102,8 @@ static int dualsense_parse_report(struct ps_device *ps_dev, struct hid_report *r
 	input_report_key(ds->touchpad, BTN_LEFT, ds_report->buttons[2] & DS_BUTTONS2_TOUCHPAD);
 	input_sync(ds->touchpad);
 
-	battery_data = ds_report->status & DS_STATUS_BATTERY_CAPACITY;
-	charging_status = (ds_report->status & DS_STATUS_CHARGING) >> DS_STATUS_CHARGING_SHIFT;
+	battery_data = ds_report->status[0] & DS_STATUS_BATTERY_CAPACITY;
+	charging_status = (ds_report->status[0] & DS_STATUS_CHARGING) >> DS_STATUS_CHARGING_SHIFT;
 
 	switch (charging_status) {
 	case 0x0:
@@ -1192,6 +1224,8 @@ static struct ps_device *dualsense_create(struct hid_device *hdev)
 	struct ps_device *ps_dev;
 	uint8_t max_output_report_size;
 	int ret;
+
+	dualsense_report_size_check();
 
 	ds = devm_kzalloc(&hdev->dev, sizeof(*ds), GFP_KERNEL);
 	if (!ds)
