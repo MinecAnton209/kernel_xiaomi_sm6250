@@ -74,7 +74,7 @@ jobs:
           if [ "${{ matrix.variant }}" = "nethunter" ]; then
             export NETHUNTER=1
           fi
-          ./build_miatoll.sh "miatoll-${{ matrix.variant }}-${{ github.run_number }}.zip"
+          bash ./build_miatoll.sh "miatoll-${{ matrix.variant }}-${{ github.run_number }}.zip"
           ccache -s
           cp out/arch/arm64/boot/Image.gz \
             "Image-${{ matrix.variant }}-${{ github.run_number }}.gz"
