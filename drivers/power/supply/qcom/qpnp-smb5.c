@@ -4029,6 +4029,10 @@ static ssize_t bypass_charging_store(struct device *dev,
 {
 	struct smb5 *chip = dev_get_drvdata(dev);
 	struct smb_charger *chg = &chip->chg;
+	struct votable *chg_disable_votable;
+	struct votable *pl_disable_votable;
+	struct votable *cp_disable_votable;
+	struct power_supply *batt_psy;
 	bool enable, old_enable;
 	int rc = 0;
 	bool voted_chg_disable = false;
@@ -4037,55 +4041,61 @@ static ssize_t bypass_charging_store(struct device *dev,
 	if (kstrtobool(buf, &enable))
 		return -EINVAL;
 
+	/*
+	 * Snapshot the votables under lock, then vote without holding
+	 * smb_lock: vote() runs election callbacks (e.g. the parallel
+	 * charger's pl_disable_vote_callback with nested votes and
+	 * workqueue flushes), which must never run under smb_lock.
+	 */
 	mutex_lock(&chg->smb_lock);
 
 	old_enable = chg->bypass_chg_enabled;
-	if (enable == old_enable)
-		goto out_unlock;
+	chg_disable_votable = chg->chg_disable_votable;
+	pl_disable_votable = chg->pl_disable_votable;
+	cp_disable_votable = chg->cp_disable_votable;
+	batt_psy = chg->batt_psy;
 
-	if (chg->chg_disable_votable) {
-		rc = vote(chg->chg_disable_votable, BYPASS_CHG_VOTER,
-			  enable, 0);
+	mutex_unlock(&chg->smb_lock);
+
+	if (enable == old_enable)
+		return count;
+
+	if (chg_disable_votable) {
+		rc = vote(chg_disable_votable, BYPASS_CHG_VOTER, enable, 0);
 		if (rc < 0)
-			goto out_unlock;
+			return rc;
 		voted_chg_disable = true;
 	}
 
-	if (chg->pl_disable_votable) {
-		rc = vote(chg->pl_disable_votable, BYPASS_CHG_VOTER,
-			  enable, 0);
+	if (pl_disable_votable) {
+		rc = vote(pl_disable_votable, BYPASS_CHG_VOTER, enable, 0);
 		if (rc < 0)
 			goto rollback_chg_disable;
 		voted_pl_disable = true;
 	}
 
-	if (chg->cp_disable_votable) {
-		rc = vote(chg->cp_disable_votable, BYPASS_CHG_VOTER,
-			  enable, 0);
+	if (cp_disable_votable) {
+		rc = vote(cp_disable_votable, BYPASS_CHG_VOTER, enable, 0);
 		if (rc < 0)
 			goto rollback_pl_disable;
 	}
 
+	mutex_lock(&chg->smb_lock);
 	chg->bypass_chg_enabled = enable;
-	goto out_unlock;
+	mutex_unlock(&chg->smb_lock);
+
+	power_supply_changed(batt_psy);
+
+	return count;
 
 rollback_pl_disable:
 	if (voted_pl_disable)
-		vote(chg->pl_disable_votable, BYPASS_CHG_VOTER,
-		     old_enable, 0);
+		vote(pl_disable_votable, BYPASS_CHG_VOTER, old_enable, 0);
 rollback_chg_disable:
 	if (voted_chg_disable)
-		vote(chg->chg_disable_votable, BYPASS_CHG_VOTER,
-		     old_enable, 0);
-out_unlock:
-	mutex_unlock(&chg->smb_lock);
+		vote(chg_disable_votable, BYPASS_CHG_VOTER, old_enable, 0);
 
-	if (rc < 0)
-		return rc;
-
-	power_supply_changed(chg->batt_psy);
-
-	return count;
+	return rc;
 }
 
 static struct device_attribute attrs2[] = {
