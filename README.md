@@ -6,12 +6,13 @@
 
 A Linux kernel tree based on **Linux 4.14.336**, configured for the Qualcomm **sm6250** platform — the SoC used in the **Xiaomi Redmi Note 9 Pro / 9 S / 9 Pro Max** family (board codename `miatoll` and its variants `curtana`, `joyeuse`, `gram`, `excalibur`).
 
-## What it does
+## What's inside (on top of vendor)
 
-- Boots the `sm6250` board from `arch/arm64/boot/Image.gz`.
-- Brings up the phone's peripherals: display, USB, cameras, audio, thermal, charging, WiFi/BT coexistence and the Qualcomm SPMI/PMIC.
-- Provides the base the vendor and device trees (`device_xiaomi_miatoll`, `vendor_xiaomi_miatoll`) bind against.
-- Produces a flashable boot image together with **AnyKernel3**.
+- **DualSense / DualSense Edge**: bind 0x0df2, Fn buttons + paddles, vibration v2, headset-jack audio routing, LED classdev + `player_id` sysfs.
+- **Wine fsync**: `FUTEX_WAIT_MULTIPLE` (opcode 31) backport so Proton/Winlator gets `fsync: up and running` instead of eventfd fallback.
+- **Bypass charging**: `bypass_charging` sysfs on the SMB5 charger — system runs off USB input, battery stays idle (no heat cycling while gaming on cable).
+- **Emulation + daily tune**: THP madvise, BBR + FQ, `schedutil` default governor, `deadline` I/O scheduler, debug overhead removed, cooler tethering (conntrack helpers dropped).
+- **NetHunter fragment**: `arch/arm64/configs/vendor/xiaomi/miatoll_nethunter.cfg` — USB Wi-Fi (ATH9K_HTC, RT2x00, RTL8xxxU, RTW88), USB serial, HIDRAW, Ethernet dongles. Base defconfig stays lean.
 
 ## Prerequisites
 
@@ -28,7 +29,30 @@ CLANG_PATH=~/clang/bin        # <-- edit to your clang location
 export CLANG_PATH
 ```
 
-## Building
+## Quick build (recommended)
+
+One command builds `Image.gz` and packs the flashable zip. `AnyKernel3/` is a submodule of the [miatoll fork](https://github.com/MinecAnton209/AnyKernel3) — clone with submodules:
+
+```bash
+git clone --recurse-submodules <this-repo>
+# or, if already cloned:
+git submodule update --init AnyKernel3
+
+# normal build + flashable zip
+./build_miatoll.sh
+
+# NetHunter build (merges miatoll_nethunter.cfg first)
+NETHUNTER=1 ./build_miatoll.sh
+
+# custom names
+./build_miatoll.sh vendor/xiaomi/miatoll_defconfig KernelSU_miatoll_test.zip
+```
+
+Result: `KernelSU_miatoll_<date>.zip` in the tree root — flash via TWRP/OFR.
+
+`build_miatoll.sh` env overrides: `AK3_DIR`, `OUT_DIR`, `CLANG_DIR`, `JOBS`.
+
+## Manual building
 
 All commands run from the kernel source root. Output goes to `out/` (which is listed in `.gitignore`, so build artifacts are never committed).
 
@@ -77,19 +101,30 @@ make -j$(nproc) O=out ARCH=arm64 \
     modules
 ```
 
-## Making a flashable boot image (AnyKernel3)
+## Making a flashable zip (manual)
 
-`AnyKernel3/` (a sibling directory) is a ready-to-use flasher: it takes your `Image.gz` and repacks it together with the existing device boot partition's ramdisk.
+If you prefer the manual flow over `build_miatoll.sh`:
 
 ```bash
-# copy the freshly built kernel into the AnyKernel3 folder
-cp out/arch/arm64/boot/Image.gz /path/to/AnyKernel3/Image.gz
+cp out/arch/arm64/boot/Image.gz AnyKernel3/Image.gz
+cd AnyKernel3
+zip -r9 ../miatoll-kernel-$(date +%F).zip * -x '.git*' README.md AnyKernel3.png
+```
 
-# package it
-cd /path/to/AnyKernel3
-zip -r9 ../miatoll-kernel-$(date +%F).zip .
+## Runtime knobs
 
-# flash the zip through TWRP/OFR
+After flashing (root required):
+
+```bash
+# bypass charging: game on cable without heating the battery
+find /sys -name bypass_charging 2>/dev/null
+echo 1 > <path>/bypass_charging   # on
+echo 0 > <path>/bypass_charging   # off
+
+# THP / governor / congestion control
+cat /sys/kernel/mm/transparent_hugepage/enabled        # expect: always [madvise] never
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor  # expect: schedutil
+cat /proc/sys/net/ipv4/tcp_available_congestion_control    # expect: cubic reno bbr
 ```
 
 ## Enabling specific options (`scripts/config`)
