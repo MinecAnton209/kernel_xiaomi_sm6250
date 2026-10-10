@@ -59,7 +59,12 @@ else
 	fi
 
 	echo "==> building Image.gz (-j$JOBS)"
-	make -C "$KDIR" O="$OUT_DIR" -j"$JOBS" Image.gz
+	# NOTE: CC must go on the make command line, not just via export:
+	# the top-level Makefile reassigns CC = $(CROSS_COMPILE)gcc, which
+	# overrides environment but loses to command-line variables. Without
+	# this, cc-name detects gcc, clang flags get disabled and the build
+	# fails on CROSS_COMPILE+gcc missing from Proton Clang.
+	make -C "$KDIR" O="$OUT_DIR" -j"$JOBS" CC="$CC" Image.gz
 
 	if [ "$USE_CCACHE" = "1" ]; then
 		echo "==> ccache stats"
