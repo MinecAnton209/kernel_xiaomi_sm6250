@@ -4015,8 +4015,13 @@ static ssize_t bypass_charging_show(struct device *dev,
 					struct device_attribute *attr, char *buf)
 {
 	struct smb5 *chip = dev_get_drvdata(dev);
+	bool enabled;
 
-	return sprintf(buf, "%d\n", chip->chg.bypass_chg_enabled);
+	mutex_lock(&chip->chg.smb_lock);
+	enabled = chip->chg.bypass_chg_enabled;
+	mutex_unlock(&chip->chg.smb_lock);
+
+	return sprintf(buf, "%d\n", enabled);
 }
 
 static ssize_t bypass_charging_store(struct device *dev,
@@ -4024,27 +4029,59 @@ static ssize_t bypass_charging_store(struct device *dev,
 {
 	struct smb5 *chip = dev_get_drvdata(dev);
 	struct smb_charger *chg = &chip->chg;
-	bool enable;
-	int rc;
+	bool enable, old_enable;
+	int rc = 0;
+	bool voted_chg_disable = false;
+	bool voted_pl_disable = false;
 
 	if (kstrtobool(buf, &enable))
 		return -EINVAL;
 
-	chg->bypass_chg_enabled = enable;
+	mutex_lock(&chg->smb_lock);
 
-	rc = vote(chg->chg_disable_votable, BYPASS_CHG_VOTER, enable, 0);
-	if (rc < 0)
-		return rc;
+	old_enable = chg->bypass_chg_enabled;
+	if (enable == old_enable)
+		goto out_unlock;
 
-	rc = vote(chg->pl_disable_votable, BYPASS_CHG_VOTER, enable, 0);
-	if (rc < 0)
-		return rc;
+	if (chg->chg_disable_votable) {
+		rc = vote(chg->chg_disable_votable, BYPASS_CHG_VOTER,
+			  enable, 0);
+		if (rc < 0)
+			goto out_unlock;
+		voted_chg_disable = true;
+	}
+
+	if (chg->pl_disable_votable) {
+		rc = vote(chg->pl_disable_votable, BYPASS_CHG_VOTER,
+			  enable, 0);
+		if (rc < 0)
+			goto rollback_chg_disable;
+		voted_pl_disable = true;
+	}
 
 	if (chg->cp_disable_votable) {
-		rc = vote(chg->cp_disable_votable, BYPASS_CHG_VOTER, enable, 0);
+		rc = vote(chg->cp_disable_votable, BYPASS_CHG_VOTER,
+			  enable, 0);
 		if (rc < 0)
-			return rc;
+			goto rollback_pl_disable;
 	}
+
+	chg->bypass_chg_enabled = enable;
+	goto out_unlock;
+
+rollback_pl_disable:
+	if (voted_pl_disable)
+		vote(chg->pl_disable_votable, BYPASS_CHG_VOTER,
+		     old_enable, 0);
+rollback_chg_disable:
+	if (voted_chg_disable)
+		vote(chg->chg_disable_votable, BYPASS_CHG_VOTER,
+		     old_enable, 0);
+out_unlock:
+	mutex_unlock(&chg->smb_lock);
+
+	if (rc < 0)
+		return rc;
 
 	power_supply_changed(chg->batt_psy);
 
