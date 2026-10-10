@@ -29,6 +29,7 @@ DEFCONFIG="${DEFCONFIG:-vendor/xiaomi/miatoll_defconfig}"
 ZIP_NAME="${1:-miatoll_$(date +%Y%m%d).zip}"
 JOBS="${JOBS:-$(nproc)}"
 
+export PATH="$CLANG_DIR:$PATH"
 export ARCH=arm64
 if [ "$USE_CCACHE" = "1" ]; then
 	command -v ccache >/dev/null || { echo "ccache not installed"; exit 1; }
