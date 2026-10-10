@@ -2852,6 +2852,14 @@ static int do_futex_wait_multiple(struct futex_wait_block *wb,
 	if (!qs)
 		return -ENOMEM;
 
+	/*
+	 * Initialize the on-stack timer once, before any retry. Re-running
+	 * hrtimer_init_on_stack() on a retry path without a matching
+	 * destroy_hrtimer_on_stack() trips CONFIG_DEBUG_OBJECTS_TIMERS.
+	 * The absolute expiry is fixed for the whole syscall (restart
+	 * re-enters via futex_wait_multiple with the saved abs_time),
+	 * so single init is correct.
+	 */
 	if (abs_time) {
 		to = &timeout;
 
@@ -2862,7 +2870,7 @@ static int do_futex_wait_multiple(struct futex_wait_block *wb,
 		hrtimer_set_expires_range_ns(&to->timer, *abs_time,
 					     current->timer_slack_ns);
 	}
-retry:
+
 	for (i = 0; i < count; i++) {
 		qs[i] = futex_q_init;
 		if (!wb[i].bitset) {
@@ -2879,6 +2887,7 @@ retry:
 			goto out;
 		}
 	}
+retry:
 
 	set_current_state(TASK_INTERRUPTIBLE);
 
@@ -2886,15 +2895,21 @@ retry:
 		ret = __futex_wait_setup(wb[i].uaddr, wb[i].val,
 					 flags, &qs[i], &hb);
 		if (ret) {
+			int j;
+
 			/*
-			 * Drop the failed key directly. Keys 0..(i-1)
-			 * will be put by unqueue_me.
+			 * unqueue_me() removes the entry from the hash
+			 * bucket but keeps the key reference; every key
+			 * taken above must be dropped explicitly here.
+			 * Keys i+1..count-1 were never acquired on this
+			 * pass (get_futex_key runs before the setup
+			 * loop), so only 0..i need release.
 			 */
 			put_futex_key(&qs[i].key);
-
-			/* Undo the partial work we did. */
-			for (--i; i >= 0; i--)
-				unqueue_me(&qs[i]);
+			for (j = i - 1; j >= 0; j--) {
+				unqueue_me(&qs[j]);
+				put_futex_key(&qs[j].key);
+			}
 
 			__set_current_state(TASK_RUNNING);
 			if (ret > 0)
@@ -4075,7 +4090,8 @@ long do_futex(u32 __user *uaddr, int op, u32 val, ktime_t *timeout,
 
 	if (op & FUTEX_CLOCK_REALTIME) {
 		flags |= FLAGS_CLOCKRT;
-		if (cmd != FUTEX_WAIT_BITSET &&	cmd != FUTEX_WAIT_REQUEUE_PI)
+		if (cmd != FUTEX_WAIT_BITSET &&	cmd != FUTEX_WAIT_REQUEUE_PI &&
+		    cmd != FUTEX_WAIT_MULTIPLE)
 			return -ENOSYS;
 	}
 
