@@ -2898,18 +2898,19 @@ retry:
 			int j;
 
 			/*
-			 * unqueue_me() removes the entry from the hash
-			 * bucket but keeps the key reference; every key
-			 * taken above must be dropped explicitly here.
-			 * Keys i+1..count-1 were never acquired on this
-			 * pass (get_futex_key runs before the setup
-			 * loop), so only 0..i need release.
+			 * unqueue_me() drops the key reference itself
+			 * (see drop_futex_key_refs at its end), so queued
+			 * entries 0..i-1 need only unqueue. The failed
+			 * entry i was never queued: drop its key directly.
+			 * Entries i+1..count-1 were acquired but never
+			 * queued on this pass: drop them too, so a retry
+			 * re-acquires a clean set from the retry label.
 			 */
 			put_futex_key(&qs[i].key);
-			for (j = i - 1; j >= 0; j--) {
+			for (j = i - 1; j >= 0; j--)
 				unqueue_me(&qs[j]);
+			for (j = i + 1; j < count; j++)
 				put_futex_key(&qs[j].key);
-			}
 
 			__set_current_state(TASK_RUNNING);
 			if (ret > 0)
