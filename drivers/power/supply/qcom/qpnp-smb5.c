@@ -4011,9 +4011,51 @@ static ssize_t lct_thermal_call_status_store(struct device *dev,
 	return count;
 }
 
+static ssize_t bypass_charging_show(struct device *dev,
+					struct device_attribute *attr, char *buf)
+{
+	struct smb5 *chip = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", chip->chg.bypass_chg_enabled);
+}
+
+static ssize_t bypass_charging_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct smb5 *chip = dev_get_drvdata(dev);
+	struct smb_charger *chg = &chip->chg;
+	bool enable;
+	int rc;
+
+	if (kstrtobool(buf, &enable))
+		return -EINVAL;
+
+	chg->bypass_chg_enabled = enable;
+
+	rc = vote(chg->chg_disable_votable, BYPASS_CHG_VOTER, enable, 0);
+	if (rc < 0)
+		return rc;
+
+	rc = vote(chg->pl_disable_votable, BYPASS_CHG_VOTER, enable, 0);
+	if (rc < 0)
+		return rc;
+
+	if (chg->cp_disable_votable) {
+		rc = vote(chg->cp_disable_votable, BYPASS_CHG_VOTER, enable, 0);
+		if (rc < 0)
+			return rc;
+	}
+
+	power_supply_changed(chg->batt_psy);
+
+	return count;
+}
+
 static struct device_attribute attrs2[] = {
 	__ATTR(thermalcall, S_IRUGO | S_IWUSR,
 			lct_thermal_call_status_show, lct_thermal_call_status_store),
+	__ATTR(bypass_charging, 0644,
+			bypass_charging_show, bypass_charging_store),
 };
 
 static void thermal_fb_notifier_resume_work(struct work_struct *work)
