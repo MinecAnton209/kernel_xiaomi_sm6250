@@ -34,7 +34,7 @@ export CLANG_PATH
 One command builds `Image.gz` and packs the flashable zip. `AnyKernel3/` is a submodule of the [miatoll fork](https://github.com/MinecAnton209/AnyKernel3) — clone with submodules:
 
 ```bash
-git clone --recurse-submodules <this-repo>
+git clone --recurse-submodules -b 16.0 https://github.com/MinecAnton209/kernel_xiaomi_sm6250.git
 # or, if already cloned:
 git submodule update --init AnyKernel3
 
@@ -44,13 +44,13 @@ git submodule update --init AnyKernel3
 # NetHunter build (merges miatoll_nethunter.cfg first)
 NETHUNTER=1 ./build_miatoll.sh
 
-# custom names
-./build_miatoll.sh vendor/xiaomi/miatoll_defconfig KernelSU_miatoll_test.zip
+# custom zip name
+./build_miatoll.sh miatoll_test.zip
 ```
 
-Result: `KernelSU_miatoll_<date>.zip` in the tree root — flash via TWRP/OFR.
+Result: `miatoll_<date>.zip` in the tree root — flash via TWRP/OFR.
 
-`build_miatoll.sh` env overrides: `AK3_DIR`, `OUT_DIR`, `CLANG_DIR`, `JOBS`.
+`build_miatoll.sh` env overrides: `AK3_DIR`, `OUT_DIR`, `CLANG_DIR`, `JOBS`, plus `SKIP_BUILD=1` / `IMAGE=...` to repack without rebuilding.
 
 ## Manual building
 
