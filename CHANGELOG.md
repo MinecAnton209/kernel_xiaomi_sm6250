@@ -54,6 +54,7 @@ for release tags (`vX.Y.Z`).
 
 ### Fixed
 
+- `arm64/sm6250`: missing includes and sysfs build fix.
 - `mm`: two stale 2-arg `try_to_unmap()` calls updated for the
   3-arg rmap API (exposed by enabling THP).
 - `futex`: key accounting on wait-multiple setup failure (no leaks,
