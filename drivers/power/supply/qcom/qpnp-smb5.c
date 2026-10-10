@@ -4042,7 +4042,15 @@ static ssize_t bypass_charging_store(struct device *dev,
 		return -EINVAL;
 
 	/*
-	 * Snapshot the votables under lock, then vote without holding
+	 * Serialize concurrent stores so two writers cannot interleave
+	 * their vote sequences and leave the flag out of sync with the
+	 * votables. This is a leaf mutex: vote() callbacks never take
+	 * it, so no lock ordering issue.
+	 */
+	mutex_lock(&chg->bypass_chg_lock);
+
+	/*
+	 * Snapshot the votables under smb_lock, then vote without holding
 	 * smb_lock: vote() runs election callbacks (e.g. the parallel
 	 * charger's pl_disable_vote_callback with nested votes and
 	 * workqueue flushes), which must never run under smb_lock.
@@ -4057,13 +4065,15 @@ static ssize_t bypass_charging_store(struct device *dev,
 
 	mutex_unlock(&chg->smb_lock);
 
-	if (enable == old_enable)
+	if (enable == old_enable) {
+		mutex_unlock(&chg->bypass_chg_lock);
 		return count;
+	}
 
 	if (chg_disable_votable) {
 		rc = vote(chg_disable_votable, BYPASS_CHG_VOTER, enable, 0);
 		if (rc < 0)
-			return rc;
+			goto out_unlock;
 		voted_chg_disable = true;
 	}
 
@@ -4084,6 +4094,8 @@ static ssize_t bypass_charging_store(struct device *dev,
 	chg->bypass_chg_enabled = enable;
 	mutex_unlock(&chg->smb_lock);
 
+	mutex_unlock(&chg->bypass_chg_lock);
+
 	power_supply_changed(batt_psy);
 
 	return count;
@@ -4094,6 +4106,8 @@ rollback_pl_disable:
 rollback_chg_disable:
 	if (voted_chg_disable)
 		vote(chg_disable_votable, BYPASS_CHG_VOTER, old_enable, 0);
+out_unlock:
+	mutex_unlock(&chg->bypass_chg_lock);
 
 	return rc;
 }

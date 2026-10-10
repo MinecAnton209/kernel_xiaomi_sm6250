@@ -799,6 +799,8 @@ struct smb_charger {
 
 	/* bypass charging: inhibit charge path, system runs off USB input */
 	bool			bypass_chg_enabled;
+	/* serializes concurrent bypass_charging sysfs stores */
+	struct mutex		bypass_chg_lock;
 
 	/* fast full charge related */
 	int			chg_term_current_thresh_hi_from_dts;

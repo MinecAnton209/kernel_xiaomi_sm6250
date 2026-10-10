@@ -9447,6 +9447,7 @@ int smblib_init(struct smb_charger *chg)
 	int rc = 0;
 
 	mutex_init(&chg->smb_lock);
+	mutex_init(&chg->bypass_chg_lock);
 	mutex_init(&chg->irq_status_lock);
 	mutex_init(&chg->dpdm_lock);
 	spin_lock_init(&chg->typec_pr_lock);
