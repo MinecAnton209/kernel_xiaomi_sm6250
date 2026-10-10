@@ -1,0 +1,55 @@
+name: Release
+
+# Manual release flow, mirroring the Zig CI: version comes from
+# miatoll.version, notes from CHANGELOG.md, tag is created and pushed
+# here (not by hand). Run from the 16.0 branch after updating both files.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Read version from miatoll.version
+        id: version
+        run: |
+          VER="$(tr -d '[:space:]' < miatoll.version)"
+          echo "tag=v$VER" >> "$GITHUB_OUTPUT"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Check tag does not exist
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" > /dev/null 2>&1; then
+            echo "::error::Tag ${{ steps.version.outputs.tag }} already exists"
+            exit 1
+          fi
+
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          VER="${{ steps.version.outputs.version }}"
+          SECTION=$(awk -v ver="## [$VER]" '
+            index($0, ver) == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md)
+          if [ -z "$SECTION" ]; then
+            echo "::error::CHANGELOG.md has no section [$VER]"
+            exit 1
+          fi
+          echo "$SECTION" > release-notes.md
+
+      - name: Create tag
+        run: |
+          git tag "${{ steps.version.outputs.tag }}" "$GITHUB_SHA"
+          git push origin "${{ steps.version.outputs.tag }}"
