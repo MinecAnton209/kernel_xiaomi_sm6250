@@ -1,0 +1,111 @@
+name: Build miatoll kernel
+
+# Public repo: Actions minutes are free. Builds both variants so a
+# broken defconfig/fragment (e.g. the THP try_to_unmap case) is caught
+# before flashing. Pushing a v* tag also publishes a GitHub Release
+# with both flashable zips attached.
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (${{ matrix.variant }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [default, nethunter]
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bc bison build-essential ccache cpio flex libelf-dev \
+            libssl-dev rsync unzip zip zlib1g-dev
+
+      - name: Restore ccache (5 GB cap, per variant)
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ matrix.variant }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.variant }}-${{ github.ref_name }}-
+            ccache-${{ matrix.variant }}-
+
+      - name: Restore Proton Clang cache
+        id: clang-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/proton-clang
+          key: proton-clang-13-${{ runner.os }}
+
+      - name: Fetch Proton Clang 13
+        if: steps.clang-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://github.com/kdrag0n/proton-clang.git \
+            "${{ runner.temp }}/proton-clang"
+
+      - name: Syntax check helper scripts
+        run: |
+          bash -n build_miatoll.sh
+          bash -n AnyKernel3/anykernel.sh
+
+      - name: Build Image.gz + flashable zip
+        env:
+          CLANG_DIR: ${{ runner.temp }}/proton-clang/bin
+          USE_CCACHE: "1"
+          CCACHE_MAXSIZE: 5G
+        run: |
+          ccache -z
+          if [ "${{ matrix.variant }}" = "nethunter" ]; then
+            export NETHUNTER=1
+          fi
+          ./build_miatoll.sh "miatoll-${{ matrix.variant }}-${{ github.run_number }}.zip"
+          ccache -s
+          cp out/arch/arm64/boot/Image.gz \
+            "Image-${{ matrix.variant }}-${{ github.run_number }}.gz"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: miatoll-${{ matrix.variant }}-${{ github.run_number }}
+          path: |
+            miatoll-*.zip
+            Image-*.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Attach zips to GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: miatoll-*
+          merge-multiple: true
+          path: release-assets
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*.zip
+          generate_release_notes: true

@@ -13,7 +13,8 @@
 # Env overrides: KDIR (kernel root, default: script dir),
 #   AK3_DIR (submodule checkout, default: $KDIR/AnyKernel3),
 #   OUT_DIR (kernel O= dir), CLANG_DIR, JOBS, NETHUNTER=1,
-#   SKIP_BUILD=1, IMAGE=/path/to/Image.gz, DEFCONFIG=... .
+#   SKIP_BUILD=1, IMAGE=/path/to/Image.gz, DEFCONFIG=... ,
+#   USE_CCACHE=1 (wrap compiler via ccache), CCACHE_DIR.
 #
 # First clone: git submodule update --init AnyKernel3
 
@@ -23,12 +24,20 @@ KDIR="${KDIR:-$(cd "$(dirname "$0")" && pwd)}"
 AK3_DIR="${AK3_DIR:-$KDIR/AnyKernel3}"
 OUT_DIR="${OUT_DIR:-$KDIR/out}"
 CLANG_DIR="${CLANG_DIR:-$(dirname "$KDIR")/clang/bin}"
+CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}"
 DEFCONFIG="${DEFCONFIG:-vendor/xiaomi/miatoll_defconfig}"
 ZIP_NAME="${1:-miatoll_$(date +%Y%m%d).zip}"
 JOBS="${JOBS:-$(nproc)}"
 
 export ARCH=arm64
-export CC="$CLANG_DIR/clang"
+if [ "$USE_CCACHE" = "1" ]; then
+	command -v ccache >/dev/null || { echo "ccache not installed"; exit 1; }
+	export CC="ccache $CLANG_DIR/clang"
+	export CCACHE_DIR CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-5G}"
+	ccache -z >/dev/null
+else
+	export CC="$CLANG_DIR/clang"
+fi
 export CLANG_TRIPLE=aarch64-linux-gnu-
 export CROSS_COMPILE="$CLANG_DIR/aarch64-linux-gnu-"
 
@@ -50,6 +59,11 @@ else
 
 	echo "==> building Image.gz (-j$JOBS)"
 	make -C "$KDIR" O="$OUT_DIR" -j"$JOBS" Image.gz
+
+	if [ "$USE_CCACHE" = "1" ]; then
+		echo "==> ccache stats"
+		ccache -s
+	fi
 
 	IMG="$OUT_DIR/arch/arm64/boot/Image.gz"
 fi
