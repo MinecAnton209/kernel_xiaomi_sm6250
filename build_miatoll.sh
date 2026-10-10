@@ -32,14 +32,27 @@ JOBS="${JOBS:-$(nproc)}"
 export ARCH=arm64
 if [ "$USE_CCACHE" = "1" ]; then
 	command -v ccache >/dev/null || { echo "ccache not installed"; exit 1; }
-	export CC="ccache $CLANG_DIR/clang"
+	CC="ccache $CLANG_DIR/clang"
 	export CCACHE_DIR CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-5G}"
 	ccache -z >/dev/null
 else
-	export CC="$CLANG_DIR/clang"
+	CC="$CLANG_DIR/clang"
 fi
+# Full LLVM toolchain, matching the known-good local command line.
+# LD=ld.lld keeps LTO links off GNU gold (vdso -shared breaks under
+# gold+LLVMgold); the llvm-* tools match Proton Clang 13.
+MAKE_ARGS="ARCH=arm64 CC=\"$CC\" LD=$CLANG_DIR/ld.lld"
+MAKE_ARGS="$MAKE_ARGS AR=$CLANG_DIR/llvm-ar NM=$CLANG_DIR/llvm-nm"
+MAKE_ARGS="$MAKE_ARGS OBJCOPY=$CLANG_DIR/llvm-objcopy"
+MAKE_ARGS="$MAKE_ARGS OBJDUMP=$CLANG_DIR/llvm-objdump"
+MAKE_ARGS="$MAKE_ARGS STRIP=$CLANG_DIR/llvm-strip"
+MAKE_ARGS="$MAKE_ARGS CLANG_TRIPLE=aarch64-linux-gnu-"
+MAKE_ARGS="$MAKE_ARGS CROSS_COMPILE=$CLANG_DIR/aarch64-linux-gnu-"
+MAKE_ARGS="$MAKE_ARGS CROSS_COMPILE_COMPAT=$CLANG_DIR/arm-linux-gnueabi-"
+export ARCH CLANG_TRIPLE CROSS_COMPILE CROSS_COMPILE_COMPAT
 export CLANG_TRIPLE=aarch64-linux-gnu-
 export CROSS_COMPILE="$CLANG_DIR/aarch64-linux-gnu-"
+export CROSS_COMPILE_COMPAT="$CLANG_DIR/arm-linux-gnueabi-"
 
 if [ -n "$IMAGE" ]; then
 	IMG="$IMAGE"
@@ -50,7 +63,8 @@ else
 	if [ "$NETHUNTER" = "1" ]; then
 		echo "==> merging NetHunter fragment"
 		(cd "$KDIR" && ARCH=arm64 \
-			./scripts/kconfig/merge_config.sh -m -O "$OUT_DIR" \
+			KCONFIG_CONFIG="$OUT_DIR/.config" \
+			./scripts/kconfig/merge_config.sh -O "$OUT_DIR" \
 			"arch/arm64/configs/$DEFCONFIG" \
 			arch/arm64/configs/vendor/xiaomi/miatoll_nethunter.cfg)
 	else
@@ -59,12 +73,11 @@ else
 	fi
 
 	echo "==> building Image.gz (-j$JOBS)"
-	# NOTE: CC must go on the make command line, not just via export:
+	# NOTE: CC/LD must go on the make command line, not just via export:
 	# the top-level Makefile reassigns CC = $(CROSS_COMPILE)gcc, which
-	# overrides environment but loses to command-line variables. Without
-	# this, cc-name detects gcc, clang flags get disabled and the build
-	# fails on CROSS_COMPILE+gcc missing from Proton Clang.
-	make -C "$KDIR" O="$OUT_DIR" -j"$JOBS" CC="$CC" Image.gz
+	# overrides environment but loses to command-line variables. LD=ld.lld
+	# keeps LTO links off GNU gold (vdso -shared breaks under gold).
+	eval make -C "$KDIR" O="$OUT_DIR" -j"$JOBS" $MAKE_ARGS Image.gz
 
 	if [ "$USE_CCACHE" = "1" ]; then
 		echo "==> ccache stats"
