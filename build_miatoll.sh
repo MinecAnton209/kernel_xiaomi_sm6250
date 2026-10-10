@@ -46,6 +46,7 @@ if [ -n "$IMAGE" ]; then
 elif [ "$SKIP_BUILD" = "1" ]; then
 	IMG="$OUT_DIR/arch/arm64/boot/Image.gz"
 else
+	mkdir -p "$OUT_DIR"
 	if [ "$NETHUNTER" = "1" ]; then
 		echo "==> merging NetHunter fragment"
 		(cd "$KDIR" && ARCH=arm64 \
