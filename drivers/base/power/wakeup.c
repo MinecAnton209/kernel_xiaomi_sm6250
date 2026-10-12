@@ -25,125 +25,6 @@
 
 #include "power.h"
 
-#ifdef CONFIG_PM_WAKELOCKS_BLOCKER
-#define WL_BLOCKER_MAX		32
-#define WL_BLOCKER_NAME_MAX	64
-
-static char wl_blocker_list[WL_BLOCKER_MAX][WL_BLOCKER_NAME_MAX];
-static int wl_blocker_count;
-static DEFINE_MUTEX(wl_blocker_lock);
-
-/*
- * Mark all existing wakeup sources according to the block list.
- * Called with wl_blocker_lock held, from process context only
- * (sysfs store). The hot path only reads ws->blocked, no locks.
- */
-static void wl_blocker_apply(void)
-{
-	struct wakeup_source *ws;
-	unsigned long flags;
-	int i;
-
-	rcu_read_lock();
-	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
-		bool blocked = false;
-
-		for (i = 0; i < wl_blocker_count; i++) {
-			if (!strcmp(ws->name, wl_blocker_list[i])) {
-				blocked = true;
-				break;
-			}
-		}
-		spin_lock_irqsave(&ws->lock, flags);
-		ws->blocked = blocked;
-		spin_unlock_irqrestore(&ws->lock, flags);
-	}
-	rcu_read_unlock();
-}
-
-static ssize_t wl_blocker_show(struct kobject *kobj,
-			       struct kobj_attribute *attr, char *buf)
-{
-	int i, len = 0;
-
-	mutex_lock(&wl_blocker_lock);
-	for (i = 0; i < wl_blocker_count; i++)
-		len += scnprintf(buf + len, PAGE_SIZE - len, "%s\n",
-				 wl_blocker_list[i]);
-	mutex_unlock(&wl_blocker_lock);
-
-	return len;
-}
-
-static ssize_t wl_blocker_store(struct kobject *kobj,
-				struct kobj_attribute *attr,
-				const char *buf, size_t n)
-{
-	char name[WL_BLOCKER_NAME_MAX];
-	size_t len;
-	int i;
-
-	len = strcspn(buf, "\n");
-	if (!len || len >= WL_BLOCKER_NAME_MAX)
-		return -EINVAL;
-	memcpy(name, buf, len);
-	name[len] = '\0';
-
-	mutex_lock(&wl_blocker_lock);
-
-	/* Writing an existing name removes it (toggle off). */
-	for (i = 0; i < wl_blocker_count; i++) {
-		if (!strcmp(name, wl_blocker_list[i])) {
-			wl_blocker_count--;
-			memmove(&wl_blocker_list[i], &wl_blocker_list[i + 1],
-				(wl_blocker_count - i) * WL_BLOCKER_NAME_MAX);
-			memset(&wl_blocker_list[wl_blocker_count], 0,
-			       WL_BLOCKER_NAME_MAX);
-			wl_blocker_apply();
-			mutex_unlock(&wl_blocker_lock);
-			return n;
-		}
-	}
-
-	if (wl_blocker_count >= WL_BLOCKER_MAX) {
-		mutex_unlock(&wl_blocker_lock);
-		return -ENOSPC;
-	}
-
-	strlcpy(wl_blocker_list[wl_blocker_count], name, WL_BLOCKER_NAME_MAX);
-	wl_blocker_count++;
-	wl_blocker_apply();
-
-	mutex_unlock(&wl_blocker_lock);
-
-	return n;
-}
-
-static struct kobj_attribute wl_blocker_attr =
-	__ATTR(wakelocks, 0644, wl_blocker_show, wl_blocker_store);
-
-static struct kobject *wl_blocker_kobj;
-
-static int __init wl_blocker_init(void)
-{
-	int ret;
-
-	wl_blocker_kobj = kobject_create_and_add("wakelock_blocker",
-						 kernel_kobj);
-	if (!wl_blocker_kobj)
-		return -ENOMEM;
-
-	ret = sysfs_create_file(wl_blocker_kobj, &wl_blocker_attr.attr);
-	if (ret) {
-		kobject_put(wl_blocker_kobj);
-		return ret;
-	}
-
-	return 0;
-}
-late_initcall(wl_blocker_init);
-#endif /* CONFIG_PM_WAKELOCKS_BLOCKER */
-
 #ifndef CONFIG_SUSPEND
 suspend_state_t pm_suspend_target_state;
 #define pm_suspend_target_state	(PM_SUSPEND_ON)
@@ -347,6 +228,125 @@ void wakeup_source_add(struct wakeup_source *ws)
 	spin_unlock_irqrestore(&events_lock, flags);
 }
 EXPORT_SYMBOL_GPL(wakeup_source_add);
+
+#ifdef CONFIG_PM_WAKELOCKS_BLOCKER
+#define WL_BLOCKER_MAX		32
+#define WL_BLOCKER_NAME_MAX	64
+
+static char wl_blocker_list[WL_BLOCKER_MAX][WL_BLOCKER_NAME_MAX];
+static int wl_blocker_count;
+static DEFINE_MUTEX(wl_blocker_lock);
+
+/*
+ * Mark all existing wakeup sources according to the block list.
+ * Called with wl_blocker_lock held, from process context only
+ * (sysfs store). The hot path only reads ws->blocked, no locks.
+ */
+static void wl_blocker_apply(void)
+{
+	struct wakeup_source *ws;
+	unsigned long flags;
+	int srcuidx, i;
+
+	srcuidx = srcu_read_lock(&wakeup_srcu);
+	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
+		bool blocked = false;
+
+		for (i = 0; i < wl_blocker_count; i++) {
+			if (!strcmp(ws->name, wl_blocker_list[i])) {
+				blocked = true;
+				break;
+			}
+		}
+		spin_lock_irqsave(&ws->lock, flags);
+		ws->blocked = blocked;
+		spin_unlock_irqrestore(&ws->lock, flags);
+	}
+	srcu_read_unlock(&wakeup_srcu, srcuidx);
+}
+
+static ssize_t wl_blocker_show(struct kobject *kobj,
+			       struct kobj_attribute *attr, char *buf)
+{
+	int i, len = 0;
+
+	mutex_lock(&wl_blocker_lock);
+	for (i = 0; i < wl_blocker_count; i++)
+		len += scnprintf(buf + len, PAGE_SIZE - len, "%s\n",
+				 wl_blocker_list[i]);
+	mutex_unlock(&wl_blocker_lock);
+
+	return len;
+}
+
+static ssize_t wl_blocker_store(struct kobject *kobj,
+				struct kobj_attribute *attr,
+				const char *buf, size_t n)
+{
+	char name[WL_BLOCKER_NAME_MAX];
+	size_t len;
+	int i;
+
+	len = strcspn(buf, "\n");
+	if (!len || len >= WL_BLOCKER_NAME_MAX)
+		return -EINVAL;
+	memcpy(name, buf, len);
+	name[len] = '\0';
+
+	mutex_lock(&wl_blocker_lock);
+
+	/* Writing an existing name removes it (toggle off). */
+	for (i = 0; i < wl_blocker_count; i++) {
+		if (!strcmp(name, wl_blocker_list[i])) {
+			wl_blocker_count--;
+			memmove(&wl_blocker_list[i], &wl_blocker_list[i + 1],
+				(wl_blocker_count - i) * WL_BLOCKER_NAME_MAX);
+			memset(&wl_blocker_list[wl_blocker_count], 0,
+			       WL_BLOCKER_NAME_MAX);
+			wl_blocker_apply();
+			mutex_unlock(&wl_blocker_lock);
+			return n;
+		}
+	}
+
+	if (wl_blocker_count >= WL_BLOCKER_MAX) {
+		mutex_unlock(&wl_blocker_lock);
+		return -ENOSPC;
+	}
+
+	strlcpy(wl_blocker_list[wl_blocker_count], name, WL_BLOCKER_NAME_MAX);
+	wl_blocker_count++;
+	wl_blocker_apply();
+
+	mutex_unlock(&wl_blocker_lock);
+
+	return n;
+}
+
+static struct kobj_attribute wl_blocker_attr =
+	__ATTR(wakelocks, 0644, wl_blocker_show, wl_blocker_store);
+
+static struct kobject *wl_blocker_kobj;
+
+static int __init wl_blocker_init(void)
+{
+	int ret;
+
+	wl_blocker_kobj = kobject_create_and_add("wakelock_blocker",
+						 kernel_kobj);
+	if (!wl_blocker_kobj)
+		return -ENOMEM;
+
+	ret = sysfs_create_file(wl_blocker_kobj, &wl_blocker_attr.attr);
+	if (ret) {
+		kobject_put(wl_blocker_kobj);
+		return ret;
+	}
+
+	return 0;
+}
+late_initcall(wl_blocker_init);
+#endif /* CONFIG_PM_WAKELOCKS_BLOCKER */
 
 /**
  * wakeup_source_remove - Remove given object from the wakeup sources list.
