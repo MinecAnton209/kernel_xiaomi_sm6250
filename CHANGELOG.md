@@ -37,8 +37,6 @@ for release tags (`vX.Y.Z`).
 - Default I/O scheduler `cfq` -> `deadline`; dropped `CFQ_GROUP_IOSCHED`.
 - THP enabled in `madvise` mode (opt-in via `MADV_HUGEPAGE`).
 - BBR congestion control + FQ scheduler enabled (default stays CUBIC).
-- Conntrack protocol helpers (FTP/TFTP/IRC/H323/Amanda/NetBIOS/PPTP/
-  SANE) and the EVENTS notifier dropped for cooler tethering.
 - External USB Wi-Fi drivers moved out of the base defconfig into the
   NetHunter fragment; base stays lean for daily use.
 - `WQ_POWER_EFFICIENT_DEFAULT=y`, smaller log buffer (1 MB -> 256 KB).
