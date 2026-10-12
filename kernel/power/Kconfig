@@ -169,6 +169,22 @@ config PM_WAKELOCKS_GC
 	depends on PM_WAKELOCKS
 	default y
 
+config PM_WAKELOCKS_BLOCKER
+	bool "Wakelock blocker (Boeffla-style)"
+	depends on PM_SLEEP
+	default n
+	---help---
+	  Allow blocking named wakeup sources via
+	  /sys/kernel/wakelock_blocker/wakelocks (one name per line,
+	  writing an existing name removes it). A blocked source can
+	  no longer hold the device awake: __pm_stay_awake() and
+	  pm_wakeup_ws_event() return immediately for it, so suspend
+	  is no longer aborted by that source. Used to silence abusive
+	  kernel wakelocks (e.g. qcom_rx_wakelock, wlan_rx_wake) that
+	  prevent deep sleep and drain the battery. The list is empty
+	  by default; blocking the wrong source (e.g. PowerManagerService
+	  or radio) can break notifications and calls. If unsure, say N.
+
 config PM
 	bool "Device power management core functionality"
 	---help---
