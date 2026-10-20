@@ -3,7 +3,10 @@
 #include <linux/mount.h>
 #include <linux/namei.h>
 #include <linux/sched.h>
+#include <linux/init.h>
 #include <linux/susfs.h>
+#include <linux/susfs_def.h>
+#include <linux/susfs_ksu.h>
 #include "internal.h"
 
 /* Provided by KernelSU-Next (drivers/kernelsu/selinux/selinux.c, kernel/core/init.c). */
@@ -56,3 +59,25 @@ void susfs_try_umount_all(uid_t uid)
 {
 	susfs_try_umount(uid);
 }
+
+/*
+ * Called from the KernelSU reboot extension, which has already checked
+ * that the caller is root. Errors are only reported through the kernel
+ * log: the extension has no channel back to userspace for struct payloads.
+ */
+int susfs_ksu_dispatch(unsigned int cmd, void __user *arg)
+{
+	switch (cmd) {
+	case CMD_SUSFS_ADD_SUS_PATH:
+		return susfs_add_sus_path(arg);
+	default:
+		return -ENOTTY;
+	}
+}
+
+static int __init susfs_ksu_late_init(void)
+{
+	susfs_init();
+	return 0;
+}
+late_initcall(susfs_ksu_late_init);
