@@ -29,6 +29,8 @@ DEFCONFIG="${DEFCONFIG:-vendor/xiaomi/miatoll_defconfig}"
 ZIP_NAME="${1:-miatoll_$(date +%Y%m%d).zip}"
 JOBS="${JOBS:-$(nproc)}"
 
+# Resolved before CLANG_DIR is prepended, so host tools get the system ld.
+HOST_LD="$(command -v ld)"
 export PATH="$CLANG_DIR:$PATH"
 export ARCH=arm64
 if [ "$USE_CCACHE" = "1" ]; then
@@ -42,7 +44,9 @@ fi
 # Full LLVM toolchain, matching the known-good local command line.
 # LD=ld.lld keeps LTO links off GNU gold (vdso -shared breaks under
 # gold+LLVMgold); the llvm-* tools match Proton Clang 13.
-MAKE_ARGS="ARCH=arm64 CC=\"$CC\" LD=$CLANG_DIR/ld.lld"
+# Host tools (kconfig, fixdep) must link with the system ld: CLANG_DIR's
+# ld cannot read the host glibc (.relr.dyn), and it shadows PATH here.
+MAKE_ARGS="ARCH=arm64 CC=\"$CC\" LD=$CLANG_DIR/ld.lld HOSTCC=gcc HOSTCXX=g++ HOSTLD=$HOST_LD HOSTLDFLAGS=-B$(dirname "$HOST_LD")/"
 MAKE_ARGS="$MAKE_ARGS AR=$CLANG_DIR/llvm-ar NM=$CLANG_DIR/llvm-nm"
 MAKE_ARGS="$MAKE_ARGS OBJCOPY=$CLANG_DIR/llvm-objcopy"
 MAKE_ARGS="$MAKE_ARGS OBJDUMP=$CLANG_DIR/llvm-objdump"
@@ -70,7 +74,7 @@ else
 			arch/arm64/configs/vendor/xiaomi/miatoll_nethunter.cfg)
 	else
 		echo "==> defconfig: $DEFCONFIG"
-		make -C "$KDIR" O="$OUT_DIR" "$DEFCONFIG"
+		eval make -C "$KDIR" O="$OUT_DIR" $MAKE_ARGS "$DEFCONFIG"
 	fi
 
 	echo "==> building Image.gz (-j$JOBS)"
