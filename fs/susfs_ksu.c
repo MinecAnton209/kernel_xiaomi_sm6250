@@ -4,6 +4,7 @@
 #include <linux/namei.h>
 #include <linux/sched.h>
 #include <linux/init.h>
+#include <linux/uaccess.h>
 #include <linux/susfs.h>
 #include <linux/susfs_def.h>
 #include <linux/susfs_ksu.h>
@@ -70,6 +71,46 @@ int susfs_ksu_dispatch(unsigned int cmd, void __user *arg)
 	switch (cmd) {
 	case CMD_SUSFS_ADD_SUS_PATH:
 		return susfs_add_sus_path(arg);
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+	case CMD_SUSFS_ADD_SUS_MOUNT:
+		return susfs_add_sus_mount(arg);
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+	case CMD_SUSFS_ADD_SUS_KSTAT:
+	case CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY:
+		return susfs_add_sus_kstat(arg);
+	case CMD_SUSFS_UPDATE_SUS_KSTAT:
+		return susfs_update_sus_kstat(arg);
+#endif
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
+	case CMD_SUSFS_ADD_TRY_UMOUNT:
+		return susfs_add_try_umount(arg);
+	case CMD_SUSFS_RUN_UMOUNT_FOR_CURRENT_MNT_NS:
+		susfs_try_umount(current_uid().val);
+		return 0;
+#endif
+#ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
+	case CMD_SUSFS_SET_UNAME:
+		return susfs_set_uname(arg);
+#endif
+#ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+	case CMD_SUSFS_ENABLE_LOG: {
+		int enabled;
+
+		if (copy_from_user(&enabled, arg, sizeof(enabled)))
+			return -EFAULT;
+		susfs_set_log(enabled != 0);
+		return 0;
+	}
+#endif
+#ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+	case CMD_SUSFS_SET_CMDLINE_OR_BOOTCONFIG:
+		return susfs_set_cmdline_or_bootconfig(arg);
+#endif
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+	case CMD_SUSFS_ADD_OPEN_REDIRECT:
+		return susfs_add_open_redirect(arg);
+#endif
 	default:
 		return -ENOTTY;
 	}
