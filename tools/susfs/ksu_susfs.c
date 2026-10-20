@@ -12,6 +12,9 @@
 
 #define CMD_SUSFS_ADD_SUS_PATH 0x55550
 #define CMD_SUSFS_ADD_SUS_MOUNT 0x55560
+#define CMD_SUSFS_ADD_SUS_KSTAT 0x55570
+#define CMD_SUSFS_UPDATE_SUS_KSTAT 0x55571
+#define CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY 0x55572
 #define CMD_SUSFS_ADD_TRY_UMOUNT 0x55580
 #define CMD_SUSFS_SET_UNAME 0x55590
 #define CMD_SUSFS_ENABLE_LOG 0x555a0
@@ -33,6 +36,24 @@ struct st_susfs_sus_path {
 struct st_susfs_sus_mount {
 	char target_pathname[SUSFS_MAX_LEN_PATHNAME];
 	unsigned long target_dev;
+};
+
+struct st_susfs_sus_kstat {
+	int is_statically;
+	unsigned long target_ino;
+	char target_pathname[SUSFS_MAX_LEN_PATHNAME];
+	unsigned long spoofed_ino;
+	unsigned long spoofed_dev;
+	unsigned int spoofed_nlink;
+	long long spoofed_size;
+	long spoofed_atime_tv_sec;
+	long spoofed_mtime_tv_sec;
+	long spoofed_ctime_tv_sec;
+	long spoofed_atime_tv_nsec;
+	long spoofed_mtime_tv_nsec;
+	long spoofed_ctime_tv_nsec;
+	unsigned long spoofed_blksize;
+	unsigned long long spoofed_blocks;
 };
 
 struct st_susfs_try_umount {
@@ -110,6 +131,115 @@ static int cmd_add_sus_mount(int argc, char **argv)
 	if (copy_path(info.target_pathname, sizeof(info.target_pathname), argv[0]))
 		return 1;
 	susfs_request(CMD_SUSFS_ADD_SUS_MOUNT, &info);
+	return 0;
+}
+
+static int parse_ulong(const char *s, unsigned long *out)
+{
+	char *end;
+
+	errno = 0;
+	*out = strtoul(s, &end, 0);
+	if (errno || *end != '\0') {
+		fprintf(stderr, "not a number: %s\n", s);
+		return 1;
+	}
+	return 0;
+}
+
+static int parse_llong(const char *s, long long *out)
+{
+	char *end;
+
+	errno = 0;
+	*out = strtoll(s, &end, 0);
+	if (errno || *end != '\0') {
+		fprintf(stderr, "not a number: %s\n", s);
+		return 1;
+	}
+	return 0;
+}
+
+static int parse_ullong(const char *s, unsigned long long *out)
+{
+	char *end;
+
+	errno = 0;
+	*out = strtoull(s, &end, 0);
+	if (errno || *end != '\0') {
+		fprintf(stderr, "not a number: %s\n", s);
+		return 1;
+	}
+	return 0;
+}
+
+static int send_kstat_dynamic(unsigned int cmd, int argc, char **argv)
+{
+	struct st_susfs_sus_kstat info;
+	struct stat sb;
+
+	if (argc != 1)
+		return 1;
+	if (stat_path(argv[0], &sb))
+		return 1;
+	memset(&info, 0, sizeof(info));
+	info.is_statically = 0;
+	info.target_ino = sb.st_ino;
+	if (copy_path(info.target_pathname, sizeof(info.target_pathname), argv[0]))
+		return 1;
+	susfs_request(cmd, &info);
+	return 0;
+}
+
+static int cmd_add_sus_kstat(int argc, char **argv)
+{
+	return send_kstat_dynamic(CMD_SUSFS_ADD_SUS_KSTAT, argc, argv);
+}
+
+static int cmd_update_sus_kstat(int argc, char **argv)
+{
+	return send_kstat_dynamic(CMD_SUSFS_UPDATE_SUS_KSTAT, argc, argv);
+}
+
+/* Spoofed times are whole seconds; the nanosecond fields stay zero. */
+static int cmd_add_sus_kstat_statically(int argc, char **argv)
+{
+	struct st_susfs_sus_kstat info;
+	struct stat sb;
+	unsigned long spoofed_ino, spoofed_dev, nlink, blksize;
+	unsigned long long blocks;
+	long long size, atime, mtime, ctime;
+
+	if (argc != 10)
+		return 1;
+	if (stat_path(argv[0], &sb))
+		return 1;
+	if (parse_ulong(argv[1], &spoofed_ino) ||
+	    parse_ulong(argv[2], &spoofed_dev) ||
+	    parse_ulong(argv[3], &nlink) ||
+	    parse_llong(argv[4], &size) ||
+	    parse_llong(argv[5], &atime) ||
+	    parse_llong(argv[6], &mtime) ||
+	    parse_llong(argv[7], &ctime) ||
+	    parse_ulong(argv[8], &blksize) ||
+	    parse_ullong(argv[9], &blocks))
+		return 1;
+
+	memset(&info, 0, sizeof(info));
+	info.is_statically = 1;
+	info.target_ino = sb.st_ino;
+	if (copy_path(info.target_pathname, sizeof(info.target_pathname), argv[0]))
+		return 1;
+	info.spoofed_ino = spoofed_ino;
+	info.spoofed_dev = spoofed_dev;
+	info.spoofed_nlink = (unsigned int)nlink;
+	info.spoofed_size = size;
+	info.spoofed_atime_tv_sec = (long)atime;
+	info.spoofed_mtime_tv_sec = (long)mtime;
+	info.spoofed_ctime_tv_sec = (long)ctime;
+	info.spoofed_blksize = blksize;
+	info.spoofed_blocks = blocks;
+	susfs_request(CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY, &info);
 	return 0;
 }
 
@@ -217,6 +347,9 @@ struct susfs_command {
 static const struct susfs_command commands[] = {
 	{ "add_sus_path", "<path>", cmd_add_sus_path },
 	{ "add_sus_mount", "<path>", cmd_add_sus_mount },
+	{ "add_sus_kstat", "<path>", cmd_add_sus_kstat },
+	{ "update_sus_kstat", "<path>", cmd_update_sus_kstat },
+	{ "add_sus_kstat_statically", "<path> <ino> <dev> <nlink> <size> <atime> <mtime> <ctime> <blksize> <blocks>", cmd_add_sus_kstat_statically },
 	{ "add_try_umount", "<path> [detach]", cmd_add_try_umount },
 	{ "run_umount", "", cmd_run_umount },
 	{ "set_uname", "<release> <version>", cmd_set_uname },

@@ -14,7 +14,9 @@
 extern bool is_ksu_domain(void);
 extern bool is_zygote(const struct cred *cred);
 extern struct cred *ksu_cred;
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 extern void susfs_try_umount(uid_t target_uid);
+#endif
 
 bool susfs_is_current_ksu_domain(void)
 {
@@ -56,10 +58,12 @@ void ksu_try_umount(const char *mnt, bool check_mnt, int flags, uid_t uid)
 		revert_creds(saved);
 }
 
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 void susfs_try_umount_all(uid_t uid)
 {
 	susfs_try_umount(uid);
 }
+#endif
 
 /*
  * Called from the KernelSU reboot extension, which has already checked
