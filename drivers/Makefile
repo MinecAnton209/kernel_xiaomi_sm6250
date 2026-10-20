@@ -192,4 +192,6 @@ obj-$(CONFIG_ESOC)              += esoc/
 obj-$(CONFIG_GNSS_SIRF)		+= gnsssirf/
 obj-$(CONFIG_GNSS)		+= gnss/
 
+# KernelSU-Next's legacy branch uses KSYM_NAME_LEN without including kallsyms.h
+subdir-ccflags-$(CONFIG_KSU) += -include linux/kallsyms.h
 obj-$(CONFIG_KSU) += kernelsu/
