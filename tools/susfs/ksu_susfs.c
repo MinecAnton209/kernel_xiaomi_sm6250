@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/sysmacros.h>
 #include <unistd.h>
 
 #define KSU_INSTALL_MAGIC1 0xDEADBEEF
@@ -24,13 +25,19 @@
 #define CMD_SUSFS_SHOW_VERSION 0x555e1
 #define CMD_SUSFS_SHOW_ENABLED_FEATURES 0x555e2
 #define CMD_SUSFS_SHOW_VARIANT 0x555e3
-#define SUSFS_SHOW_BUF_LEN 256
+#define CMD_SUSFS_SHOW_SUS_SU_WORKING_MODE 0x555e4
+#define CMD_SUSFS_IS_SUS_SU_READY 0x555f0
+#define CMD_SUSFS_SUS_SU 0x60000
+#define SUSFS_SHOW_BUF_LEN 512
 
 #define SUSFS_MAX_LEN_PATHNAME 256
 #define SUSFS_UTS_LEN 65
 #define SUSFS_CMDLINE_MAX 4096
+#define SUSFS_SUS_SU_PATH_LEN 256
 #define TRY_UMOUNT_DEFAULT 0
 #define TRY_UMOUNT_DETACH 1
+#define SUS_SU_DISABLED 0
+#define SUS_SU_WITH_HOOKS 2
 
 struct st_susfs_sus_path {
 	unsigned long target_ino;
@@ -74,6 +81,10 @@ struct st_susfs_open_redirect {
 	unsigned long target_ino;
 	char target_pathname[SUSFS_MAX_LEN_PATHNAME];
 	char redirected_pathname[SUSFS_MAX_LEN_PATHNAME];
+};
+
+struct st_sus_su {
+	int mode;
 };
 
 /*
@@ -380,6 +391,76 @@ static int cmd_show_features(int argc, char **argv)
 	return cmd_show(CMD_SUSFS_SHOW_ENABLED_FEATURES);
 }
 
+static int cmd_show_sus_su_working_mode(int argc, char **argv)
+{
+	(void)argv;
+	if (argc != 0)
+		return 1;
+	return cmd_show(CMD_SUSFS_SHOW_SUS_SU_WORKING_MODE);
+}
+
+static int cmd_is_sus_su_ready(int argc, char **argv)
+{
+	(void)argv;
+	if (argc != 0)
+		return 1;
+	return cmd_show(CMD_SUSFS_IS_SUS_SU_READY);
+}
+
+/*
+ * Reads "ready=1 path=<dev> major=<n>" from the kernel. The kernel does not
+ * create the device node, so sus_su needs the path and major to mknod it.
+ */
+static int read_sus_su_device(char *path, size_t size, int *major)
+{
+	char buf[SUSFS_SHOW_BUF_LEN];
+	char fmt[32];
+
+	memset(buf, 0, sizeof(buf));
+	susfs_request(CMD_SUSFS_IS_SUS_SU_READY, buf);
+	snprintf(fmt, sizeof(fmt), "ready=1 path=%%%zus major=%%d", size - 1);
+	return sscanf(buf, fmt, path, major) == 2 ? 0 : 1;
+}
+
+static int cmd_sus_su(int argc, char **argv)
+{
+	struct st_sus_su info;
+	char path[SUSFS_SUS_SU_PATH_LEN];
+	int major;
+	int was_ready;
+
+	if (argc != 1)
+		return 1;
+	if (strcmp(argv[0], "0") == 0)
+		info.mode = SUS_SU_DISABLED;
+	else if (strcmp(argv[0], "2") == 0)
+		info.mode = SUS_SU_WITH_HOOKS;
+	else
+		return 1;
+
+	was_ready = read_sus_su_device(path, sizeof(path), &major) == 0;
+	susfs_request(CMD_SUSFS_SUS_SU, &info);
+
+	if (info.mode == SUS_SU_DISABLED) {
+		if (was_ready && read_sus_su_device(path, sizeof(path), &major) != 0) {
+			if (unlink(path) && errno != ENOENT) {
+				perror(path);
+				return 1;
+			}
+		}
+		return 0;
+	}
+	if (read_sus_su_device(path, sizeof(path), &major)) {
+		fprintf(stderr, "sus_su did not register a device\n");
+		return 1;
+	}
+	if (mknod(path, S_IFCHR | 0666, makedev(major, 0)) && errno != EEXIST) {
+		perror(path);
+		return 1;
+	}
+	return 0;
+}
+
 struct susfs_command {
 	const char *name;
 	const char *args;
@@ -402,6 +483,9 @@ static const struct susfs_command commands[] = {
 	{ .name = "show_version", .args = "", .run = cmd_show_version, .shows_reply = 1 },
 	{ .name = "show_variant", .args = "", .run = cmd_show_variant, .shows_reply = 1 },
 	{ .name = "show_features", .args = "", .run = cmd_show_features, .shows_reply = 1 },
+	{ .name = "sus_su", .args = "<0|2>", .run = cmd_sus_su, .shows_reply = 0 },
+	{ .name = "show_sus_su_working_mode", .args = "", .run = cmd_show_sus_su_working_mode, .shows_reply = 1 },
+	{ .name = "is_sus_su_ready", .args = "", .run = cmd_is_sus_su_ready, .shows_reply = 1 },
 };
 
 int main(int argc, char **argv)
@@ -414,7 +498,7 @@ int main(int argc, char **argv)
 				continue;
 			if (commands[i].run(argc - 2, argv + 2) == 0) {
 				if (!commands[i].shows_reply)
-					printf("sent %s; check dmesg for the result\n", commands[i].name);
+					printf("sent %s\n", commands[i].name);
 				return 0;
 			}
 			break;
