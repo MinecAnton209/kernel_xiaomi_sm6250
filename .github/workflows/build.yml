@@ -170,6 +170,14 @@ jobs:
             echo "Built from \`${GITHUB_SHA::7}\` (run ${{ github.run_number }})."
           } > release-notes.md
 
+      - name: Generate manifest.json
+        env:
+          REPO: ${{ github.repository }}
+          TAG: unreleased
+          COMMIT: ${{ github.sha }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: bash ci/make-manifest.sh Unreleased release-assets release-assets/manifest.json
+
       - name: Move the unreleased tag to this commit
         run: |
           git tag -f unreleased "$GITHUB_SHA"
@@ -196,17 +204,20 @@ jobs:
   release:
     name: Attach zips to GitHub Release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build]
+    needs: [build, module]
     runs-on: ubuntu-22.04
     permissions:
       contents: write
       id-token: write
       attestations: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: miatoll-*
+          pattern: "*-${{ github.run_number }}"
           merge-multiple: true
           path: release-assets
 
@@ -224,6 +235,14 @@ jobs:
           fi
           echo "$SECTION" > release-notes.md
 
+      - name: Generate manifest.json
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: bash ci/make-manifest.sh "${GITHUB_REF_NAME#v}" release-assets release-assets/manifest.json
+
       - name: Attest flashable zips provenance
         uses: actions/attest-build-provenance@v4.2.2
         with:
@@ -232,5 +251,7 @@ jobs:
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release-assets/*.zip
+          files: |
+            release-assets/*.zip
+            release-assets/manifest.json
           body_path: release-notes.md
