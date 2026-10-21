@@ -1,0 +1,6 @@
+id=ksu_susfs_ui
+name=SUSFS Control
+version=v1.0.0
+versionCode=1
+author=MinecAnton209
+description=WebUI for miatoll SUSFS: hidden paths, logging, try_umount. Paths are restored on every boot.
