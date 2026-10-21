@@ -3,7 +3,9 @@ name: Build miatoll kernel
 # Public repo: Actions minutes are free. Builds both variants so a
 # broken defconfig/fragment (e.g. the THP try_to_unmap case) is caught
 # before flashing. Pushing a v* tag also publishes a GitHub Release
-# with both flashable zips attached.
+# with both flashable zips attached. Every push to 16.0 replaces the
+# rolling "unreleased" pre-release with this build and its CHANGELOG
+# [Unreleased] section.
 
 on:
   push:
@@ -131,6 +133,65 @@ jobs:
           path: ksu_module/ksu_susfs_ui-*.zip
           if-no-files-found: error
           retention-days: 14
+
+  prerelease:
+    name: Update Unreleased pre-release
+    # Only the 16.0 branch feeds the rolling pre-release, so feature branches
+    # cannot overwrite it with a build that is not the newest work.
+    if: "github.event_name == 'push' && github.ref == 'refs/heads/16.0'"
+    needs: [build, module]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-${{ github.run_number }}"
+          merge-multiple: true
+          path: release-assets
+
+      - name: Extract Unreleased notes from CHANGELOG.md
+        run: |
+          SECTION=$(awk '
+            index($0, "## [Unreleased]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md)
+          if [ -z "$(printf '%s' "$SECTION" | tr -d '[:space:]')" ]; then
+            SECTION="No entries in the Unreleased section yet."
+          fi
+          {
+            echo "$SECTION"
+            echo
+            echo "Built from \`${GITHUB_SHA::7}\` (run ${{ github.run_number }})."
+          } > release-notes.md
+
+      - name: Move the unreleased tag to this commit
+        run: |
+          git tag -f unreleased "$GITHUB_SHA"
+          git push -f origin refs/tags/unreleased
+
+      - name: Clear assets of the previous build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view unreleased --json assets --jq '.assets[].name' 2>/dev/null |
+            while read -r name; do
+              gh release delete-asset unreleased "$name" --yes
+            done
+
+      - name: Update the pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: unreleased
+          name: "Unreleased (build ${{ github.run_number }})"
+          prerelease: true
+          files: release-assets/*
+          body_path: release-notes.md
 
   release:
     name: Attach zips to GitHub Release
