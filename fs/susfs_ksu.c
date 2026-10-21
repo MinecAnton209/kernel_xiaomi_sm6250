@@ -1,3 +1,4 @@
+#include <linux/capability.h>
 #include <linux/cred.h>
 #include <linux/fs.h>
 #include <linux/mount.h>
@@ -14,8 +15,17 @@
 extern bool is_ksu_domain(void);
 extern bool is_zygote(const struct cred *cred);
 extern struct cred *ksu_cred;
+extern bool __ksu_is_allow_uid_for_current(uid_t uid);
+extern bool ksu_uid_should_umount(uid_t uid);
+extern void escape_to_root_for_adb_root(void);
+extern bool susfs_is_auto_add_sus_bind_mount_enabled;
+extern bool susfs_is_auto_add_sus_ksu_default_mount_enabled;
+extern bool susfs_is_auto_add_try_umount_for_bind_mount_enabled;
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 extern void susfs_try_umount(uid_t target_uid);
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+#include <linux/sus_su.h>
 #endif
 
 bool susfs_is_current_ksu_domain(void)
@@ -63,7 +73,69 @@ void susfs_try_umount_all(uid_t uid)
 {
 	susfs_try_umount(uid);
 }
+
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+static bool susfs_umount_zygote_system_process;
 #endif
+
+static bool susfs_is_zygote_system_umount(uid_t uid)
+{
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+	return uid >= 1000 && uid < 10000 && susfs_umount_zygote_system_process;
+#else
+	return false;
+#endif
+}
+
+/*
+ * Runs the SUSFS try_umount list for a zygote child before it becomes an app,
+ * ahead of KernelSU's own umount, so SUSFS paths are gone first.
+ */
+void susfs_try_umount_on_spawn(uid_t new_uid)
+{
+	if (!is_zygote(current_cred()))
+		return;
+	if (new_uid < 10000 && !susfs_is_zygote_system_umount(new_uid))
+		return;
+	if (!ksu_uid_should_umount(new_uid))
+		return;
+	susfs_try_umount_all(new_uid);
+}
+#endif
+
+static bool susfs_path_exists(const char *path)
+{
+	struct path p;
+
+	if (kern_path(path, 0, &p))
+		return false;
+	path_put(&p);
+	return true;
+}
+
+/*
+ * The DATA_ADB_* marker files live on /data, so they can only be checked
+ * once post-fs-data runs. Auto-add defaults stay on unless a marker opts out.
+ */
+void susfs_on_post_fs_data(void)
+{
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+	if (susfs_path_exists(DATA_ADB_UMOUNT_FOR_ZYGOTE_SYSTEM_PROCESS))
+		susfs_umount_zygote_system_process = true;
+#endif
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
+	if (susfs_path_exists(DATA_ADB_NO_AUTO_ADD_SUS_BIND_MOUNT))
+		susfs_is_auto_add_sus_bind_mount_enabled = false;
+#endif
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
+	if (susfs_path_exists(DATA_ADB_NO_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT))
+		susfs_is_auto_add_sus_ksu_default_mount_enabled = false;
+#endif
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
+	if (susfs_path_exists(DATA_ADB_NO_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT))
+		susfs_is_auto_add_try_umount_for_bind_mount_enabled = false;
+#endif
+}
 
 static int susfs_show_text(void __user *arg, const char *text)
 {
@@ -84,9 +156,79 @@ static int susfs_show_features(void __user *arg)
 	len += scnprintf(buf + len, sizeof(buf) - len, "spoof_uname=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_SPOOF_UNAME));
 	len += scnprintf(buf + len, sizeof(buf) - len, "open_redirect=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_OPEN_REDIRECT));
 	len += scnprintf(buf + len, sizeof(buf) - len, "enable_log=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_ENABLE_LOG));
+	len += scnprintf(buf + len, sizeof(buf) - len, "sus_su=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_SUS_SU));
 
 	return susfs_show_text(arg, buf);
 }
+
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+/* "/dev/" plus the random name sus_su generates (at most 248 chars) and the NUL */
+#define SUS_SU_DRV_PATH_LEN 256
+
+static int sus_su_maj_dev_num = -1;
+static char sus_su_drv_path[SUS_SU_DRV_PATH_LEN];
+static bool sus_su_device_registered;
+
+bool susfs_is_allow_su(void)
+{
+	return __ksu_is_allow_uid_for_current(current_uid().val);
+}
+
+/*
+ * Root for the sus_su device is the same as escape_to_root(): uid and
+ * capabilities first, then the KernelSU SELinux domain.
+ */
+void ksu_escape_to_root(void)
+{
+	struct cred *cred = prepare_creds();
+
+	if (!cred)
+		return;
+	cred->uid = cred->euid = cred->suid = cred->fsuid = GLOBAL_ROOT_UID;
+	cred->gid = cred->egid = cred->sgid = cred->fsgid = GLOBAL_ROOT_GID;
+	cred->cap_inheritable = CAP_FULL_SET;
+	cred->cap_permitted = CAP_FULL_SET;
+	cred->cap_effective = CAP_FULL_SET;
+	cred->cap_bset = CAP_FULL_SET;
+	cred->cap_ambient = CAP_FULL_SET;
+	commit_creds(cred);
+	escape_to_root_for_adb_root();
+}
+
+void ksu_susfs_enable_sus_su(void)
+{
+	if (sus_su_fifo_init(&sus_su_maj_dev_num, sus_su_drv_path))
+		return;
+	sus_su_device_registered = true;
+}
+
+void ksu_susfs_disable_sus_su(void)
+{
+	if (!sus_su_device_registered)
+		return;
+	sus_su_fifo_exit(&sus_su_maj_dev_num, sus_su_drv_path);
+	sus_su_device_registered = false;
+}
+
+static int susfs_show_sus_su_working_mode(void __user *arg)
+{
+	char buf[16];
+
+	scnprintf(buf, sizeof(buf), "%d\n", susfs_get_sus_su_working_mode());
+	return susfs_show_text(arg, buf);
+}
+
+static int susfs_show_sus_su_ready(void __user *arg)
+{
+	char buf[SUSFS_SHOW_BUF_LEN];
+
+	if (sus_su_device_registered)
+		scnprintf(buf, sizeof(buf), "ready=1 path=%s major=%d\n", sus_su_drv_path, sus_su_maj_dev_num);
+	else
+		scnprintf(buf, sizeof(buf), "ready=0\n");
+	return susfs_show_text(arg, buf);
+}
+#endif
 
 /*
  * Called from the KernelSU reboot extension, which has already checked
@@ -143,6 +285,14 @@ int susfs_ksu_dispatch(unsigned int cmd, void __user *arg)
 #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
 	case CMD_SUSFS_ADD_OPEN_REDIRECT:
 		return susfs_add_open_redirect(arg);
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+	case CMD_SUSFS_SUS_SU:
+		return susfs_sus_su(arg);
+	case CMD_SUSFS_SHOW_SUS_SU_WORKING_MODE:
+		return susfs_show_sus_su_working_mode(arg);
+	case CMD_SUSFS_IS_SUS_SU_READY:
+		return susfs_show_sus_su_ready(arg);
 #endif
 	default:
 		return -ENOTTY;

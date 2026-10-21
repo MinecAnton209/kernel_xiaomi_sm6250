@@ -128,4 +128,13 @@ config KSU_SUSFS_OPEN_REDIRECT
 	  - Effective only on processes with uid < 2000.
 	  - Please be reminded that process with open access to the target and redirected path can be detected.
 
+config KSU_SUSFS_SUS_SU
+	bool "Enable sus_su, a root grant through a randomly named character device"
+	depends on KSU_SUSFS
+	default n
+	help
+	  - Registers a character device with a random name. Allowlisted apps that write the
+	    token to it are granted root without a su binary on the filesystem.
+	  - Off until switched on at runtime with CMD_SUSFS_SUS_SU.
+
 endmenu
