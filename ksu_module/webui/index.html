@@ -72,17 +72,30 @@
             <span class="chip" id="moduleStatus">модуль: проверьте обновления</span>
             <span class="chip" id="kernelStatus">ядро: проверьте обновления</span>
           </div>
-          <div class="item-note" id="updateNotes"></div>
+          <div class="notes" id="updateNotes"></div>
           <div class="row end">
+            <m3e-button id="fullChangelogBtn" variant="text">Полный changelog</m3e-button>
             <m3e-circular-progress-indicator id="checkSpinner" indeterminate hidden></m3e-circular-progress-indicator>
             <m3e-button id="checkUpdatesBtn" variant="tonal">Проверить</m3e-button>
           </div>
           <div class="progress-row" id="downloadRow" hidden>
             <m3e-linear-progress-indicator id="downloadProgress" mode="determinate" value="0" max="1"></m3e-linear-progress-indicator>
+            <p class="hint" id="downloadText"></p>
           </div>
+          <div class="row end" id="actionsRow" hidden>
+            <m3e-button id="kernelDownloadBtn" variant="outlined" hidden>Скачать ядро…</m3e-button>
+            <m3e-button id="moduleUpdateBtn" variant="filled" hidden>Обновить модуль</m3e-button>
+          </div>
+        </section>
+
+        <section class="card" id="folderPicker" hidden>
+          <h2>Куда сохранить ядро</h2>
+          <p class="hint" id="pickerPath"></p>
+          <div class="list" id="pickerList"></div>
           <div class="row end">
-            <m3e-button id="kernelDownloadBtn" variant="outlined" disabled>Скачать ядро</m3e-button>
-            <m3e-button id="moduleUpdateBtn" variant="filled" disabled>Обновить модуль</m3e-button>
+            <m3e-button id="pickerUp" variant="text">Вверх</m3e-button>
+            <m3e-button id="pickerCancel" variant="text">Отмена</m3e-button>
+            <m3e-button id="pickerSelect" variant="filled">Сохранить сюда</m3e-button>
           </div>
         </section>
       </div>
