@@ -7,6 +7,7 @@ import { byId, busy, type Togglable, type SwitchElement } from './dom';
 import { savedTab, showPage } from './nav';
 import { runUmount, setLog } from './system';
 import { setSusSu } from './su';
+import { initUpdates, loadChannel } from './updates';
 
 function init(): void {
   document.querySelectorAll<HTMLElement>('.nav-item').forEach((button) => {
@@ -40,6 +41,7 @@ function init(): void {
     void setSusSu((event.target as SwitchElement).checked);
   });
 
+  void loadChannel().then(initUpdates);
   showPage(savedTab());
 }
 

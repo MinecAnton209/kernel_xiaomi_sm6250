@@ -60,6 +60,27 @@
           <p class="hint">Размонтирует пути для текущего mnt namespace прямо сейчас.</p>
           <m3e-button id="umountBtn" variant="outlined">Размонтировать сейчас</m3e-button>
         </section>
+
+        <section class="card">
+          <h2>Обновления</h2>
+          <p class="hint">Проверка по GitHub. Модуль ставится через KernelSU, ядро скачивается в Загрузки и прошивается через recovery.</p>
+          <div class="switch-row">
+            <span>CI-сборки (выкл. = только релизы)</span>
+            <m3e-switch id="channelSwitch"></m3e-switch>
+          </div>
+          <div class="chips">
+            <span class="chip" id="moduleStatus">модуль: проверьте обновления</span>
+            <span class="chip" id="kernelStatus">ядро: проверьте обновления</span>
+          </div>
+          <div class="item-note" id="updateNotes"></div>
+          <div class="row end">
+            <m3e-button id="checkUpdatesBtn" variant="tonal">Проверить</m3e-button>
+          </div>
+          <div class="row end">
+            <m3e-button id="kernelDownloadBtn" variant="outlined" disabled>Скачать ядро</m3e-button>
+            <m3e-button id="moduleUpdateBtn" variant="filled" disabled>Обновить модуль</m3e-button>
+          </div>
+        </section>
       </div>
 
       <div class="page" data-page="su" hidden>

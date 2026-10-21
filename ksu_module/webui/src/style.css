@@ -200,6 +200,14 @@ header p {
   padding: 18px 0;
 }
 
+.item-note {
+  margin: 8px 0 4px;
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .switch-row {
   display: flex;
   align-items: center;
