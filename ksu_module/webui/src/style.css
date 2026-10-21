@@ -200,6 +200,10 @@ header p {
   padding: 18px 0;
 }
 
+.progress-row {
+  margin-top: 14px;
+}
+
 .item-note {
   margin: 8px 0 4px;
   color: var(--on-surface-variant);

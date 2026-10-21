@@ -10,6 +10,9 @@ const MODULE_ZIP = '/data/local/tmp/ksu_susfs_ui_update.zip';
 const KSUD = '/data/adb/ksud';
 const DOWNLOADS = '/sdcard/Download';
 const THREADS = 4;
+const AUTO_CHECK_MS = 6 * 60 * 60 * 1000;
+const POLL_MS = 500;
+const DOWNLOAD_TIMEOUT_MS = 60 * 60 * 1000;
 
 export type Channel = 'release' | 'ci';
 
@@ -46,18 +49,25 @@ interface Loaded {
   assets: ManifestAsset[];
 }
 
+interface LinearProgress extends HTMLElement {
+  value: number;
+  max: number;
+}
+
 let current: Loaded | null = null;
+
+// Requests go through curl in the root shell: the WebView enforces CORS, and
+// GitHub download URLs redirect to a CDN that does not send CORS headers.
+async function getJson<T>(url: string): Promise<T> {
+  const result = await exec(`curl -fsSL --retry 2 -H 'Accept: application/json' ${quote(url)}`);
+  if (result.errno !== 0) {
+    throw new Error(result.stderr.trim() || 'Не удалось загрузить данные с GitHub');
+  }
+  return JSON.parse(result.stdout) as T;
+}
 
 function releasePath(channel: Channel): string {
   return channel === 'ci' ? 'tags/unreleased' : 'latest';
-}
-
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!response.ok) {
-    throw new Error(`GitHub ответил ${response.status}`);
-  }
-  return (await response.json()) as T;
 }
 
 async function loadRelease(channel: Channel): Promise<Loaded> {
@@ -106,16 +116,25 @@ function renderNotes(loaded: Loaded): void {
   notes.textContent = loaded.changelog ? loaded.changelog.slice(0, 600) : 'Описание не указано';
 }
 
-async function checkUpdates(): Promise<void> {
+function setChecking(checking: boolean): void {
+  byId('checkSpinner').hidden = !checking;
+  byId<Togglable>('checkUpdatesBtn').disabled = checking;
+}
+
+async function checkUpdates(showErrors: boolean): Promise<void> {
   const channel: Channel = byId<SwitchElement>('channelSwitch').checked ? 'ci' : 'release';
+  setChecking(true);
   let loaded: Loaded;
   try {
     loaded = await loadRelease(channel);
   } catch (error) {
-    toast(error instanceof Error ? error.message : 'Не удалось проверить обновления');
+    if (showErrors) toast(error instanceof Error ? error.message : 'Не удалось проверить обновления');
     return;
+  } finally {
+    setChecking(false);
   }
   current = loaded;
+  await run(`printf '%s' ${Date.now()} > ${confFile('last_check')}`);
 
   const version = await installed();
   const moduleAsset = findAsset(loaded, /^ksu_susfs_ui-.*\.zip$/);
@@ -146,10 +165,56 @@ async function checkUpdates(): Promise<void> {
   renderNotes(loaded);
 }
 
-async function fetchTo(asset: ManifestAsset, target: string): Promise<boolean> {
+async function autoCheck(): Promise<void> {
+  const saved = Number((await exec(`cat ${confFile('last_check')} 2>/dev/null`)).stdout.trim());
+  if (Number.isFinite(saved) && Date.now() - saved < AUTO_CHECK_MS) return;
+  await checkUpdates(false);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function showProgress(done: number, total: number): void {
+  const bar = byId<LinearProgress>('downloadProgress');
+  bar.value = total > 0 ? done / total : 0;
+  bar.max = 1;
+}
+
+// fetch.sh runs detached so ksu.exec returns at once; progress comes from files.
+async function download(asset: ManifestAsset, target: string): Promise<boolean> {
   const sha = asset.sha256 ? ` ${quote(asset.sha256)}` : '';
-  const result = await run(`sh ${quote(FETCH)} ${quote(asset.url)} ${quote(target)} ${THREADS}${sha}`);
-  return result.errno === 0;
+  const row = byId('downloadRow');
+  row.hidden = false;
+  showProgress(0, 0);
+  await run(
+    `rm -f ${quote(`${target}.state`)} ${quote(`${target}.progress`)}; ` +
+      `( sh ${quote(FETCH)} ${quote(asset.url)} ${quote(target)} ${THREADS}${sha} ) </dev/null >${quote(`${target}.log`)} 2>&1 &`,
+  );
+
+  const deadline = Date.now() + DOWNLOAD_TIMEOUT_MS;
+  try {
+    while (Date.now() < deadline) {
+      await sleep(POLL_MS);
+      const status = (
+        await exec(`cat ${quote(`${target}.state`)} 2>/dev/null; echo '|'; cat ${quote(`${target}.progress`)} 2>/dev/null`)
+      ).stdout;
+      const [state = '', progress = ''] = status.split('|');
+      const [done = '0', total = '0'] = progress.trim().split(/\s+/);
+      showProgress(Number(done) || 0, Number(total) || 0);
+
+      if (state.trim() === 'done') return true;
+      if (state.trim() === 'error') {
+        const log = (await exec(`tail -n 3 ${quote(`${target}.log`)} 2>/dev/null`)).stdout.trim();
+        toast(log || 'Загрузка не удалась');
+        return false;
+      }
+    }
+    toast('Загрузка заняла слишком много времени');
+    return false;
+  } finally {
+    row.hidden = true;
+  }
 }
 
 async function updateModule(): Promise<void> {
@@ -158,12 +223,12 @@ async function updateModule(): Promise<void> {
     toast('Сначала проверьте обновления');
     return;
   }
-  if (!(await fetchTo(asset, MODULE_ZIP))) return;
+  if (!(await download(asset, MODULE_ZIP))) return;
   const installedOk = await run(`${quote(KSUD)} module install ${quote(MODULE_ZIP)}`);
   if (installedOk.errno !== 0) return;
   await run(`printf '%s' ${quote(asset.name)} > ${confFile('module_build')}`);
   toast('Модуль обновлён. Перезагрузите телефон, чтобы применить');
-  await checkUpdates();
+  await checkUpdates(true);
 }
 
 async function downloadKernel(): Promise<void> {
@@ -174,7 +239,7 @@ async function downloadKernel(): Promise<void> {
   }
   const name = asset.url.split('/').pop() ?? 'miatoll.zip';
   const target = `${DOWNLOADS}/${name}`;
-  if (!(await fetchTo(asset, target))) return;
+  if (!(await download(asset, target))) return;
   toast(`Ядро сохранено: ${target}. Прошейте его через recovery`);
 }
 
@@ -196,11 +261,13 @@ export function initUpdates(channelSaved: Channel): void {
   });
 
   const checkButton = byId<Togglable>('checkUpdatesBtn');
-  checkButton.addEventListener('click', () => void busy(checkButton, checkUpdates));
+  checkButton.addEventListener('click', () => void busy(checkButton, () => checkUpdates(true)));
 
   const moduleButton = byId<Togglable>('moduleUpdateBtn');
   moduleButton.addEventListener('click', () => void busy(moduleButton, updateModule));
 
   const kernelButton = byId<Togglable>('kernelDownloadBtn');
   kernelButton.addEventListener('click', () => void busy(kernelButton, downloadKernel));
+
+  void autoCheck();
 }

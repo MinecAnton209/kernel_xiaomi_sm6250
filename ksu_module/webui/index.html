@@ -74,7 +74,11 @@
           </div>
           <div class="item-note" id="updateNotes"></div>
           <div class="row end">
+            <m3e-circular-progress-indicator id="checkSpinner" indeterminate hidden></m3e-circular-progress-indicator>
             <m3e-button id="checkUpdatesBtn" variant="tonal">Проверить</m3e-button>
+          </div>
+          <div class="progress-row" id="downloadRow" hidden>
+            <m3e-linear-progress-indicator id="downloadProgress" mode="determinate" value="0" max="1"></m3e-linear-progress-indicator>
           </div>
           <div class="row end">
             <m3e-button id="kernelDownloadBtn" variant="outlined" disabled>Скачать ядро</m3e-button>

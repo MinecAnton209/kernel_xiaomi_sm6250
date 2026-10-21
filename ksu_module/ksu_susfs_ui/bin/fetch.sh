@@ -1,23 +1,64 @@
 #!/system/bin/sh
 # Usage: fetch.sh <url> <output> [threads=4] [sha256]
-# Downloads with parallel HTTP range requests and falls back to one stream
-# when the server does not report a size or does not honour ranges.
+# Run detached. Progress goes to <output>.progress ("<done> <total>"), the
+# outcome to <output>.state ("running", "done" or "error").
+# Uses parallel range requests and falls back to one stream when the server
+# does not report a size or does not honour ranges.
 
 URL="$1"
 OUT="$2"
 THREADS="${3:-4}"
 SHA="${4:-}"
 
-command -v curl >/dev/null 2>&1 || { echo "curl not found" >&2; exit 1; }
+STATE="$OUT.state"
+PROGRESS="$OUT.progress"
+
+set_state() {
+  printf '%s' "$1" > "$STATE"
+}
+
+fail() {
+  echo "$1" >&2
+  set_state error
+  rm -f "$OUT".part*
+  exit 1
+}
+
+command -v curl >/dev/null 2>&1 || fail "curl not found"
+
+sum_bytes() {
+  total=0
+  for f in "$@"; do
+    [ -f "$f" ] && total=$(( total + $(stat -c %s "$f") ))
+  done
+  echo "$total"
+}
+
+# Polls file sizes until every pid exits, so the WebUI can show progress.
+watch_pids() {
+  while :; do
+    alive=0
+    for pid in $1; do
+      kill -0 "$pid" 2>/dev/null && alive=1
+    done
+    printf '%s %s' "$(sum_bytes $2)" "$SIZE" > "$PROGRESS"
+    [ "$alive" -eq 0 ] && break
+    sleep 1
+  done
+}
 
 single() {
-  curl -fsSL --retry 2 -o "$OUT" "$URL"
+  curl -fsSL --retry 2 -o "$OUT" "$URL" &
+  pid=$!
+  watch_pids "$pid" "$OUT"
+  wait "$pid"
 }
 
 split() {
   part=$(( (SIZE + THREADS - 1) / THREADS ))
   i=0
   pids=""
+  parts=""
   while [ "$i" -lt "$THREADS" ]; do
     start=$(( i * part ))
     [ "$start" -ge "$SIZE" ] && break
@@ -25,27 +66,22 @@ split() {
     [ "$end" -ge "$SIZE" ] && end=$(( SIZE - 1 ))
     curl -fsSL --retry 3 -r "$start-$end" -o "$OUT.part$i" "$URL" &
     pids="$pids $!"
+    parts="$parts $OUT.part$i"
     i=$(( i + 1 ))
   done
+
+  watch_pids "$pids" "$parts"
 
   failed=0
   for pid in $pids; do
     wait "$pid" || failed=1
   done
 
-  total=0
-  i=0
-  while [ "$i" -lt "$THREADS" ] && [ -f "$OUT.part$i" ]; do
-    total=$(( total + $(stat -c %s "$OUT.part$i") ))
-    i=$(( i + 1 ))
-  done
-
+  total=$(sum_bytes $parts)
   if [ "$failed" -eq 0 ] && [ "$total" -eq "$SIZE" ]; then
     : > "$OUT"
-    i=0
-    while [ "$i" -lt "$THREADS" ] && [ -f "$OUT.part$i" ]; do
-      cat "$OUT.part$i" >> "$OUT"
-      i=$(( i + 1 ))
+    for f in $parts; do
+      cat "$f" >> "$OUT"
     done
     rm -f "$OUT".part*
     return 0
@@ -55,22 +91,30 @@ split() {
   single
 }
 
+set_state running
+printf '0 0' > "$PROGRESS"
+
 SIZE=$(curl -sIL --retry 2 "$URL" | tr -d '\r' | awk 'tolower($1) == "content-length:" { size = $2 } END { print size }')
 
 case "$SIZE" in
   ''|*[!0-9]*|0)
-    single || exit 1
+    SIZE=0
+    single || fail "download failed"
     ;;
   *)
-    split || exit 1
+    split || fail "download failed"
     ;;
 esac
+
+size=$(sum_bytes "$OUT")
+printf '%s %s' "$size" "$size" > "$PROGRESS"
 
 if [ -n "$SHA" ]; then
   actual=$(sha256sum "$OUT" | cut -d' ' -f1)
   if [ "$actual" != "$SHA" ]; then
-    echo "sha256 mismatch: expected $SHA, got $actual" >&2
     rm -f "$OUT"
-    exit 1
+    fail "sha256 mismatch: expected $SHA, got $actual"
   fi
 fi
+
+set_state done
