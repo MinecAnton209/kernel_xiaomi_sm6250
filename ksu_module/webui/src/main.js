@@ -5,6 +5,7 @@ import './style.css';
 const CONF = '/data/adb/susfs_ui';
 const BIN = '/data/adb/modules/ksu_susfs_ui/bin/ksu_susfs';
 const PATH_RE = /^\/[A-Za-z0-9._/-]{1,255}$/;
+const TAB_KEY = 'susfs_ui_tab';
 
 const $ = (id) => document.getElementById(id);
 const q = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
@@ -25,6 +26,25 @@ function exec(cmd) {
   });
 }
 
+async function run(cmd, okMsg) {
+  const r = await exec(cmd);
+  if (r.errno !== 0) {
+    toast(r.stderr.trim() || 'Команда не выполнена');
+  } else if (okMsg) {
+    toast(okMsg);
+  }
+  return r;
+}
+
+async function busy(el, task) {
+  el.disabled = true;
+  try {
+    await task();
+  } finally {
+    el.disabled = false;
+  }
+}
+
 let toastTimer;
 function toast(msg) {
   const el = $('toast');
@@ -41,7 +61,7 @@ async function readPaths() {
 
 async function writePaths(list) {
   const args = list.map(q).join(' ');
-  await exec(`printf '%s\\n' ${args} > ${q(`${CONF}/paths.txt`)}`);
+  await run(`printf '%s\\n' ${args} > ${q(`${CONF}/paths.txt`)}`);
 }
 
 function renderPaths(list) {
@@ -86,7 +106,8 @@ async function addPath() {
   }
   list.push(p);
   await writePaths(list);
-  await exec(`${q(BIN)} add_sus_path ${q(p)}`);
+  const r = await run(`${q(BIN)} add_sus_path ${q(p)}`);
+  if (r.errno !== 0) return;
   $('pathInput').value = '';
   renderPaths(list);
   toast('Путь добавлен');
@@ -101,20 +122,25 @@ async function removePath(p) {
 
 async function applyAll() {
   const list = await readPaths();
-  for (const p of list) {
-    await exec(`${q(BIN)} add_sus_path ${q(p)}`);
+  if (list.length === 0) {
+    toast('Список пуст');
+    return;
   }
-  toast(list.length ? 'Пути применены' : 'Список пуст');
+  let failed = 0;
+  for (const p of list) {
+    const r = await exec(`${q(BIN)} add_sus_path ${q(p)}`);
+    if (r.errno !== 0) failed += 1;
+  }
+  toast(failed ? `Не применено путей: ${failed}` : 'Пути применены');
 }
 
 async function setLog(on) {
-  await exec(`printf '%s' ${on ? 1 : 0} > ${q(`${CONF}/log`)}`);
-  await exec(`${q(BIN)} enable_log ${on ? 1 : 0}`);
+  await run(`printf '%s' ${on ? 1 : 0} > ${q(`${CONF}/log`)}`);
+  await run(`${q(BIN)} enable_log ${on ? 1 : 0}`, on ? 'Лог включён' : 'Лог выключен');
 }
 
 async function runUmount() {
-  await exec(`${q(BIN)} run_umount`);
-  toast('Try umount выполнен');
+  await run(`${q(BIN)} run_umount`, 'Try umount выполнен');
 }
 
 async function loadSusSu() {
@@ -146,11 +172,15 @@ async function loadSusSu() {
 }
 
 async function setSusSu(on) {
-  const mode = on ? 2 : 0;
-  await exec(`printf '%s' ${mode} > ${q(`${CONF}/sus_su`)}`);
-  await exec(`${q(BIN)} sus_su ${mode}`);
-  await loadSusSu();
-  toast(on ? 'sus_su включён' : 'sus_su выключен');
+  const sw = $('susSuSwitch');
+  await busy(sw, async () => {
+    const mode = on ? 2 : 0;
+    const saved = await run(`printf '%s' ${mode} > ${q(`${CONF}/sus_su`)}`);
+    if (saved.errno !== 0) return;
+    const r = await run(`${q(BIN)} sus_su ${mode}`, on ? 'sus_su включён' : 'sus_su выключен');
+    if (r.errno !== 0) sw.checked = !on;
+    await loadSusSu();
+  });
 }
 
 function showPage(name) {
@@ -166,6 +196,20 @@ function showPage(name) {
       btn.removeAttribute('aria-current');
     }
   });
+  try {
+    sessionStorage.setItem(TAB_KEY, name);
+  } catch {
+    // sessionStorage can be blocked in the manager WebView; the tab just won't persist.
+  }
+  if (typeof ksu !== 'undefined') loadPage(name);
+}
+
+function savedTab() {
+  try {
+    return sessionStorage.getItem(TAB_KEY) || 'status';
+  } catch {
+    return 'status';
+  }
 }
 
 function renderFeatures(text) {
@@ -208,6 +252,13 @@ async function refreshPaths() {
   renderPaths(await readPaths());
 }
 
+function loadPage(name) {
+  if (name === 'status') loadStatus();
+  if (name === 'paths') refreshPaths();
+  if (name === 'system') loadLog();
+  if (name === 'su') loadSusSu();
+}
+
 function init() {
   document.querySelectorAll('.nav-item').forEach((btn) => {
     btn.addEventListener('click', () => showPage(btn.dataset.tab));
@@ -220,19 +271,16 @@ function init() {
     });
     return;
   }
-  $('addBtn').addEventListener('click', addPath);
+  $('addBtn').addEventListener('click', () => busy($('addBtn'), addPath));
   $('pathInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') addPath();
   });
-  $('applyBtn').addEventListener('click', applyAll);
-  $('umountBtn').addEventListener('click', runUmount);
+  $('applyBtn').addEventListener('click', () => busy($('applyBtn'), applyAll));
+  $('umountBtn').addEventListener('click', () => busy($('umountBtn'), runUmount));
   $('logSwitch').addEventListener('change', (e) => setLog(e.target.checked));
   $('susSuSwitch').addEventListener('change', (e) => setSusSu(e.target.checked));
 
-  loadStatus();
-  loadLog();
-  refreshPaths();
-  loadSusSu();
+  showPage(savedTab());
 }
 
 init();
