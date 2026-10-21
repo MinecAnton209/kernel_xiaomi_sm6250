@@ -21,6 +21,10 @@
 #define CMD_SUSFS_SET_CMDLINE_OR_BOOTCONFIG 0x555b0
 #define CMD_SUSFS_ADD_OPEN_REDIRECT 0x555c0
 #define CMD_SUSFS_RUN_UMOUNT_FOR_CURRENT_MNT_NS 0x555d0
+#define CMD_SUSFS_SHOW_VERSION 0x555e1
+#define CMD_SUSFS_SHOW_ENABLED_FEATURES 0x555e2
+#define CMD_SUSFS_SHOW_VARIANT 0x555e3
+#define SUSFS_SHOW_BUF_LEN 256
 
 #define SUSFS_MAX_LEN_PATHNAME 256
 #define SUSFS_UTS_LEN 65
@@ -338,24 +342,66 @@ static int cmd_add_open_redirect(int argc, char **argv)
 	return 0;
 }
 
+static int cmd_show(unsigned int cmd)
+{
+	char buf[SUSFS_SHOW_BUF_LEN];
+
+	memset(buf, 0, sizeof(buf));
+	susfs_request(cmd, buf);
+	if (buf[0] == '\0') {
+		fprintf(stderr, "no answer from kernel: run as root and check that SUSFS is built in\n");
+		return 1;
+	}
+	fputs(buf, stdout);
+	return 0;
+}
+
+static int cmd_show_version(int argc, char **argv)
+{
+	(void)argv;
+	if (argc != 0)
+		return 1;
+	return cmd_show(CMD_SUSFS_SHOW_VERSION);
+}
+
+static int cmd_show_variant(int argc, char **argv)
+{
+	(void)argv;
+	if (argc != 0)
+		return 1;
+	return cmd_show(CMD_SUSFS_SHOW_VARIANT);
+}
+
+static int cmd_show_features(int argc, char **argv)
+{
+	(void)argv;
+	if (argc != 0)
+		return 1;
+	return cmd_show(CMD_SUSFS_SHOW_ENABLED_FEATURES);
+}
+
 struct susfs_command {
 	const char *name;
 	const char *args;
 	int (*run)(int argc, char **argv);
+	int shows_reply;
 };
 
 static const struct susfs_command commands[] = {
-	{ "add_sus_path", "<path>", cmd_add_sus_path },
-	{ "add_sus_mount", "<path>", cmd_add_sus_mount },
-	{ "add_sus_kstat", "<path>", cmd_add_sus_kstat },
-	{ "update_sus_kstat", "<path>", cmd_update_sus_kstat },
-	{ "add_sus_kstat_statically", "<path> <ino> <dev> <nlink> <size> <atime> <mtime> <ctime> <blksize> <blocks>", cmd_add_sus_kstat_statically },
-	{ "add_try_umount", "<path> [detach]", cmd_add_try_umount },
-	{ "run_umount", "", cmd_run_umount },
-	{ "set_uname", "<release> <version>", cmd_set_uname },
-	{ "enable_log", "<0|1>", cmd_enable_log },
-	{ "set_cmdline", "<file>", cmd_set_cmdline },
-	{ "add_open_redirect", "<target> <redirected>", cmd_add_open_redirect },
+	{ .name = "add_sus_path", .args = "<path>", .run = cmd_add_sus_path, .shows_reply = 0 },
+	{ .name = "add_sus_mount", .args = "<path>", .run = cmd_add_sus_mount, .shows_reply = 0 },
+	{ .name = "add_sus_kstat", .args = "<path>", .run = cmd_add_sus_kstat, .shows_reply = 0 },
+	{ .name = "update_sus_kstat", .args = "<path>", .run = cmd_update_sus_kstat, .shows_reply = 0 },
+	{ .name = "add_sus_kstat_statically", .args = "<path> <ino> <dev> <nlink> <size> <atime> <mtime> <ctime> <blksize> <blocks>", .run = cmd_add_sus_kstat_statically, .shows_reply = 0 },
+	{ .name = "add_try_umount", .args = "<path> [detach]", .run = cmd_add_try_umount, .shows_reply = 0 },
+	{ .name = "run_umount", .args = "", .run = cmd_run_umount, .shows_reply = 0 },
+	{ .name = "set_uname", .args = "<release> <version>", .run = cmd_set_uname, .shows_reply = 0 },
+	{ .name = "enable_log", .args = "<0|1>", .run = cmd_enable_log, .shows_reply = 0 },
+	{ .name = "set_cmdline", .args = "<file>", .run = cmd_set_cmdline, .shows_reply = 0 },
+	{ .name = "add_open_redirect", .args = "<target> <redirected>", .run = cmd_add_open_redirect, .shows_reply = 0 },
+	{ .name = "show_version", .args = "", .run = cmd_show_version, .shows_reply = 1 },
+	{ .name = "show_variant", .args = "", .run = cmd_show_variant, .shows_reply = 1 },
+	{ .name = "show_features", .args = "", .run = cmd_show_features, .shows_reply = 1 },
 };
 
 int main(int argc, char **argv)
@@ -367,7 +413,8 @@ int main(int argc, char **argv)
 			if (strcmp(argv[1], commands[i].name) != 0)
 				continue;
 			if (commands[i].run(argc - 2, argv + 2) == 0) {
-				printf("sent %s; check dmesg for the result\n", commands[i].name);
+				if (!commands[i].shows_reply)
+					printf("sent %s; check dmesg for the result\n", commands[i].name);
 				return 0;
 			}
 			break;

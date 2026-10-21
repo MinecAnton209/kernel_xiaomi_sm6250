@@ -65,16 +65,45 @@ void susfs_try_umount_all(uid_t uid)
 }
 #endif
 
+static int susfs_show_text(void __user *arg, const char *text)
+{
+	size_t len = min_t(size_t, strlen(text) + 1, SUSFS_SHOW_BUF_LEN);
+
+	return copy_to_user(arg, text, len) ? -EFAULT : 0;
+}
+
+static int susfs_show_features(void __user *arg)
+{
+	char buf[SUSFS_SHOW_BUF_LEN];
+	int len = 0;
+
+	len += scnprintf(buf + len, sizeof(buf) - len, "sus_path=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_SUS_PATH));
+	len += scnprintf(buf + len, sizeof(buf) - len, "sus_mount=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_SUS_MOUNT));
+	len += scnprintf(buf + len, sizeof(buf) - len, "sus_kstat=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_SUS_KSTAT));
+	len += scnprintf(buf + len, sizeof(buf) - len, "try_umount=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_TRY_UMOUNT));
+	len += scnprintf(buf + len, sizeof(buf) - len, "spoof_uname=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_SPOOF_UNAME));
+	len += scnprintf(buf + len, sizeof(buf) - len, "open_redirect=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_OPEN_REDIRECT));
+	len += scnprintf(buf + len, sizeof(buf) - len, "enable_log=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_ENABLE_LOG));
+
+	return susfs_show_text(arg, buf);
+}
+
 /*
  * Called from the KernelSU reboot extension, which has already checked
  * that the caller is root. Errors are only reported through the kernel
- * log: the extension has no channel back to userspace for struct payloads.
+ * log, except SHOW_* commands which copy their answer into the user buffer.
  */
 int susfs_ksu_dispatch(unsigned int cmd, void __user *arg)
 {
 	switch (cmd) {
 	case CMD_SUSFS_ADD_SUS_PATH:
 		return susfs_add_sus_path(arg);
+	case CMD_SUSFS_SHOW_VERSION:
+		return susfs_show_text(arg, SUSFS_VERSION);
+	case CMD_SUSFS_SHOW_VARIANT:
+		return susfs_show_text(arg, SUSFS_VARIANT);
+	case CMD_SUSFS_SHOW_ENABLED_FEATURES:
+		return susfs_show_features(arg);
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	case CMD_SUSFS_ADD_SUS_MOUNT:
 		return susfs_add_sus_mount(arg);
