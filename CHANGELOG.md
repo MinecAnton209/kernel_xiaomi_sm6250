@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 for release tags (`vX.Y.Z`).
 
-## [1.0.0] - 2026-10-11
+## [Unreleased]
 
 ### Added
 
@@ -30,6 +30,25 @@ for release tags (`vX.Y.Z`).
 - AnyKernel3 submodule (MinecAnton209 fork) with staged installer:
   banner/version files, 5-phase progress bar, bypass_charging tip.
 - This changelog (`CHANGELOG.md`).
+- New: root support through KernelSU-Next (legacy branch, kprobe hook
+  mode), added as the `KernelSU-Next` submodule and enabled with
+  `CONFIG_KSU` in miatoll_defconfig.
+- New: SUSFS v1.5.5 for KernelSU-Next, written from scratch for this
+  tree: sus_path, sus_mount, sus_kstat, try_umount, spoof_uname,
+  open_redirect, log toggle and the status commands (version, variant,
+  enabled features).
+- try_umount runs on app spawn in addition to the manual trigger, and
+  post-fs-data reads the `/data/adb/susfs_*` marker files.
+- sus_su (`CONFIG_KSU_SUSFS_SUS_SU`, enabled in miatoll_defconfig):
+  root through a randomly named character device, switched at runtime.
+- `ksu_susfs` client (`tools/susfs`) for sending SUSFS commands from
+  the device shell, including `sus_su`, `show_sus_su_working_mode` and
+  `is_sus_su_ready`.
+- SUSFS Control KernelSU module (`ksu_module/ksu_susfs_ui`, v1.1.0):
+  WebUI with Status, Paths, System and SU tabs in a bottom navbar.
+  Hidden paths, log setting and sus_su mode are restored on every boot.
+- ThinLTO in miatoll_defconfig.
+- CI: separate `module` job builds the WebUI and packages the module.
 
 ### Changed
 
@@ -43,6 +62,11 @@ for release tags (`vX.Y.Z`).
 - Default flashable-zip name `KernelSU_miatoll_*` -> `miatoll_*`
   (no KernelSU in this tree).
 - README refreshed: submodule clone flow, feature list, runtime knobs.
+- CFI and SCS disabled in miatoll_defconfig for Magisk and APatch.
+- Conntrack helpers restored for Wi-Fi hotspot; TTL/HL targets enabled
+  for tethering.
+- `build_miatoll.sh` links host tools with the system linker and puts
+  `CLANG_DIR` on `PATH` for the LLVM binutils.
 
 ### Removed
 
@@ -61,6 +85,10 @@ for release tags (`vX.Y.Z`).
 - `bypass_charging`: vote rollback on partial failure, NULL votable
   guards, `smb_lock` scope narrowed (votes run unlocked), dedicated
   store serialization mutex.
+- SUSFS sus_path had no effect on app processes: the
+  `TASK_STRUCT_NON_ROOT_USER_APP_PROC` flag is now set in the setresuid
+  hook.
+- Host tools failed to link with the LLVM linker (`.relr.dyn`).
 
 ## [0.1.0] - 2026-09-30
 
