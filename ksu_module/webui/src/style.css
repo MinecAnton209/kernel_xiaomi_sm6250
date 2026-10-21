@@ -61,7 +61,18 @@ body {
 .wrap {
   max-width: 560px;
   margin: 0 auto;
-  padding-block: 8px 40px;
+  padding-block: 8px 120px;
+}
+
+.page {
+  animation: page-in 0.35s var(--standard);
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 
 header {
@@ -196,10 +207,66 @@ header p {
   gap: 12px;
 }
 
+.navbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  background: var(--surface-high);
+  border-radius: var(--radius-l) var(--radius-l) 0 0;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--on-surface-variant);
+  font: 12px system-ui, -apple-system, Roboto, sans-serif;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-ind {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 32px;
+  border-radius: 16px;
+  transition: background 0.4s var(--standard), width 0.4s var(--spring);
+}
+
+.nav-item svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.nav-item.active {
+  color: var(--on-surface);
+  font-weight: 600;
+}
+
+.nav-item.active .nav-ind {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
 #toast {
   position: fixed;
   left: 50%;
-  bottom: 24px;
+  bottom: 96px;
   transform: translate(-50%, 140%);
   max-width: calc(100% - 32px);
   padding: 14px 20px;

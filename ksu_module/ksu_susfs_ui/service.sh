@@ -10,6 +10,7 @@ until [ "$(getprop sys.boot_completed)" = "1" ]; do
 done
 
 [ -f "$CONF_DIR/log" ] && "$BIN" enable_log "$(cat "$CONF_DIR/log")"
+[ -f "$CONF_DIR/sus_su" ] && "$BIN" sus_su "$(cat "$CONF_DIR/sus_su")"
 
 [ -f "$CONF_DIR/paths.txt" ] || exit 0
 while IFS= read -r path; do

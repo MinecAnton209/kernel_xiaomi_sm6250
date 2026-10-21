@@ -10,7 +10,7 @@
     <div class="wrap">
       <header>
         <h1>SUSFS</h1>
-        <p>Скрытие путей, логи и try_umount для miatoll-ядра</p>
+        <p>Скрытие путей, логи, try_umount и sus_su для miatoll-ядра</p>
       </header>
 
       <section class="card" id="noBridge" hidden>
@@ -18,44 +18,92 @@
         <p class="hint">Открой страницу из менеджера KernelSU-Next, а не в браузере.</p>
       </section>
 
-      <section class="card">
-        <h2>Состояние</h2>
-        <p class="hint">Версия SUSFS и включённые функции берутся из ядра.</p>
-        <div class="chips" id="status">
-          <span class="chip" id="kernel">ядро: ...</span>
-          <span class="chip" id="susfs">SUSFS: ...</span>
-        </div>
-        <div class="chips" id="features"></div>
-      </section>
+      <div class="page" data-page="status">
+        <section class="card">
+          <h2>Состояние</h2>
+          <p class="hint">Версия SUSFS и включённые функции берутся из ядра.</p>
+          <div class="chips" id="status">
+            <span class="chip" id="kernel">ядро: ...</span>
+            <span class="chip" id="susfs">SUSFS: ...</span>
+          </div>
+          <div class="chips" id="features"></div>
+        </section>
+      </div>
 
-      <section class="card">
-        <h2>Скрытые пути</h2>
-        <p class="hint">Путь должен существовать. Список сохраняется и применяется после каждой загрузки.</p>
-        <div class="row">
-          <input class="field" id="pathInput" placeholder="/system/xbin/su" autocomplete="off" spellcheck="false" />
-          <m3e-button id="addBtn" variant="filled">Добавить</m3e-button>
-        </div>
-        <div class="list" id="pathList"></div>
-        <div class="row end">
-          <m3e-button id="applyBtn" variant="tonal">Применить сейчас</m3e-button>
-        </div>
-      </section>
+      <div class="page" data-page="paths" hidden>
+        <section class="card">
+          <h2>Скрытые пути</h2>
+          <p class="hint">Путь должен существовать. Список сохраняется и применяется после каждой загрузки.</p>
+          <div class="row">
+            <input class="field" id="pathInput" placeholder="/system/xbin/su" autocomplete="off" spellcheck="false" />
+            <m3e-button id="addBtn" variant="filled">Добавить</m3e-button>
+          </div>
+          <div class="list" id="pathList"></div>
+          <div class="row end">
+            <m3e-button id="applyBtn" variant="tonal">Применить сейчас</m3e-button>
+          </div>
+        </section>
+      </div>
 
-      <section class="card">
-        <h2>Логи SUSFS</h2>
-        <p class="hint">Записи о работе SUSFS в лог ядра.</p>
-        <div class="switch-row">
-          <span>Писать в лог ядра</span>
-          <m3e-switch id="logSwitch"></m3e-switch>
-        </div>
-      </section>
+      <div class="page" data-page="system" hidden>
+        <section class="card">
+          <h2>Логи SUSFS</h2>
+          <p class="hint">Записи о работе SUSFS в лог ядра.</p>
+          <div class="switch-row">
+            <span>Писать в лог ядра</span>
+            <m3e-switch id="logSwitch"></m3e-switch>
+          </div>
+        </section>
 
-      <section class="card">
-        <h2>Try umount</h2>
-        <p class="hint">Размонтирует пути для текущего mnt namespace прямо сейчас.</p>
-        <m3e-button id="umountBtn" variant="outlined">Размонтировать сейчас</m3e-button>
-      </section>
+        <section class="card">
+          <h2>Try umount</h2>
+          <p class="hint">Размонтирует пути для текущего mnt namespace прямо сейчас.</p>
+          <m3e-button id="umountBtn" variant="outlined">Размонтировать сейчас</m3e-button>
+        </section>
+      </div>
+
+      <div class="page" data-page="su" hidden>
+        <section class="card">
+          <h2>sus_su</h2>
+          <p class="hint">Root для приложений из списка KernelSU-Next через скрытое символьное устройство. Устройство создаётся при включении и пересоздаётся после загрузки.</p>
+          <div class="switch-row">
+            <span>Включить sus_su</span>
+            <m3e-switch id="susSuSwitch"></m3e-switch>
+          </div>
+          <div class="chips" id="susSuStatus">
+            <span class="chip" id="susSuMode">режим: ...</span>
+            <span class="chip" id="susSuReady">устройство: ...</span>
+          </div>
+        </section>
+      </div>
     </div>
+
+    <nav class="navbar" aria-label="Разделы">
+      <button class="nav-item active" type="button" data-tab="status" aria-current="page">
+        <span class="nav-ind">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-6h2Zm0-8h-2V7h2Z"/></svg>
+        </span>
+        <span class="nav-label">Статус</span>
+      </button>
+      <button class="nav-item" type="button" data-tab="paths">
+        <span class="nav-ind">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2Z"/></svg>
+        </span>
+        <span class="nav-label">Пути</span>
+      </button>
+      <button class="nav-item" type="button" data-tab="system">
+        <span class="nav-ind">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17v2h6v-2H3Zm0-12v2h10V5H3Zm10 16v-2h8v-2h-8v-2h-2v6h2ZM7 9v2H3v2h4v2h2V9H7Zm14 4v-2H11v2h10Zm-6-4h2V7h4V5h-4V3h-2v6Z"/></svg>
+        </span>
+        <span class="nav-label">Система</span>
+      </button>
+      <button class="nav-item" type="button" data-tab="su">
+        <span class="nav-ind">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8Z"/></svg>
+        </span>
+        <span class="nav-label">SU</span>
+      </button>
+    </nav>
 
     <div id="toast" role="status"></div>
 

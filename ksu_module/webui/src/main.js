@@ -104,7 +104,7 @@ async function applyAll() {
   for (const p of list) {
     await exec(`${q(BIN)} add_sus_path ${q(p)}`);
   }
-  toast(list.length ? 'Пути отправлены в ядро, результат смотри в dmesg' : 'Список пуст');
+  toast(list.length ? 'Пути применены' : 'Список пуст');
 }
 
 async function setLog(on) {
@@ -115,6 +115,57 @@ async function setLog(on) {
 async function runUmount() {
   await exec(`${q(BIN)} run_umount`);
   toast('Try umount выполнен');
+}
+
+async function loadSusSu() {
+  const mode = (await exec(`${q(BIN)} show_sus_su_working_mode`)).stdout.trim();
+  const ready = (await exec(`${q(BIN)} is_sus_su_ready`)).stdout.trim();
+  const sw = $('susSuSwitch');
+  const modeChip = $('susSuMode');
+  const readyChip = $('susSuReady');
+
+  if (!mode) {
+    sw.checked = false;
+    sw.disabled = true;
+    modeChip.textContent = 'ядро без sus_su';
+    modeChip.className = 'chip off';
+    readyChip.textContent = 'устройство: нет';
+    readyChip.className = 'chip off';
+    return;
+  }
+
+  const on = mode === '2';
+  sw.disabled = false;
+  sw.checked = on;
+  modeChip.textContent = on ? 'режим: включён' : 'режим: выключен';
+  modeChip.className = on ? 'chip ok' : 'chip off';
+
+  const isReady = ready.startsWith('ready=1');
+  readyChip.textContent = isReady ? 'устройство: готово' : 'устройство: нет';
+  readyChip.className = isReady ? 'chip ok' : 'chip off';
+}
+
+async function setSusSu(on) {
+  const mode = on ? 2 : 0;
+  await exec(`printf '%s' ${mode} > ${q(`${CONF}/sus_su`)}`);
+  await exec(`${q(BIN)} sus_su ${mode}`);
+  await loadSusSu();
+  toast(on ? 'sus_su включён' : 'sus_su выключен');
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach((page) => {
+    page.hidden = page.dataset.page !== name;
+  });
+  document.querySelectorAll('.nav-item').forEach((btn) => {
+    const active = btn.dataset.tab === name;
+    btn.classList.toggle('active', active);
+    if (active) {
+      btn.setAttribute('aria-current', 'page');
+    } else {
+      btn.removeAttribute('aria-current');
+    }
+  });
 }
 
 function renderFeatures(text) {
@@ -158,6 +209,10 @@ async function refreshPaths() {
 }
 
 function init() {
+  document.querySelectorAll('.nav-item').forEach((btn) => {
+    btn.addEventListener('click', () => showPage(btn.dataset.tab));
+  });
+
   if (typeof ksu === 'undefined') {
     $('noBridge').hidden = false;
     document.querySelectorAll('m3e-button, m3e-switch').forEach((el) => {
@@ -172,10 +227,12 @@ function init() {
   $('applyBtn').addEventListener('click', applyAll);
   $('umountBtn').addEventListener('click', runUmount);
   $('logSwitch').addEventListener('change', (e) => setLog(e.target.checked));
+  $('susSuSwitch').addEventListener('change', (e) => setSusSu(e.target.checked));
 
   loadStatus();
   loadLog();
   refreshPaths();
+  loadSusSu();
 }
 
 init();
