@@ -1,6 +1,7 @@
 import '@m3e/web/button';
 import '@m3e/web/switch';
 import '@m3e/web/loading-indicator';
+import '@m3e/web/progress-indicator';
 import './style.css';
 import { hasBridge } from './ksu';
 import { addPath, applyAll } from './paths';

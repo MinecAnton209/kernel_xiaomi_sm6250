@@ -454,60 +454,12 @@ m3e-loading-indicator {
   color: var(--accent);
 }
 
-.bar {
-  position: relative;
-  height: 8px;
-  margin-top: 16px;
-  overflow: hidden;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
-}
-
-.bar i {
-  position: absolute;
-  inset: 0;
-  border-radius: 4px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.5s var(--standard), background 0.4s var(--standard);
-}
-
-.install[data-state="running"] .bar:not([data-indeterminate]) i::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent);
-  animation: shimmer 1.4s linear infinite;
-}
-
-@keyframes shimmer {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(100%);
-  }
-}
-
-.bar[data-indeterminate] i {
-  width: 40%;
-  transform: none;
-  animation: slide 1.3s var(--standard) infinite;
-}
-
-.install:not([data-state="running"]) .bar[data-indeterminate] i {
+#installBar {
+  display: block;
   width: 100%;
-  animation: none;
-}
-
-@keyframes slide {
-  from {
-    left: -40%;
-  }
-  to {
-    left: 100%;
-  }
+  margin-top: 16px;
+  --m3e-progress-indicator-color: var(--accent);
+  --m3e-progress-indicator-track-color: color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .install-meta {

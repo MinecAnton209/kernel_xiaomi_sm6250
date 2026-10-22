@@ -2,6 +2,7 @@ import { MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confFile, quote } from './conf
 import { byId, busy, type SwitchElement, type Togglable } from './dom';
 import { exec, run } from './ksu';
 import { renderMarkdown } from './markdown';
+import { parseProgress } from './progressMath';
 import { closePanel, initPanel, openPanel, setProgress, setStep, showError, showSuccess, type Step } from './install';
 import { toast } from './toast';
 
@@ -265,8 +266,8 @@ async function download(asset: ManifestAsset, target: string, steps: readonly St
       )
     ).stdout.trim();
     const [state = '', progress = '', alive = '0'] = status.split('|');
-    const [done = '0', total = '0'] = progress.trim().split(/\s+/);
-    setProgress(Number(done) || 0, Number(total) || 0);
+    // While verifying, the bar stays indeterminate instead of jumping back to a full download bar.
+    if (state !== 'verifying') setProgress(parseProgress(progress), THREADS);
     if (alive === '1') seenAlive = true;
 
     if (state === 'verifying' && !verifying) {

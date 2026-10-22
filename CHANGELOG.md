@@ -54,6 +54,11 @@ for release tags (`vX.Y.Z`).
   (`tune.sh dump`) and caches the result until the WebUI page is closed,
   which stops it from stalling on open. A `?` button opens a help page that
   explains each setting and its values.
+- Kernel Control: the kernel download and module update panel uses the M3E
+  linear progress indicator in its wavy variant: query while connecting,
+  buffer while downloading (the main bar is the slowest of the parallel
+  parts, the buffer is everything received) and indeterminate while
+  verifying and installing. `fetch.sh` now also reports the size of each part.
 - Kernel Control: pull to refresh on every tab with the M3E loading
   indicator (needs @m3e/web 2.10.2), an M3E loading indicator for the
   update check and for the Tuning tab, and settings that load in the

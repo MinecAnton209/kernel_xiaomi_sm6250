@@ -1,6 +1,7 @@
 #!/system/bin/sh
 # Usage: fetch.sh <url> <output> [threads=4] [sha256]
-# Run detached. Progress goes to <output>.progress ("<done> <total>"), the
+# Run detached. Progress goes to <output>.progress ("<done> <total>", followed by the
+# size of each part while the parts are downloading), the
 # stage to <output>.state ("running", "verifying", "done" or "error") and the
 # script pid to <output>.pid so the WebUI can cancel it.
 # Uses parallel range requests and falls back to one stream when the server
@@ -35,6 +36,17 @@ sum_bytes() {
   echo "$total"
 }
 
+# Current size of each file, space separated, so the WebUI can tell which part is lagging.
+part_sizes() {
+  for f in "$@"; do
+    if [ -f "$f" ]; then
+      printf ' %s' "$(stat -c %s "$f")"
+    else
+      printf ' 0'
+    fi
+  done
+}
+
 # Polls file sizes until every pid exits, so the WebUI can show progress.
 watch_pids() {
   while :; do
@@ -42,7 +54,7 @@ watch_pids() {
     for pid in $1; do
       kill -0 "$pid" 2>/dev/null && alive=1
     done
-    printf '%s %s' "$(sum_bytes $2)" "$SIZE" > "$PROGRESS"
+    printf '%s %s%s' "$(sum_bytes $2)" "$SIZE" "$(part_sizes $2)" > "$PROGRESS"
     [ "$alive" -eq 0 ] && break
     sleep 1
   done

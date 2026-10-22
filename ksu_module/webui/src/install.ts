@@ -1,7 +1,15 @@
 import { byId } from './dom';
+import { barState, type BarState, type Progress } from './progressMath';
 
 export type Step = 'download' | 'verify' | 'install';
 type PanelState = 'running' | 'success' | 'error';
+type LinearIndicator = HTMLElement & {
+  mode: 'determinate' | 'indeterminate' | 'buffer' | 'query';
+  value: number;
+  bufferValue: number;
+};
+
+const FULL: BarState = { mode: 'buffer', value: 100, buffer: 100 };
 
 const MIB = 1024 * 1024;
 const SPEED_SMOOTHING = 0.25;
@@ -42,16 +50,16 @@ function setSteps(active: Step | null, steps: readonly Step[]): void {
   }
 }
 
-function setBar(fraction: number | null): void {
-  const bar = byId('installBar');
-  const fill = byId('installFill');
-  if (fraction === null) {
-    bar.dataset.indeterminate = 'true';
-    fill.style.transform = '';
-    return;
+let barNow: BarState = { mode: 'query' };
+
+function setIndicator(state: BarState): void {
+  barNow = state;
+  const bar = byId<LinearIndicator>('installBar');
+  bar.mode = state.mode;
+  if (state.mode === 'buffer') {
+    bar.value = state.value;
+    bar.bufferValue = state.buffer;
   }
-  delete bar.dataset.indeterminate;
-  fill.style.transform = `scaleX(${Math.min(1, Math.max(0, fraction))})`;
 }
 
 function setButtons(cancel: boolean, retry: boolean, done: boolean): void {
@@ -88,7 +96,7 @@ export function openPanel(options: PanelOptions): void {
   byId('installLog').hidden = true;
   byId('installLog').textContent = '';
   setSteps(options.steps[0] ?? null, options.steps);
-  setBar(null);
+  setIndicator({ mode: 'query' });
   setButtons(true, false, false);
   panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -96,18 +104,19 @@ export function openPanel(options: PanelOptions): void {
 export function setStep(step: Step, steps: readonly Step[]): void {
   setSteps(step, steps);
   if (step === 'verify') {
-    setBar(null);
+    setIndicator({ mode: 'indeterminate' });
     byId('installMeta').textContent = 'Проверяем контрольную сумму…';
     byId('installPct').textContent = '100%';
   } else if (step === 'install') {
-    setBar(null);
+    setIndicator({ mode: 'indeterminate' });
     byId('installMeta').textContent = 'KernelSU устанавливает модуль…';
     byId('installPct').textContent = '';
     setButtons(false, false, false);
   }
 }
 
-export function setProgress(done: number, total: number): void {
+export function setProgress(progress: Progress, threads: number): void {
+  const { done, total } = progress;
   const now = performance.now();
   if (lastSample && now > lastSample.at && done >= lastSample.done) {
     const instant = ((done - lastSample.done) / (now - lastSample.at)) * 1000;
@@ -115,15 +124,15 @@ export function setProgress(done: number, total: number): void {
   }
   lastSample = { at: now, done };
 
+  setIndicator(barState(progress, threads));
+
   if (total <= 0) {
-    setBar(null);
     byId('installPct').textContent = done > 0 ? `${formatMib(done)} MB` : '';
     byId('installMeta').textContent = done > 0 ? `${formatMib(done)} MB · ${formatMib(speed)} MB/s` : 'Подключение…';
     return;
   }
 
   const fraction = done / total;
-  setBar(fraction);
   byId('installPct').textContent = `${Math.floor(fraction * 100)}%`;
   const parts = [`${formatMib(done)} из ${formatMib(total)} MB`];
   if (speed > 0) {
@@ -136,7 +145,7 @@ export function setProgress(done: number, total: number): void {
 
 export function showSuccess(title: string, detail: string): void {
   setState('success');
-  setBar(1);
+  setIndicator(FULL);
   setSteps(null, ['download', 'verify', 'install']);
   byId('installTitle').textContent = title;
   byId('installSub').textContent = detail;
@@ -147,6 +156,8 @@ export function showSuccess(title: string, detail: string): void {
 
 export function showError(title: string, detail: string, log: string, canRetry: boolean): void {
   setState('error');
+  // An indeterminate or query bar would keep animating after a failure, so freeze it as a full red bar.
+  if (barNow.mode !== 'buffer') setIndicator(FULL);
   byId('installTitle').textContent = title;
   byId('installSub').textContent = detail;
   byId('installPct').textContent = '';
