@@ -153,7 +153,24 @@ header p {
 
 .row.end {
   justify-content: flex-end;
+  flex-wrap: wrap;
   margin-top: 14px;
+}
+
+/* The spinner and the button it belongs to wrap together on a narrow screen. */
+.check-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/*
+ * The indicator draws shapes that reach almost to the edge of its round container (up to 19 px
+ * from the centre in a 38 px circle). A flex row used to squeeze it to 32 px on a phone, which cut
+ * the corners off the shapes, so it must never shrink.
+ */
+m3e-loading-indicator {
+  flex: none;
 }
 
 .field {

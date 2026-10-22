@@ -54,6 +54,10 @@ for release tags (`vX.Y.Z`).
   (`tune.sh dump`) and caches the result until the WebUI page is closed,
   which stops it from stalling on open. A `?` button opens a help page that
   explains each setting and its values.
+- Kernel Control: the loading indicator of the update check is no longer
+  squeezed by its flex row (it shrank from 38 to 32 px on a phone and its
+  round container cut the corners off the shapes); the spinner and the check
+  button now wrap together, and the pull indicator got an `aria-label`.
 - Kernel Control: every command now runs through `ksu.spawn`, which returns
   at once and reports from a background thread. `ksu.exec` is synchronous in
   the manager and held the page's JS thread for as long as each root shell
