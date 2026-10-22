@@ -8,6 +8,7 @@
 int susfs_ksu_dispatch(unsigned int cmd, void __user *arg);
 void susfs_on_post_fs_data(void);
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
+bool susfs_should_try_umount_on_spawn(uid_t new_uid);
 void susfs_try_umount_on_spawn(uid_t new_uid);
 #endif
 #else

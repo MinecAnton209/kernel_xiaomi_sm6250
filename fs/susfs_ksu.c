@@ -88,17 +88,25 @@ static bool susfs_is_zygote_system_umount(uid_t uid)
 }
 
 /*
- * Runs the SUSFS try_umount list for a zygote child before it becomes an app,
- * ahead of KernelSU's own umount, so SUSFS paths are gone first.
+ * Safe to call from the syscall hook: it only decides, it never sleeps.
+ */
+bool susfs_should_try_umount_on_spawn(uid_t new_uid)
+{
+	if (!is_zygote(current_cred()))
+		return false;
+	if (new_uid < 10000 && !susfs_is_zygote_system_umount(new_uid))
+		return false;
+	return ksu_uid_should_umount(new_uid);
+}
+
+/*
+ * Runs the SUSFS try_umount list for a zygote child ahead of KernelSU's own
+ * umount, so SUSFS paths are gone first. path_umount() sleeps in
+ * synchronize_rcu(), so this must run from task_work, not from the sys_enter
+ * hook, which is atomic.
  */
 void susfs_try_umount_on_spawn(uid_t new_uid)
 {
-	if (!is_zygote(current_cred()))
-		return;
-	if (new_uid < 10000 && !susfs_is_zygote_system_umount(new_uid))
-		return;
-	if (!ksu_uid_should_umount(new_uid))
-		return;
 	susfs_try_umount_all(new_uid);
 }
 #endif
