@@ -54,6 +54,24 @@ const TAG = 'refs/tags/v1.0.0';
 const KERNEL_KEEP = 'miatoll-*|Image-*';
 const MODULE_KEEP = 'kernel_control-*';
 
+test('the matrix job has no name that mentions the matrix', () => {
+  // GitHub does not expand a skipped matrix job, so such a name would be shown as raw text.
+  const start = lines.findIndex((line) => line === '  build:');
+  assert.notEqual(start, -1, 'no build job');
+  const end = lines.findIndex((line, index) => index > start && /^  [a-z]+:$/.test(line));
+  const block = lines.slice(start + 1, end === -1 ? undefined : end);
+  const names = block.filter((line) => /^    name:/.test(line));
+  assert.deepEqual(names, [], 'the build job must not set a name');
+  const code = block.filter((line) => !line.trim().startsWith('#')).join('\n');
+  assert.ok(code.includes('matrix:'), 'the build job should still use a matrix');
+});
+
+test('every other job name is free of matrix expressions', () => {
+  const named = lines.filter((line) => /^    name:/.test(line));
+  assert.ok(named.length >= 3, 'expected the module, pre-release and release jobs to be named');
+  for (const line of named) assert.ok(!line.includes('matrix'), line);
+});
+
 test('the workflow has the jobs this test reads', () => {
   for (const name of ['build', 'module', 'prerelease']) {
     assert.ok(conditions[name], `no condition for the ${name} job`);
