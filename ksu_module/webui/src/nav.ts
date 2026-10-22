@@ -2,13 +2,13 @@ import { TAB_KEY } from './config';
 import { hasBridge } from './ksu';
 import { refreshPaths } from './paths';
 import { loadStatus } from './status';
-import { loadLog } from './system';
+import { loadSystem } from './system';
 import { loadSusSu } from './su';
 
 const loaders: Record<string, () => Promise<void>> = {
   status: loadStatus,
   paths: refreshPaths,
-  system: loadLog,
+  system: loadSystem,
   su: loadSusSu,
 };
 

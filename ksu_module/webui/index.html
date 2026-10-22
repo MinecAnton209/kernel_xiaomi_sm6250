@@ -56,6 +56,24 @@
         </section>
 
         <section class="card">
+          <h2>Обходная зарядка</h2>
+          <p class="hint">Отключает зарядку батареи, система питается от USB. Нужен блок не слабее 2 А, иначе батарея будет понемногу разряжаться. Состояние восстанавливается после каждой загрузки.</p>
+          <div class="switch-row">
+            <span>Отключить зарядку батареи</span>
+            <m3e-switch id="bypassSwitch"></m3e-switch>
+          </div>
+          <div class="chips">
+            <span class="chip" id="bypassState">обходная зарядка: ...</span>
+          </div>
+          <div class="chips">
+            <span class="chip" id="batteryStatus">статус: ...</span>
+            <span class="chip" id="batteryCurrent">ток: ...</span>
+            <span class="chip" id="batteryCapacity">заряд: ...</span>
+            <span class="chip" id="batteryTemp">температура: ...</span>
+          </div>
+        </section>
+
+        <section class="card">
           <h2>Try umount</h2>
           <p class="hint">Размонтирует пути для текущего mnt namespace прямо сейчас.</p>
           <m3e-button id="umountBtn" variant="outlined">Размонтировать сейчас</m3e-button>

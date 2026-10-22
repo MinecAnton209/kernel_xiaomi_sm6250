@@ -6,7 +6,7 @@ import { hasBridge } from './ksu';
 import { addPath, applyAll } from './paths';
 import { byId, busy, type Togglable, type SwitchElement } from './dom';
 import { savedTab, showPage } from './nav';
-import { runUmount, setLog } from './system';
+import { runUmount, setBypass, setLog } from './system';
 import { setSusSu } from './su';
 import { initUpdates, loadChannel } from './updates';
 
@@ -37,6 +37,9 @@ function init(): void {
 
   byId<SwitchElement>('logSwitch').addEventListener('change', (event) => {
     void setLog((event.target as SwitchElement).checked);
+  });
+  byId<SwitchElement>('bypassSwitch').addEventListener('change', (event) => {
+    void setBypass((event.target as SwitchElement).checked);
   });
   byId<SwitchElement>('susSuSwitch').addEventListener('change', (event) => {
     void setSusSu((event.target as SwitchElement).checked);
