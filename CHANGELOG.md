@@ -54,6 +54,11 @@ for release tags (`vX.Y.Z`).
   (`tune.sh dump`) and caches the result until the WebUI page is closed,
   which stops it from stalling on open. A `?` button opens a help page that
   explains each setting and its values.
+- Kernel Control: every command now runs through `ksu.spawn`, which returns
+  at once and reports from a background thread. `ksu.exec` is synchronous in
+  the manager and held the page's JS thread for as long as each root shell
+  took, which made animations stutter. A probe command decides between the
+  two on first use, so a manager without `spawn` falls back to `exec`.
 - Kernel Control: fewer lags. Every page now loads with one root shell
   (`charge.sh info` also reports the battery and the bypass switch), all
   pages are prefetched in the background after the first paint and refreshed

@@ -3,7 +3,7 @@ import '@m3e/web/switch';
 import '@m3e/web/loading-indicator';
 import '@m3e/web/progress-indicator';
 import './style.css';
-import { hasBridge } from './ksu';
+import { hasBridge, warmUp } from './ksu';
 import { addPath, applyAll } from './paths';
 import { byId, busy, type Togglable, type SwitchElement } from './dom';
 import { prefetchPages, refreshCurrentPage, savedTab, showPage } from './nav';
@@ -27,6 +27,8 @@ function init(): void {
     });
     return;
   }
+
+  warmUp();
 
   const addButton = byId<Togglable>('addBtn');
   addButton.addEventListener('click', () => void busy(addButton, addPath));
