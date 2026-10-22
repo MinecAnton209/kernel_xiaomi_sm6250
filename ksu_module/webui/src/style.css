@@ -219,10 +219,49 @@ m3e-loading-indicator {
   transition: none;
 }
 
-.tune-loading {
-  display: flex;
-  justify-content: center;
-  padding: 18px 0;
+/*
+ * Skeletons. The page does not theme the M3E tokens, so the fill and the pulse colour come from the
+ * page's own palette: a step above the card for the fill, and a step toward the text colour for the pulse.
+ */
+m3e-skeleton {
+  --m3e-skeleton-color: var(--surface-highest);
+  --m3e-skeleton-tint-color: color-mix(in srgb, var(--surface-highest) 88%, var(--on-surface));
+}
+
+/* Placeholders take the size of what they stand in for, so nothing jumps when the data arrives. */
+.chip.ph {
+  animation: none;
+}
+
+.ph-item {
+  height: 64px;
+}
+
+.ph-lines {
+  margin: 8px 0 4px;
+}
+
+.ph-line {
+  height: 14px;
+  margin: 4px 0;
+  border-radius: 7px;
+}
+
+.ph-title {
+  height: 16px;
+  margin-block: 2.875px;
+  border-radius: 8px;
+}
+
+.ph-hint {
+  height: 13px;
+  margin-block: 4.375px;
+  border-radius: 7px;
+}
+
+.ph-field {
+  height: 51.6px;
+  border-radius: 18px;
 }
 
 .card-head {

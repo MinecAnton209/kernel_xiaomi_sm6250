@@ -1,6 +1,7 @@
 import { TAB_KEY } from './config';
 import { hasBridge } from './ksu';
 import { refreshPaths } from './paths';
+import { hidePageSkeletons, showPageSkeletons } from './skeleton';
 import { loadStatus } from './status';
 import { loadSystem } from './system';
 import { loadSusSu } from './su';
@@ -41,6 +42,8 @@ function load(name: string): Promise<void> {
     .catch(() => undefined)
     .finally(() => {
       inflight.delete(name);
+      // Success or failure, the placeholders have done their job; the page shows what it has.
+      hidePageSkeletons(name);
     });
   inflight.set(name, task);
   return task;
@@ -93,6 +96,9 @@ function loadPage(name: string): void {
     }, ANIMATION_MS);
     return;
   }
+  // Nothing to show yet: placeholders stand in until the data arrives. They are only built for a
+  // tab that is opened before its background load finished, so a prefetched tab never shows them.
+  showPageSkeletons(name);
   // Wait a frame so the first animation frames are not held up by starting a shell.
   requestAnimationFrame(() => {
     if (activeTab === name) void load(name);

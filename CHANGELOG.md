@@ -54,6 +54,13 @@ for release tags (`vX.Y.Z`).
   (`tune.sh dump`) and caches the result until the WebUI page is closed,
   which stops it from stalling on open. A `?` button opens a help page that
   explains each setting and its values.
+- Kernel Control: M3E skeletons stand in for content that fills in after the
+  data arrives: the Status chips and features, the hidden paths list, the
+  battery and charging chips, the SU status, the Tuning rows (instead of a
+  spinner) and the update notes on the first check. They have the size of the
+  real content, so nothing jumps when it appears, use the cheaper pulse
+  animation, and are only built for a tab opened before its background load
+  finished. The card is marked `aria-busy` meanwhile.
 - Kernel Control: the loading indicator of the update check is no longer
   squeezed by its flex row (it shrank from 38 to 32 px on a phone and its
   round container cut the corners off the shapes); the spinner and the check

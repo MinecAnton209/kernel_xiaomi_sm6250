@@ -4,6 +4,7 @@ import { exec, run } from './ksu';
 import { renderMarkdown } from './markdown';
 import { parseProgress } from './progressMath';
 import { closePanel, initPanel, openPanel, setProgress, setStep, showError, showSuccess, type Step } from './install';
+import { hideSkeleton, showSkeleton } from './skeleton';
 import { toast } from './toast';
 
 const REPO = 'MinecAnton209/kernel_xiaomi_sm6250';
@@ -139,6 +140,12 @@ async function toggleFullChangelog(): Promise<void> {
 function setChecking(checking: boolean): void {
   byId('checkSpinner').hidden = !checking;
   byId<Togglable>('checkUpdatesBtn').disabled = checking;
+  // Notes from an earlier check stay on screen while the next one runs; placeholders only fill the gap on the first.
+  if (checking && byId('updateNotes').childElementCount === 0) {
+    showSkeleton('updateNotes');
+  } else {
+    hideSkeleton('updateNotes');
+  }
 }
 
 function setActions(moduleAvailable: boolean, kernelAvailable: boolean): void {

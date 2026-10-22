@@ -1,6 +1,7 @@
 import { TUNE, quote } from './config';
 import { byId } from './dom';
 import { exec, run } from './ksu';
+import { hideSkeleton, showSkeleton } from './skeleton';
 import { TUNE_DOCS, type TuneDoc } from './tuneDocs';
 import { parseDump, rangeOf, type TuneState } from './tuneDump';
 
@@ -48,15 +49,6 @@ function note(text: string): HTMLElement {
   paragraph.className = 'hint';
   paragraph.textContent = text;
   return paragraph;
-}
-
-function loadingIndicator(): HTMLElement {
-  const box = document.createElement('div');
-  box.className = 'tune-loading';
-  const indicator = document.createElement('m3e-loading-indicator');
-  indicator.setAttribute('aria-label', 'Загрузка настроек');
-  box.append(indicator);
-  return box;
 }
 
 function buildControl(state: TuneState): Control {
@@ -137,16 +129,16 @@ export function prefetchTune(): void {
 export async function loadTune(force = false): Promise<void> {
   const list = byId('tuneList');
   // With cached rows on screen a forced reload keeps them until the new values arrive.
-  if (!cache) list.replaceChildren(loadingIndicator());
+  if (!cache) showSkeleton('tuneList');
 
-  let states: Map<string, TuneState>;
   try {
-    states = await readAll(force);
+    const states = await readAll(force);
+    list.replaceChildren(...TUNE_DOCS.map((doc) => renderRow(doc, states.get(doc.key))));
   } catch {
     list.replaceChildren(note('Не удалось прочитать настройки ядра. Откройте вкладку ещё раз.'));
-    return;
+  } finally {
+    hideSkeleton('tuneList');
   }
-  list.replaceChildren(...TUNE_DOCS.map((doc) => renderRow(doc, states.get(doc.key))));
 }
 
 /** Re-reads the kernel even when values are cached; used by pull to refresh. */
