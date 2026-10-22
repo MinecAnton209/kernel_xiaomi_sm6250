@@ -78,13 +78,36 @@
             <m3e-circular-progress-indicator id="checkSpinner" indeterminate hidden></m3e-circular-progress-indicator>
             <m3e-button id="checkUpdatesBtn" variant="tonal">Проверить</m3e-button>
           </div>
-          <div class="progress-row" id="downloadRow" hidden>
-            <m3e-linear-progress-indicator id="downloadProgress" mode="determinate" value="0" max="1"></m3e-linear-progress-indicator>
-            <p class="hint" id="downloadText"></p>
-          </div>
           <div class="row end" id="actionsRow" hidden>
             <m3e-button id="kernelDownloadBtn" variant="outlined" hidden>Скачать ядро…</m3e-button>
             <m3e-button id="moduleUpdateBtn" variant="filled" hidden>Обновить модуль</m3e-button>
+          </div>
+          <div class="install" id="installPanel" data-state="running" hidden aria-live="polite">
+            <div class="install-head">
+              <div class="install-icon" aria-hidden="true">
+                <svg class="ic-run" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2Zm7-18-6 7h4v6h4V9h4l-6-7Z" transform="rotate(180 12 11)"/></svg>
+                <svg class="ic-ok" viewBox="0 0 24 24"><path d="m9 16.2-3.5-3.5L4 14.1l5 5 11-11-1.4-1.4L9 16.2Z"/></svg>
+                <svg class="ic-err" viewBox="0 0 24 24"><path d="M12 2 1 21h22L12 2Zm1 14h-2v-2h2v2Zm0-4h-2V8h2v4Z"/></svg>
+              </div>
+              <div class="install-titles">
+                <strong id="installTitle"></strong>
+                <span id="installSub"></span>
+              </div>
+              <span class="install-pct" id="installPct"></span>
+            </div>
+            <div class="bar" id="installBar" data-indeterminate="true"><i id="installFill"></i></div>
+            <p class="install-meta" id="installMeta"></p>
+            <ol class="steps" id="installSteps">
+              <li data-step="download"><span class="dot"></span>Загрузка</li>
+              <li data-step="verify"><span class="dot"></span>Проверка</li>
+              <li data-step="install"><span class="dot"></span>Установка</li>
+            </ol>
+            <pre class="install-log" id="installLog" hidden></pre>
+            <div class="row end">
+              <m3e-button id="installCancel" variant="text">Отмена</m3e-button>
+              <m3e-button id="installRetry" variant="tonal" hidden>Повторить</m3e-button>
+              <m3e-button id="installDone" variant="filled" hidden>Готово</m3e-button>
+            </div>
           </div>
         </section>
 

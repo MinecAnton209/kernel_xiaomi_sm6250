@@ -1,7 +1,8 @@
 #!/system/bin/sh
 # Usage: fetch.sh <url> <output> [threads=4] [sha256]
 # Run detached. Progress goes to <output>.progress ("<done> <total>"), the
-# outcome to <output>.state ("running", "done" or "error").
+# stage to <output>.state ("running", "verifying", "done" or "error") and the
+# script pid to <output>.pid so the WebUI can cancel it.
 # Uses parallel range requests and falls back to one stream when the server
 # does not report a size or does not honour ranges.
 
@@ -20,7 +21,7 @@ set_state() {
 fail() {
   echo "$1" >&2
   set_state error
-  rm -f "$OUT".part*
+  rm -f "$OUT" "$OUT".part*
   exit 1
 }
 
@@ -91,6 +92,7 @@ split() {
   single
 }
 
+printf '%s' "$$" > "$OUT.pid"
 set_state running
 printf '0 0' > "$PROGRESS"
 
@@ -110,10 +112,12 @@ size=$(sum_bytes "$OUT")
 printf '%s %s' "$size" "$size" > "$PROGRESS"
 
 if [ -n "$SHA" ]; then
+  set_state verifying
+  expected=$(printf '%s' "$SHA" | tr 'A-F' 'a-f')
   actual=$(sha256sum "$OUT" | cut -d' ' -f1)
-  if [ "$actual" != "$SHA" ]; then
+  if [ "$actual" != "$expected" ]; then
     rm -f "$OUT"
-    fail "sha256 mismatch: expected $SHA, got $actual"
+    fail "Контрольная сумма не совпала: ожидалась $expected, получена $actual"
   fi
 fi
 

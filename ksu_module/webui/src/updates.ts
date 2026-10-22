@@ -2,6 +2,7 @@ import { confFile, quote } from './config';
 import { byId, busy, type SwitchElement, type Togglable } from './dom';
 import { exec, run } from './ksu';
 import { renderMarkdown } from './markdown';
+import { closePanel, initPanel, openPanel, setProgress, setStep, showError, showSuccess, type Step } from './install';
 import { toast } from './toast';
 
 const REPO = 'MinecAnton209/kernel_xiaomi_sm6250';
@@ -15,7 +16,6 @@ const THREADS = 4;
 const AUTO_CHECK_MS = 6 * 60 * 60 * 1000;
 const POLL_MS = 500;
 const DOWNLOAD_TIMEOUT_MS = 60 * 60 * 1000;
-const MIB = 1024 * 1024;
 
 export type Channel = 'release' | 'ci';
 
@@ -50,11 +50,6 @@ interface Loaded {
   tag: string;
   changelog: string;
   assets: ManifestAsset[];
-}
-
-interface LinearProgress extends HTMLElement {
-  value: number;
-  max: number;
 }
 
 let current: Loaded | null = null;
@@ -153,8 +148,11 @@ function setActions(moduleAvailable: boolean, kernelAvailable: boolean): void {
   byId('actionsRow').hidden = !moduleAvailable && !kernelAvailable;
 }
 
+let checkGeneration = 0;
+
 async function checkUpdates(showErrors: boolean): Promise<void> {
   const channel: Channel = byId<SwitchElement>('channelSwitch').checked ? 'ci' : 'release';
+  const generation = ++checkGeneration;
   setChecking(true);
   let loaded: Loaded;
   try {
@@ -165,6 +163,8 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
   } finally {
     setChecking(false);
   }
+  // The channel was switched while the request was in flight.
+  if (generation !== checkGeneration) return;
   current = loaded;
   showingFull = false;
   renderNotes();
@@ -204,72 +204,152 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function formatMib(bytes: number): string {
-  return (bytes / MIB).toFixed(1);
+const LOCKABLE = ['checkUpdatesBtn', 'moduleUpdateBtn', 'kernelDownloadBtn', 'channelSwitch'] as const;
+const STARTUP_GRACE_MS = 10_000;
+
+type TransferResult = { ok: true } | { ok: false; cancelled: boolean; message: string };
+
+let transferring = false;
+let cancelRequested = false;
+
+function setLocked(locked: boolean): void {
+  transferring = locked;
+  for (const id of LOCKABLE) byId<Togglable>(id).disabled = locked;
 }
 
-function showProgress(done: number, total: number): void {
-  const bar = byId<LinearProgress>('downloadProgress');
-  bar.value = total > 0 ? done / total : 0;
-  bar.max = 1;
-  byId('downloadText').textContent =
-    total > 0 ? `${formatMib(done)} MB из ${formatMib(total)} MB` : `${formatMib(done)} MB`;
+function sidecars(target: string): string {
+  return ['state', 'progress', 'log', 'pid'].map((ext) => quote(`${target}.${ext}`)).join(' ');
+}
+
+async function cleanupTransfer(target: string, removeTarget: boolean): Promise<void> {
+  const extra = removeTarget ? `${quote(target)} ${quote(`${target}.part`)}* ` : '';
+  await exec(`rm -f ${extra}${sidecars(target)}`);
+}
+
+// Kill the children first: once the script is gone they are reparented to init
+// and can no longer be found through its pid.
+async function killTransfer(target: string): Promise<void> {
+  const pidFile = quote(`${target}.pid`);
+  await exec(
+    `pid=$(cat ${pidFile} 2>/dev/null); [ -n "$pid" ] && { pkill -P "$pid"; kill "$pid"; pkill -P "$pid"; }; true`,
+  );
 }
 
 // fetch.sh runs detached so ksu.exec returns at once; progress comes from files.
-async function download(asset: ManifestAsset, target: string): Promise<boolean> {
+async function download(asset: ManifestAsset, target: string, steps: readonly Step[]): Promise<TransferResult> {
   const sha = asset.sha256 ? ` ${quote(asset.sha256)}` : '';
-  byId('downloadRow').hidden = false;
-  showProgress(0, 0);
-  await run(
-    `rm -f ${quote(`${target}.state`)} ${quote(`${target}.progress`)}; ` +
-      `( sh ${quote(FETCH)} ${quote(asset.url)} ${quote(target)} ${THREADS}${sha} ) </dev/null >${quote(`${target}.log`)} 2>&1 &`,
+  cancelRequested = false;
+  await cleanupTransfer(target, true);
+  const launch = await exec(
+    `( sh ${quote(FETCH)} ${quote(asset.url)} ${quote(target)} ${THREADS}${sha} ) </dev/null >${quote(`${target}.log`)} 2>&1 &`,
   );
-
-  const deadline = Date.now() + DOWNLOAD_TIMEOUT_MS;
-  try {
-    while (Date.now() < deadline) {
-      await sleep(POLL_MS);
-      const status = (
-        await exec(`cat ${quote(`${target}.state`)} 2>/dev/null; echo '|'; cat ${quote(`${target}.progress`)} 2>/dev/null`)
-      ).stdout;
-      const [state = '', progress = ''] = status.split('|');
-      const [done = '0', total = '0'] = progress.trim().split(/\s+/);
-      showProgress(Number(done) || 0, Number(total) || 0);
-
-      if (state.trim() === 'done') return true;
-      if (state.trim() === 'error') {
-        const log = (await exec(`tail -n 3 ${quote(`${target}.log`)} 2>/dev/null`)).stdout.trim();
-        toast(log || 'Загрузка не удалась');
-        return false;
-      }
-    }
-    toast('Загрузка заняла слишком много времени');
-    return false;
-  } finally {
-    byId('downloadRow').hidden = true;
+  if (launch.errno !== 0) {
+    return { ok: false, cancelled: false, message: launch.stderr.trim() || 'Не удалось запустить загрузку' };
   }
+
+  const startedAt = Date.now();
+  const deadline = startedAt + DOWNLOAD_TIMEOUT_MS;
+  let seenAlive = false;
+  let verifying = false;
+  while (Date.now() < deadline) {
+    await sleep(POLL_MS);
+    if (cancelRequested) {
+      await killTransfer(target);
+      await cleanupTransfer(target, true);
+      return { ok: false, cancelled: true, message: 'Загрузка отменена' };
+    }
+
+    const status = (
+      await exec(
+        `pid=$(cat ${quote(`${target}.pid`)} 2>/dev/null); alive=0; ` +
+          `[ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && alive=1; ` +
+          `echo "$(cat ${quote(`${target}.state`)} 2>/dev/null)|$(cat ${quote(`${target}.progress`)} 2>/dev/null)|$alive"`,
+      )
+    ).stdout.trim();
+    const [state = '', progress = '', alive = '0'] = status.split('|');
+    const [done = '0', total = '0'] = progress.trim().split(/\s+/);
+    setProgress(Number(done) || 0, Number(total) || 0);
+    if (alive === '1') seenAlive = true;
+
+    if (state === 'verifying' && !verifying) {
+      verifying = true;
+      setStep('verify', steps);
+    }
+    if (state === 'done') return { ok: true };
+    if (state === 'error') {
+      const log = (await exec(`tail -n 3 ${quote(`${target}.log`)} 2>/dev/null`)).stdout.trim();
+      return { ok: false, cancelled: false, message: log || 'Загрузка не удалась' };
+    }
+    const died = alive !== '1' && (seenAlive || Date.now() - startedAt > STARTUP_GRACE_MS);
+    if (died) {
+      return { ok: false, cancelled: false, message: 'Процесс загрузки завершился неожиданно' };
+    }
+  }
+  await killTransfer(target);
+  return { ok: false, cancelled: false, message: 'Загрузка заняла слишком много времени' };
+}
+
+function lastLines(text: string, count: number): string {
+  return text.trim().split('\n').slice(-count).join('\n');
+}
+
+function failTransfer(result: Extract<TransferResult, { ok: false }>): void {
+  if (result.cancelled) {
+    closePanel();
+    toast(result.message);
+    return;
+  }
+  showError('Не удалось', result.message, '', true);
 }
 
 async function updateModule(): Promise<void> {
   const asset = current ? findAsset(current, /^ksu_susfs_ui-.*\.zip$/) : undefined;
-  if (!asset) {
-    toast('Сначала проверьте обновления');
+  if (!asset || transferring) {
+    if (!asset) toast('Сначала проверьте обновления');
     return;
   }
-  if (!(await download(asset, MODULE_ZIP))) return;
-  const installedOk = await run(`${quote(KSUD)} module install ${quote(MODULE_ZIP)}`);
-  if (installedOk.errno !== 0) return;
-  await run(`printf '%s' ${quote(asset.name)} > ${confFile('module_build')}`);
-  toast('Модуль обновлён. Перезагрузите телефон, чтобы применить');
-  await checkUpdates(true);
+  const steps: readonly Step[] = ['download', 'verify', 'install'];
+  setLocked(true);
+  openPanel({
+    title: 'Обновление модуля',
+    subtitle: asset.name,
+    steps,
+    onCancel: () => {
+      cancelRequested = true;
+    },
+    onRetry: () => void updateModule(),
+  });
+
+  try {
+    const result = await download(asset, MODULE_ZIP, steps);
+    if (!result.ok) {
+      failTransfer(result);
+      return;
+    }
+    setStep('install', steps);
+    const install = await exec(`${quote(KSUD)} module install ${quote(MODULE_ZIP)} 2>&1`);
+    await cleanupTransfer(MODULE_ZIP, true);
+    if (install.errno !== 0) {
+      showError('Установка не удалась', 'KernelSU вернул ошибку', lastLines(install.stdout || install.stderr, 8), true);
+      return;
+    }
+    await run(`printf '%s' ${quote(asset.name)} > ${confFile('module_build')}`);
+    showSuccess('Модуль обновлён', 'Перезагрузите телефон, чтобы применить');
+  } finally {
+    setLocked(false);
+  }
+  await checkUpdates(false);
 }
+
+let pickerRequest = 0;
 
 function renderPicker(): void {
   byId('pickerPath').textContent = pickerDir;
   const list = byId('pickerList');
   list.replaceChildren();
+  const request = ++pickerRequest;
   void exec(`ls -1p ${quote(pickerDir)} 2>/dev/null`).then((result) => {
+    if (request !== pickerRequest) return;
     const folders = result.stdout
       .split('\n')
       .filter((name) => name.endsWith('/'))
@@ -298,7 +378,9 @@ function renderPicker(): void {
 
 function openPicker(asset: ManifestAsset): void {
   pendingKernel = asset;
-  byId('folderPicker').hidden = false;
+  const picker = byId('folderPicker');
+  picker.hidden = false;
+  picker.scrollIntoView({ behavior: 'smooth', block: 'center' });
   void exec(`cat ${confFile('kernel_dir')} 2>/dev/null`).then((result) => {
     const saved = result.stdout.trim();
     pickerDir = saved || DEFAULT_DIR;
@@ -308,12 +390,36 @@ function openPicker(asset: ManifestAsset): void {
 
 async function saveKernel(): Promise<void> {
   const asset = pendingKernel;
-  if (!asset) return;
+  if (!asset || transferring) return;
   await run(`printf '%s' ${quote(pickerDir)} > ${confFile('kernel_dir')}`);
   const target = `${pickerDir.replace(/\/$/, '')}/${asset.name}`;
   closePicker();
-  if (!(await download(asset, target))) return;
-  toast(`Ядро сохранено: ${target}. Прошейте его через recovery`);
+  await downloadKernel(asset, target);
+}
+
+async function downloadKernel(asset: ManifestAsset, target: string): Promise<void> {
+  const steps: readonly Step[] = asset.sha256 ? ['download', 'verify'] : ['download'];
+  setLocked(true);
+  openPanel({
+    title: 'Загрузка ядра',
+    subtitle: asset.name,
+    steps,
+    onCancel: () => {
+      cancelRequested = true;
+    },
+    onRetry: () => void downloadKernel(asset, target),
+  });
+  try {
+    const result = await download(asset, target, steps);
+    if (!result.ok) {
+      failTransfer(result);
+      return;
+    }
+    await cleanupTransfer(target, false);
+    showSuccess('Ядро сохранено', `${target}. Прошейте его через recovery`);
+  } finally {
+    setLocked(false);
+  }
 }
 
 function closePicker(): void {
@@ -338,6 +444,7 @@ function kernelButtonClicked(): void {
 }
 
 async function setChannel(ci: boolean): Promise<void> {
+  checkGeneration++;
   await run(`printf '%s' ${ci ? 'ci' : 'release'} > ${confFile('update_channel')}`);
   current = null;
   fullChangelog = null;
@@ -360,10 +467,10 @@ export function initUpdates(channelSaved: Channel): void {
 
   byId('fullChangelogBtn').addEventListener('click', () => void toggleFullChangelog());
 
-  const moduleButton = byId<Togglable>('moduleUpdateBtn');
-  moduleButton.addEventListener('click', () => void busy(moduleButton, updateModule));
+  byId('moduleUpdateBtn').addEventListener('click', () => void updateModule());
 
   byId('kernelDownloadBtn').addEventListener('click', kernelButtonClicked);
+  initPanel();
   byId('pickerUp').addEventListener('click', pickerUp);
   byId('pickerCancel').addEventListener('click', closePicker);
   const select = byId<Togglable>('pickerSelect');
