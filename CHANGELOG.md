@@ -81,6 +81,11 @@ for release tags (`vX.Y.Z`).
   removal on reboot.
 - ThinLTO in miatoll_defconfig.
 - CI: separate `module` job builds the WebUI and packages the module.
+- CI: `[skip kernel]` / `[skip kernel build]` and `[skip module]` /
+  `[skip module build]` in a commit message skip that build. The rolling
+  Unreleased pre-release is still updated with the build that ran: the other
+  build's files stay in the release and `manifest.json` lists both
+  (`ci/prerelease-assets.sh`). Tags and pull requests always build everything.
 
 ### Changed
 

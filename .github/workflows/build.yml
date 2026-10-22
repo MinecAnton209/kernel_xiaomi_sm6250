@@ -6,6 +6,14 @@ name: Build miatoll kernel
 # with both flashable zips attached. Every push to 16.0 replaces the
 # rolling "unreleased" pre-release with this build and its CHANGELOG
 # [Unreleased] section.
+#
+# Put a marker in the commit message of a push to skip part of the build:
+#   [skip kernel] or [skip kernel build]  skips both kernel builds
+#   [skip module] or [skip module build]  skips the Kernel Control module build
+#   [skip ci], [skip-ci], [ci skip], [no ci]  skips everything
+# When only one build ran, the pre-release is still updated with it: the other build's files
+# stay in the release and the manifest lists both. Pull requests, manual runs and v* tags
+# always build everything.
 
 on:
   push:
@@ -21,7 +29,7 @@ concurrency:
 jobs:
   build:
     name: Build (${{ matrix.variant }})
-    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[skip-ci]') && !contains(github.event.head_commit.message, '[ci skip]') && !contains(github.event.head_commit.message, '[no ci]')"
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[skip-ci]') && !contains(github.event.head_commit.message, '[ci skip]') && !contains(github.event.head_commit.message, '[no ci]') && (startsWith(github.ref, 'refs/tags/v') || (!contains(github.event.head_commit.message, '[skip kernel]') && !contains(github.event.head_commit.message, '[skip kernel build]')))"
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -94,7 +102,7 @@ jobs:
 
   module:
     name: Build Kernel Control module
-    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[skip-ci]') && !contains(github.event.head_commit.message, '[ci skip]') && !contains(github.event.head_commit.message, '[no ci]')"
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[skip-ci]') && !contains(github.event.head_commit.message, '[ci skip]') && !contains(github.event.head_commit.message, '[no ci]') && (startsWith(github.ref, 'refs/tags/v') || (!contains(github.event.head_commit.message, '[skip module]') && !contains(github.event.head_commit.message, '[skip module build]')))"
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout (with submodules)
@@ -138,11 +146,17 @@ jobs:
     name: Update Unreleased pre-release
     # Only the 16.0 branch feeds the rolling pre-release, so feature branches
     # cannot overwrite it with a build that is not the newest work.
-    if: "github.event_name == 'push' && github.ref == 'refs/heads/16.0'"
+    # It runs when at least one build succeeded and the other one either succeeded or was
+    # skipped, so a [skip kernel] or [skip module] push still publishes the part that was built.
+    if: "!cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/16.0' && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.module.result == 'success' || needs.module.result == 'skipped') && (needs.build.result == 'success' || needs.module.result == 'success')"
     needs: [build, module]
     runs-on: ubuntu-22.04
     permissions:
       contents: write
+    env:
+      # Assets of the build that did not run stay in the release; empty when both ran.
+      KEEP: ${{ needs.build.result != 'success' && 'miatoll-*|Image-*' || needs.module.result != 'success' && 'kernel_control-*' || '' }}
+      BUILT: ${{ needs.build.result == 'success' && needs.module.result == 'success' && 'kernel and module' || needs.build.result == 'success' && 'kernel only' || 'module only' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -167,8 +181,16 @@ jobs:
           {
             echo "$SECTION"
             echo
-            echo "Built from \`${GITHUB_SHA::7}\` (run ${{ github.run_number }})."
+            echo "Built from \`${GITHUB_SHA::7}\` (run ${{ github.run_number }}): $BUILT."
+            if [ -n "$KEEP" ]; then
+              echo "The other build was skipped for this commit, so its files are kept from an earlier run (the run number is in their names)."
+            fi
           } > release-notes.md
+
+      - name: Gather the new assets and the ones kept from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ci/prerelease-assets.sh gather unreleased "$KEEP" release-assets all-assets
 
       - name: Generate manifest.json
         env:
@@ -176,21 +198,17 @@ jobs:
           TAG: unreleased
           COMMIT: ${{ github.sha }}
           RUN_NUMBER: ${{ github.run_number }}
-        run: bash ci/make-manifest.sh Unreleased release-assets release-assets/manifest.json
+        run: bash ci/make-manifest.sh Unreleased all-assets release-assets/manifest.json
 
       - name: Move the unreleased tag to this commit
         run: |
           git tag -f unreleased "$GITHUB_SHA"
           git push -f origin refs/tags/unreleased
 
-      - name: Clear assets of the previous build
+      - name: Clear the assets that this build replaces
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view unreleased --json assets --jq '.assets[].name' 2>/dev/null |
-            while read -r name; do
-              gh release delete-asset unreleased "$name" --yes
-            done
+        run: bash ci/prerelease-assets.sh clean unreleased "$KEEP"
 
       - name: Update the pre-release
         uses: softprops/action-gh-release@v2
