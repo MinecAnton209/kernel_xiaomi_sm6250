@@ -50,6 +50,11 @@ for release tags (`vX.Y.Z`).
 - Kernel Control: bypass charging switch with live battery readout, and a
   Tuning tab for I/O scheduler, CPU and GPU governors, TCP congestion
   control, THP and swappiness, restored after every boot.
+- Kernel Control: Charging card on the System tab with the charger type,
+  PD state, input limit, battery current limit, thermal level, charger
+  temperature and charging power, refreshed every 2 s. It shows what
+  limits a given charger, since the kernel already ships a high-charging
+  profile for joyeuse.
 - The module was renamed from SUSFS Control: id `ksu_susfs_ui` ->
   `kernel_control`, config `/data/adb/susfs_ui` -> `/data/adb/kernel_control`.
   Installing it migrates the old settings and marks the old module for

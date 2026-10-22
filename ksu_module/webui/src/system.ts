@@ -1,3 +1,4 @@
+import { loadCharge } from './charge';
 import { BIN, confFile, quote } from './config';
 import { byId, type SwitchElement } from './dom';
 import { exec, run } from './ksu';
@@ -102,12 +103,12 @@ export function startBatteryPolling(): void {
   setInterval(() => {
     if (page.hidden || document.hidden || batteryPollBusy) return;
     batteryPollBusy = true;
-    void loadBattery().finally(() => {
+    void Promise.all([loadBattery(), loadCharge()]).finally(() => {
       batteryPollBusy = false;
     });
   }, BATTERY_POLL_MS);
 }
 
 export async function loadSystem(): Promise<void> {
-  await Promise.all([loadLog(), loadBypass(), loadBattery()]);
+  await Promise.all([loadLog(), loadBypass(), loadBattery(), loadCharge()]);
 }
