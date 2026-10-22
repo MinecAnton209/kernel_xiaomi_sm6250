@@ -148,10 +148,21 @@
       </div>
 
       <div class="page" data-page="tune" hidden>
-        <section class="card">
-          <h2>Тюнинг ядра</h2>
+        <section class="card" id="tuneMain">
+          <div class="card-head">
+            <h2>Тюнинг ядра</h2>
+            <button class="help-btn" id="tuneHelpBtn" type="button" aria-label="Справка">?</button>
+          </div>
           <p class="hint">Значения применяются сразу и восстанавливаются после загрузки. Пункты, которых нет в ядре, помечены.</p>
           <div class="tune-list" id="tuneList"></div>
+        </section>
+
+        <section class="card" id="tuneHelp" hidden>
+          <div class="card-head">
+            <h2>Справка по тюнингу</h2>
+            <button class="help-btn" id="tuneHelpBack" type="button" aria-label="Назад к настройкам">×</button>
+          </div>
+          <div class="help-body" id="tuneHelpBody"></div>
         </section>
       </div>
 

@@ -180,6 +180,81 @@ header p {
   margin-top: 14px;
 }
 
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-head h2 {
+  margin: 0;
+}
+
+.help-btn {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font: 700 17px system-ui, sans-serif;
+  cursor: pointer;
+  transition: transform 0.4s var(--spring);
+}
+
+.help-btn:active {
+  transform: scale(0.9);
+}
+
+.help-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.help-item h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.help-item p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--on-surface-variant);
+}
+
+.help-values {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 8px;
+}
+
+.help-values dt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.help-values dd {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--on-surface-variant);
+}
+
+.help-item .help-advice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  background: var(--surface-highest);
+  color: var(--on-surface);
+}
+
 .tune-list {
   display: flex;
   flex-direction: column;

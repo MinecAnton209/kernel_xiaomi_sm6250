@@ -150,5 +150,33 @@ printf '60\n' > "$R/proc/sys/vm/swappiness"
 check 'restore skips a stale value and exits 0' '0' "$(tune restore > /dev/null 2>&1; echo $?)"
 check 'restore still applies the remaining keys' '30' "$(content "$R/proc/sys/vm/swappiness")"
 
+new_tree dump
+out=$(tune dump)
+check 'dump prints one line per key' '7' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+check 'dump line for a bracket list' "$(printf 'io_scheduler\tdeadline\tnoop deadline cfq')" "$(printf '%s\n' "$out" | grep '^io_scheduler')"
+check 'dump line for a plain list' "$(printf 'tcp_congestion\tcubic\treno cubic bbr')" "$(printf '%s\n' "$out" | grep '^tcp_congestion')"
+check 'dump line for THP' "$(printf 'thp\tmadvise\talways madvise never')" "$(printf '%s\n' "$out" | grep '^thp')"
+check 'dump line for an integer' "$(printf 'swappiness\t60\trange 0 100')" "$(printf '%s\n' "$out" | grep '^swappiness')"
+for key in $(tune keys); do
+	line=$(printf '%s\n' "$out" | grep "^$key	")
+	current=$(printf '%s\n' "$line" | cut -f2)
+	check "dump value for $key matches get" "$(tune get "$key")" "$current"
+	options=$(printf '%s\n' "$line" | cut -f3)
+	check "dump options for $key match options" "$(tune options "$key" | tr '\n' ' ' | tr -s ' ' | sed 's/ $//')" "$options"
+done
+
+new_tree dump_missing
+rm -f "$R/proc/sys/net/ipv4/tcp_congestion_control"
+out=$(tune dump)
+check 'dump keeps a key the kernel lacks, with empty fields' "$(printf 'tcp_congestion\t\t')" "$(printf '%s\n' "$out" | grep '^tcp_congestion')"
+check 'dump still prints every key when one is missing' '7' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+check 'dump exits zero when a key is missing' '0' "$(tune dump > /dev/null 2>&1; echo $?)"
+
+new_tree dump_empty
+rm -rf "$R/sys" "$R/proc"
+out=$(tune dump)
+check 'dump on a kernel with no tunables still lists every key' '7' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+check 'dump on a kernel with no tunables has no values' '0' "$(printf '%s\n' "$out" | cut -f2,3 | tr -d '\t' | grep -c .)"
+
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

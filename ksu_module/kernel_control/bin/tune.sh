@@ -3,6 +3,7 @@
 #   tune.sh keys              list supported keys
 #   tune.sh get KEY           print the active value
 #   tune.sh options KEY       print allowed values, or "range MIN MAX" for numbers
+#   tune.sh dump              one tab separated line per key: key, active value, options
 #   tune.sh set KEY VALUE     validate, write to the kernel and remember for the next boot
 #   tune.sh restore           re-apply every remembered value
 # TUNE_ROOT and TUNE_CONF_DIR exist so the tests can run against a fake sysfs tree.
@@ -173,6 +174,21 @@ restore() {
 	return 0
 }
 
+# The WebUI reads every key at once: one root shell instead of two per key keeps the
+# Tuning tab from stalling while a dozen shells start. A key the kernel lacks gets
+# empty fields.
+dump() {
+	for key in $KEYS; do
+		meta "$key" || continue
+		cur=$(current 2> /dev/null)
+		opts=
+		for o in $(options 2> /dev/null); do
+			opts="${opts:+$opts }$o"
+		done
+		printf '%s\t%s\t%s\n' "$key" "$cur" "$opts"
+	done
+}
+
 case "$1" in
 keys)
 	for key in $KEYS; do
@@ -185,6 +201,9 @@ get)
 options)
 	meta "$2" && options
 	;;
+dump)
+	dump
+	;;
 set)
 	set_value "$2" "$3"
 	;;
@@ -192,7 +211,7 @@ restore)
 	restore
 	;;
 *)
-	echo "usage: $0 keys|get KEY|options KEY|set KEY VALUE|restore" >&2
+	echo "usage: $0 keys|get KEY|options KEY|dump|set KEY VALUE|restore" >&2
 	exit 1
 	;;
 esac

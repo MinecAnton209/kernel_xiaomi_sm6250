@@ -8,12 +8,15 @@ import { byId, busy, type Togglable, type SwitchElement } from './dom';
 import { savedTab, showPage } from './nav';
 import { runUmount, setBypass, setLog, startBatteryPolling } from './system';
 import { setSusSu } from './su';
+import { initTuneHelp } from './tune';
 import { initUpdates, loadChannel } from './updates';
 
 function init(): void {
   document.querySelectorAll<HTMLElement>('.nav-item').forEach((button) => {
     button.addEventListener('click', () => showPage(button.dataset['tab'] ?? 'status'));
   });
+
+  initTuneHelp();
 
   if (!hasBridge()) {
     byId('noBridge').hidden = false;

@@ -50,6 +50,10 @@ for release tags (`vX.Y.Z`).
 - Kernel Control: bypass charging switch with live battery readout, and a
   Tuning tab for I/O scheduler, CPU and GPU governors, TCP congestion
   control, THP and swappiness, restored after every boot.
+- Kernel Control: the Tuning tab reads every setting with one root shell
+  (`tune.sh dump`) and caches the result until the WebUI page is closed,
+  which stops it from stalling on open. A `?` button opens a help page that
+  explains each setting and its values.
 - Kernel Control: Charging card on the System tab with the charger type,
   PD state, input limit, battery current limit, thermal level, charger
   temperature and charging power, refreshed every 2 s. It shows what

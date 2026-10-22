@@ -50,8 +50,7 @@ export async function loadBypass(): Promise<void> {
   const on = (await readSysfs(path)) === '1';
   toggle.disabled = false;
   toggle.checked = on;
-  setChip('bypassState', 'зарядка отключена', 'ok');
-  chip.hidden = !on;
+  chip.hidden = true;
 }
 
 export async function setBypass(on: boolean): Promise<void> {
