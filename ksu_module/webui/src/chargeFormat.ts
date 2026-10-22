@@ -76,3 +76,33 @@ export function buildChargeChips(info: Map<string, string>): ChipSpec[] {
   if (chips.length === 0) chips.push({ key: 'empty', text: 'нет данных от драйвера зарядки', state: 'off' });
   return chips;
 }
+
+/** The four battery chips. Each falls back to "нет данных", so the layout never jumps. */
+export function buildBatteryChips(info: Map<string, string>): ChipSpec[] {
+  const status = info.get('batt_status');
+  const current = number(info, 'batt_current');
+  const capacity = info.get('batt_capacity');
+  const temp = number(info, 'batt_temp');
+
+  return [
+    { key: 'status', text: status ? `статус: ${status}` : 'статус: нет данных', state: status ? '' : 'off' },
+    {
+      key: 'current',
+      text: current !== undefined ? `ток: ${Math.round(current / 1000)} мА` : 'ток: нет данных',
+      state: current !== undefined ? '' : 'off',
+    },
+    { key: 'capacity', text: capacity ? `заряд: ${capacity}%` : 'заряд: нет данных', state: capacity ? '' : 'off' },
+    {
+      key: 'temp',
+      text: temp !== undefined ? `температура: ${(temp / 10).toFixed(1)} °C` : 'температура: нет данных',
+      state: temp !== undefined ? '' : 'off',
+    },
+  ];
+}
+
+/** Where the kernel put bypass_charging and whether it is on; undefined when the kernel lacks it. */
+export function bypassOf(info: Map<string, string>): { path: string; on: boolean } | undefined {
+  const path = info.get('bypass_path');
+  if (!path) return undefined;
+  return { path, on: info.get('bypass') === '1' };
+}

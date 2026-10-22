@@ -1,10 +1,13 @@
 import { BIN, confFile, quote } from './config';
 import { byId, busy, type SwitchElement } from './dom';
 import { exec, run } from './ksu';
+import { joinCommands, splitSections } from './shellOut';
 
 export async function loadSusSu(): Promise<void> {
-  const mode = (await exec(`${quote(BIN)} show_sus_su_working_mode`)).stdout.trim();
-  const ready = (await exec(`${quote(BIN)} is_sus_su_ready`)).stdout.trim();
+  const { stdout } = await exec(
+    joinCommands([`${quote(BIN)} show_sus_su_working_mode`, `${quote(BIN)} is_sus_su_ready`]),
+  );
+  const [mode = '', ready = ''] = splitSections(stdout);
   const toggle = byId<SwitchElement>('susSuSwitch');
   const modeChip = byId('susSuMode');
   const readyChip = byId('susSuReady');

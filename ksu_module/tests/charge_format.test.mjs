@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildChargeChips, parseInfo } from '../webui/src/chargeFormat.ts';
+import { buildBatteryChips, buildChargeChips, bypassOf, parseInfo } from '../webui/src/chargeFormat.ts';
 
 const FULL = [
   'usb_real_type=USB_PD',
@@ -126,4 +126,75 @@ test('the charging power chip toggles without disturbing the others', () => {
 test('the placeholder chip has its own key so it is replaced once data arrives', () => {
   assert.deepEqual(keys(''), ['empty']);
   assert.ok(!keys('usb_real_type=USB').includes('empty'));
+});
+
+const battery = (stdout) => buildBatteryChips(parseInfo(stdout));
+
+test('battery chips are always the same four, in the same order', () => {
+  assert.deepEqual(battery('').map((chip) => chip.key), ['status', 'current', 'capacity', 'temp']);
+  assert.deepEqual(battery(FULL + '\nbatt_status=Charging\nbatt_capacity=87\nbatt_temp=312').map((chip) => chip.key), [
+    'status',
+    'current',
+    'capacity',
+    'temp',
+  ]);
+});
+
+test('battery chips convert units', () => {
+  const chips = battery('batt_status=Charging\nbatt_current=-37841\nbatt_capacity=87\nbatt_temp=312');
+  assert.deepEqual(
+    chips.map((chip) => chip.text),
+    ['статус: Charging', 'ток: -38 мА', 'заряд: 87%', 'температура: 31.2 °C'],
+  );
+  assert.ok(chips.every((chip) => chip.state === ''));
+});
+
+test('battery chips fall back to "нет данных" when a node is missing', () => {
+  const chips = battery('');
+  assert.deepEqual(
+    chips.map((chip) => chip.text),
+    ['статус: нет данных', 'ток: нет данных', 'заряд: нет данных', 'температура: нет данных'],
+  );
+  assert.ok(chips.every((chip) => chip.state === 'off'));
+});
+
+test('battery chips only drop to "нет данных" for the node that is missing', () => {
+  const chips = battery('batt_status=Full\nbatt_capacity=100');
+  assert.equal(chips[0].text, 'статус: Full');
+  assert.equal(chips[1].text, 'ток: нет данных');
+  assert.equal(chips[2].text, 'заряд: 100%');
+  assert.equal(chips[3].text, 'температура: нет данных');
+});
+
+test('battery chips treat a zero current and a zero temperature as real values', () => {
+  const chips = battery('batt_current=0\nbatt_temp=0');
+  assert.equal(chips[1].text, 'ток: 0 мА');
+  assert.equal(chips[3].text, 'температура: 0.0 °C');
+});
+
+test('battery chips skip non numeric current and temperature instead of printing NaN', () => {
+  const chips = battery('batt_current=abc\nbatt_temp=?');
+  assert.equal(chips[1].text, 'ток: нет данных');
+  assert.equal(chips[3].text, 'температура: нет данных');
+});
+
+test('bypassOf reads the path and whether the switch is on', () => {
+  assert.deepEqual(bypassOf(parseInfo('bypass_path=/sys/x/bypass_charging\nbypass=1')), {
+    path: '/sys/x/bypass_charging',
+    on: true,
+  });
+  assert.deepEqual(bypassOf(parseInfo('bypass_path=/sys/x/bypass_charging\nbypass=0')), {
+    path: '/sys/x/bypass_charging',
+    on: false,
+  });
+});
+
+test('bypassOf treats a path with no readable value as off', () => {
+  assert.deepEqual(bypassOf(parseInfo('bypass_path=/sys/x/bypass_charging')), { path: '/sys/x/bypass_charging', on: false });
+});
+
+test('bypassOf is undefined when the kernel has no switch', () => {
+  assert.equal(bypassOf(parseInfo('')), undefined);
+  assert.equal(bypassOf(parseInfo('bypass=1')), undefined);
+  assert.equal(bypassOf(parseInfo('bypass_path=')), undefined);
 });

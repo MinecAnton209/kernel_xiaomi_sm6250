@@ -34,10 +34,14 @@ new_tree() {
 	printf '412\n' > "$B/charger_temp"
 	printf '4210000\n' > "$B/voltage_now"
 	printf -- '-3100000\n' > "$B/current_now"
+	printf 'Charging\n' > "$B/status"
+	printf '87\n' > "$B/capacity"
+	printf '312\n' > "$B/temp"
+	mkdir -p "$R/conf"
 }
 
 info() {
-	CHARGE_ROOT="$R" sh "$CHARGE" info
+	CHARGE_ROOT="$R" CHARGE_CONF_DIR="$R/conf" sh "$CHARGE" info
 }
 
 new_tree full
@@ -52,12 +56,16 @@ check 'reports charge type' 'batt_charge_type=Fast' "$(printf '%s\n' "$out" | gr
 check 'reports charger temperature' 'batt_charger_temp=412' "$(printf '%s\n' "$out" | grep '^batt_charger_temp=')"
 check 'reports battery voltage' 'batt_voltage=4210000' "$(printf '%s\n' "$out" | grep '^batt_voltage=')"
 check 'keeps the sign of the battery current' 'batt_current=-3100000' "$(printf '%s\n' "$out" | grep '^batt_current=')"
-check 'prints exactly one line per node' '10' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+check 'reports battery status' 'batt_status=Charging' "$(printf '%s\n' "$out" | grep '^batt_status=')"
+check 'reports battery capacity' 'batt_capacity=87' "$(printf '%s\n' "$out" | grep '^batt_capacity=')"
+check 'reports battery temperature' 'batt_temp=312' "$(printf '%s\n' "$out" | grep '^batt_temp=')"
+check 'prints exactly one line per node' '13' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+check 'prints no bypass lines without a saved path' '0' "$(printf '%s\n' "$out" | grep -c '^bypass')"
 
 new_tree missing_node
 rm -f "$B/system_temp_level" "$U/pd_active"
 out=$(info)
-check 'skips missing nodes' '8' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+check 'skips missing nodes' '11' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
 check 'missing thermal level is absent' '0' "$(printf '%s\n' "$out" | grep -c '^batt_thermal_level=')"
 check 'present nodes are still reported' 'usb_real_type=USB_PD' "$(printf '%s\n' "$out" | grep '^usb_real_type=')"
 
@@ -69,8 +77,35 @@ check 'skips an empty node' '0' "$(printf '%s\n' "$out" | grep -c '^batt_charge_
 new_tree no_usb
 rm -rf "$U"
 out=$(info)
-check 'works without a usb supply' '6' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+check 'works without a usb supply' '9' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
 check 'exit status is zero without a usb supply' '0' "$(CHARGE_ROOT="$R" sh "$CHARGE" info > /dev/null 2>&1; echo $?)"
+
+BYPASS=/sys/devices/platform/smb5/bypass_charging
+
+new_tree bypass_on
+mkdir -p "$R$(dirname "$BYPASS")"
+printf '1\n' > "$R$BYPASS"
+printf '%s\n' "$BYPASS" > "$R/conf/bypass_path"
+out=$(info)
+check 'reports where the bypass switch lives' "bypass_path=$BYPASS" "$(printf '%s\n' "$out" | grep '^bypass_path=')"
+check 'reports the bypass switch when on' 'bypass=1' "$(printf '%s\n' "$out" | grep '^bypass=')"
+
+new_tree bypass_off
+mkdir -p "$R$(dirname "$BYPASS")"
+printf '0\n' > "$R$BYPASS"
+printf '%s\n' "$BYPASS" > "$R/conf/bypass_path"
+check 'reports the bypass switch when off' 'bypass=0' "$(info | grep '^bypass=')"
+
+new_tree bypass_node_missing
+printf '%s\n' "$BYPASS" > "$R/conf/bypass_path"
+out=$(info)
+check 'a saved path without a node still reports the path' "bypass_path=$BYPASS" "$(printf '%s\n' "$out" | grep '^bypass_path=')"
+check 'a saved path without a node reports no value' '0' "$(printf '%s\n' "$out" | grep -c '^bypass=')"
+check 'a saved path without a node exits zero' '0' "$(CHARGE_ROOT="$R" CHARGE_CONF_DIR="$R/conf" sh "$CHARGE" info > /dev/null 2>&1; echo $?)"
+
+new_tree bypass_empty_path
+: > "$R/conf/bypass_path"
+check 'an empty saved path means no bypass switch' '0' "$(info | grep -c '^bypass')"
 
 R="$WORK/nothing"
 mkdir -p "$R"

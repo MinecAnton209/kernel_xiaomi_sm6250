@@ -6,11 +6,11 @@ import './style.css';
 import { hasBridge } from './ksu';
 import { addPath, applyAll } from './paths';
 import { byId, busy, type Togglable, type SwitchElement } from './dom';
-import { refreshCurrentPage, savedTab, showPage } from './nav';
+import { prefetchPages, refreshCurrentPage, savedTab, showPage } from './nav';
 import { initPullToRefresh } from './pull';
-import { runUmount, setBypass, setLog, startBatteryPolling } from './system';
+import { runUmount, setBypass, setLog, startLivePolling } from './system';
 import { setSusSu } from './su';
-import { initTuneHelp, prefetchTune } from './tune';
+import { initTuneHelp } from './tune';
 import { initUpdates, loadChannel } from './updates';
 
 function init(): void {
@@ -52,8 +52,8 @@ function init(): void {
 
   void loadChannel().then(initUpdates);
   showPage(savedTab());
-  prefetchTune();
-  startBatteryPolling();
+  prefetchPages();
+  startLivePolling();
   initPullToRefresh(refreshCurrentPage);
 }
 

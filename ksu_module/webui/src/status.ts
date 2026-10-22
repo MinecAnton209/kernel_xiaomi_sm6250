@@ -1,26 +1,25 @@
+import { createChipList, type ChipList } from './chipList';
 import { BIN, quote } from './config';
 import { byId } from './dom';
 import { exec } from './ksu';
+import { joinCommands, splitSections } from './shellOut';
+import { featureSpecs } from './statusFormat';
 
-function renderFeatures(text: string): void {
-  const box = byId('features');
-  box.replaceChildren();
-  for (const line of text.split('\n')) {
-    const [key, value] = line.split('=');
-    if (!key || value === undefined) continue;
-    const chip = document.createElement('span');
-    chip.className = value.trim() === '1' ? 'chip ok' : 'chip off';
-    chip.textContent = key.replaceAll('_', ' ');
-    box.append(chip);
-  }
-}
+let featureChips: ChipList | undefined;
 
 export async function loadStatus(): Promise<void> {
-  const kernel = await exec('uname -r');
-  byId('kernel').textContent = `ядро: ${kernel.stdout.trim()}`;
+  const { stdout } = await exec(
+    joinCommands([
+      'uname -r',
+      `${quote(BIN)} show_version`,
+      `${quote(BIN)} show_variant`,
+      `${quote(BIN)} show_features`,
+    ]),
+  );
+  const [kernel = '', version = '', variant = '', features = ''] = splitSections(stdout);
 
-  const version = (await exec(`${quote(BIN)} show_version`)).stdout.trim();
-  const variant = (await exec(`${quote(BIN)} show_variant`)).stdout.trim();
+  byId('kernel').textContent = `ядро: ${kernel}`;
+
   const susfs = byId('susfs');
   if (version) {
     susfs.textContent = `SUSFS ${version} (${variant})`;
@@ -30,5 +29,6 @@ export async function loadStatus(): Promise<void> {
     susfs.className = 'chip off';
   }
 
-  renderFeatures((await exec(`${quote(BIN)} show_features`)).stdout);
+  featureChips ??= createChipList(byId('features'));
+  featureChips.update(featureSpecs(features));
 }

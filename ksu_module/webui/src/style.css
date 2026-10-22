@@ -180,11 +180,6 @@ header p {
   margin-top: 14px;
 }
 
-m3e-loading-indicator {
-  --m3e-loading-indicator-container-size: 40px;
-  --m3e-loading-indicator-active-indicator-size: 32px;
-}
-
 .ptr {
   position: fixed;
   top: 0;

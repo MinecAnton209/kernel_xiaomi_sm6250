@@ -54,6 +54,12 @@ for release tags (`vX.Y.Z`).
   (`tune.sh dump`) and caches the result until the WebUI page is closed,
   which stops it from stalling on open. A `?` button opens a help page that
   explains each setting and its values.
+- Kernel Control: fewer lags. Every page now loads with one root shell
+  (`charge.sh info` also reports the battery and the bypass switch), all
+  pages are prefetched in the background after the first paint and refreshed
+  quietly once the tab animation has ended, and the pull to refresh
+  indicator is no longer left animating while hidden. The status feature
+  chips update in place too.
 - Kernel Control: the kernel download and module update panel uses the M3E
   linear progress indicator in its wavy variant: query while connecting,
   buffer while downloading (the main bar is the slowest of the parallel

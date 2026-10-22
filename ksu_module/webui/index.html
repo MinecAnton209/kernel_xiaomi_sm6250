@@ -65,12 +65,7 @@
           <div class="chips">
             <span class="chip" id="bypassState" hidden>обходная зарядка: ...</span>
           </div>
-          <div class="chips">
-            <span class="chip" id="batteryStatus">статус: ...</span>
-            <span class="chip" id="batteryCurrent">ток: ...</span>
-            <span class="chip" id="batteryCapacity">заряд: ...</span>
-            <span class="chip" id="batteryTemp">температура: ...</span>
-          </div>
+          <div class="chips" id="batteryInfo"></div>
         </section>
 
         <section class="card">
@@ -183,7 +178,7 @@
     </div>
 
     <div class="ptr" id="ptr" aria-hidden="true">
-      <m3e-loading-indicator id="ptrIndicator" variant="contained"></m3e-loading-indicator>
+      <m3e-loading-indicator id="ptrIndicator" variant="contained" hidden></m3e-loading-indicator>
     </div>
 
     <nav class="navbar" aria-label="Разделы">

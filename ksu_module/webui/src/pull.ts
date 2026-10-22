@@ -14,6 +14,8 @@ type PullIndicator = HTMLElement & { pullProgress: number | null };
 const REFRESH_OFFSET = 56;
 /** Keeps the spinner visible long enough to read even when the refresh is instant. */
 const MIN_SPIN_MS = 600;
+/** The indicator is removed from rendering once its exit transition (0.4 s in CSS) is over. */
+const HIDE_AFTER_MS = 450;
 
 function atTop(): boolean {
   return (document.scrollingElement?.scrollTop ?? window.scrollY) <= 0;
@@ -38,15 +40,27 @@ export function initPullToRefresh(refresh: () => Promise<void>): void {
   let tracking = false;
   let pulling = false;
   let refreshing = false;
+  let hideTimer: number | undefined;
 
   const place = (offset: number, opacity: number): void => {
     zone.style.setProperty('--ptr-offset', `${offset}px`);
     zone.style.setProperty('--ptr-opacity', String(opacity));
   };
 
+  // The indicator animates for as long as it is rendered, even at opacity 0, so while idle it
+  // stays display: none instead of spinning unseen on every tab.
+  const reveal = (): void => {
+    window.clearTimeout(hideTimer);
+    indicator.hidden = false;
+  };
+
   const hide = (): void => {
     indicator.pullProgress = null;
     place(0, 0);
+    window.clearTimeout(hideTimer);
+    hideTimer = window.setTimeout(() => {
+      indicator.hidden = true;
+    }, HIDE_AFTER_MS);
   };
 
   const finish = async (): Promise<void> => {
@@ -106,6 +120,7 @@ export function initPullToRefresh(refresh: () => Promise<void>): void {
           return;
         }
         pulling = true;
+        reveal();
         zone.classList.add('dragging');
       }
 
