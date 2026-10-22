@@ -44,9 +44,16 @@ for release tags (`vX.Y.Z`).
 - `ksu_susfs` client (`tools/susfs`) for sending SUSFS commands from
   the device shell, including `sus_su`, `show_sus_su_working_mode` and
   `is_sus_su_ready`.
-- SUSFS Control KernelSU module (`ksu_module/ksu_susfs_ui`, v1.1.0):
-  WebUI with Status, Paths, System and SU tabs in a bottom navbar.
+- Kernel Control KernelSU module (`ksu_module/kernel_control`, v1.1.0):
+  WebUI with Status, Paths, System, Tuning and SU tabs in a bottom navbar.
   Hidden paths, log setting and sus_su mode are restored on every boot.
+- Kernel Control: bypass charging switch with live battery readout, and a
+  Tuning tab for I/O scheduler, CPU and GPU governors, TCP congestion
+  control, THP and swappiness, restored after every boot.
+- The module was renamed from SUSFS Control: id `ksu_susfs_ui` ->
+  `kernel_control`, config `/data/adb/susfs_ui` -> `/data/adb/kernel_control`.
+  Installing it migrates the old settings and marks the old module for
+  removal on reboot.
 - ThinLTO in miatoll_defconfig.
 - CI: separate `module` job builds the WebUI and packages the module.
 

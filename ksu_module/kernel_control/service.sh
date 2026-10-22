@@ -1,6 +1,6 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
-CONF_DIR=/data/adb/susfs_ui
+. "$MODDIR/config.sh"
 BIN="$MODDIR/bin/ksu_susfs"
 
 # SUS_PATH and log state live in kernel memory, so they are lost on every reboot.
@@ -18,6 +18,14 @@ find /sys/devices -name bypass_charging 2>/dev/null | head -n 1 > "$CONF_DIR/byp
 BYPASS_PATH=$(cat "$CONF_DIR/bypass_path")
 # The SMB5 driver resets bypass_charging on every boot, so the saved state is written back here.
 [ -n "$BYPASS_PATH" ] && [ "$(cat "$CONF_DIR/bypass" 2>/dev/null)" = "1" ] && printf '%s' 1 > "$BYPASS_PATH"
+
+# HACK: vendor post_boot scripts may set governors right after boot_completed and would
+# overwrite the saved values, so tuning is restored after a short delay. It runs in the
+# background so the SUSFS paths below are not held up by it.
+(
+	sleep 15
+	"$MODDIR/bin/tune.sh" restore
+) &
 
 [ -f "$CONF_DIR/paths.txt" ] || exit 0
 while IFS= read -r path; do

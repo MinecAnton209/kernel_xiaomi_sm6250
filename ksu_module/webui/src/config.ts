@@ -1,7 +1,15 @@
-export const CONF = '/data/adb/susfs_ui';
-export const BIN = '/data/adb/modules/ksu_susfs_ui/bin/ksu_susfs';
+// Keep these in step with kernel_control/config.sh; tests/config_test.sh checks that they match.
+export const MODULE_ID = 'kernel_control';
+export const MODULES_DIR = '/data/adb/modules';
+export const CONF = '/data/adb/kernel_control';
+
+export const MODULE_DIR = `${MODULES_DIR}/${MODULE_ID}`;
+export const BIN = `${MODULE_DIR}/bin/ksu_susfs`;
+export const TUNE = `${MODULE_DIR}/bin/tune.sh`;
+export const MODULE_ZIP = `/data/local/tmp/${MODULE_ID}_update.zip`;
+export const MODULE_ASSET_RE = new RegExp(`^${MODULE_ID}-.*\\.zip$`);
 export const PATH_RE = /^\/[A-Za-z0-9._/-]{1,255}$/;
-export const TAB_KEY = 'susfs_ui_tab';
+export const TAB_KEY = `${MODULE_ID}_tab`;
 
 export function quote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;

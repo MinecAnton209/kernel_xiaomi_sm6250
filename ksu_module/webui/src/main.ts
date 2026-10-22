@@ -6,7 +6,7 @@ import { hasBridge } from './ksu';
 import { addPath, applyAll } from './paths';
 import { byId, busy, type Togglable, type SwitchElement } from './dom';
 import { savedTab, showPage } from './nav';
-import { runUmount, setBypass, setLog } from './system';
+import { runUmount, setBypass, setLog, startBatteryPolling } from './system';
 import { setSusSu } from './su';
 import { initUpdates, loadChannel } from './updates';
 
@@ -47,6 +47,7 @@ function init(): void {
 
   void loadChannel().then(initUpdates);
   showPage(savedTab());
+  startBatteryPolling();
 }
 
 init();

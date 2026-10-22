@@ -93,7 +93,7 @@ jobs:
           retention-days: 14
 
   module:
-    name: Build SUSFS UI module
+    name: Build Kernel Control module
     if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[skip-ci]') && !contains(github.event.head_commit.message, '[ci skip]') && !contains(github.event.head_commit.message, '[no ci]')"
     runs-on: ubuntu-22.04
     steps:
@@ -123,14 +123,14 @@ jobs:
         run: pnpm build
 
       - name: Package KernelSU module
-        working-directory: ksu_module/ksu_susfs_ui
-        run: zip -r9 "../ksu_susfs_ui-${{ github.run_number }}.zip" .
+        working-directory: ksu_module/kernel_control
+        run: zip -r9 "../kernel_control-${{ github.run_number }}.zip" .
 
       - name: Upload module artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ksu_susfs_ui-${{ github.run_number }}
-          path: ksu_module/ksu_susfs_ui-*.zip
+          name: kernel_control-${{ github.run_number }}
+          path: ksu_module/kernel_control-*.zip
           if-no-files-found: error
           retention-days: 14
 

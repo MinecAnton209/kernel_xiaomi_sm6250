@@ -36,17 +36,21 @@ export async function loadBypass(): Promise<void> {
   const toggle = byId<SwitchElement>('bypassSwitch');
   const path = await bypassPath();
 
+  const chip = byId('bypassState');
+
   if (!path) {
     toggle.checked = false;
     toggle.disabled = true;
     setChip('bypassState', 'ядро без bypass_charging', 'off');
+    chip.hidden = false;
     return;
   }
 
   const on = (await readSysfs(path)) === '1';
   toggle.disabled = false;
   toggle.checked = on;
-  setChip('bypassState', on ? 'зарядка отключена' : 'зарядка идёт', on ? 'ok' : 'off');
+  setChip('bypassState', 'зарядка отключена', 'ok');
+  chip.hidden = !on;
 }
 
 export async function setBypass(on: boolean): Promise<void> {
@@ -82,6 +86,26 @@ export async function loadBattery(): Promise<void> {
   setChip('batteryCapacity', capacity ? `заряд: ${capacity}%` : 'заряд: нет данных', capacity ? '' : 'off');
   const tenths = Number(temp);
   setChip('batteryTemp', Number.isFinite(tenths) && temp ? `температура: ${(tenths / 10).toFixed(1)} °C` : 'температура: нет данных', temp ? '' : 'off');
+}
+
+const BATTERY_POLL_MS = 2000;
+let batteryPollBusy = false;
+
+/**
+ * Keeps the battery chips live while the System tab is open. It skips a tick when
+ * the tab or the whole page is hidden, and never overlaps with a slow previous read.
+ */
+export function startBatteryPolling(): void {
+  const page = document.querySelector<HTMLElement>('.page[data-page="system"]');
+  if (!page) return;
+
+  setInterval(() => {
+    if (page.hidden || document.hidden || batteryPollBusy) return;
+    batteryPollBusy = true;
+    void loadBattery().finally(() => {
+      batteryPollBusy = false;
+    });
+  }, BATTERY_POLL_MS);
 }
 
 export async function loadSystem(): Promise<void> {

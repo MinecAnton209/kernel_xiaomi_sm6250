@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <title>SUSFS Control</title>
+    <title>Kernel Control</title>
   </head>
   <body>
     <div class="wrap">
       <header>
-        <h1>SUSFS</h1>
-        <p>Скрытие путей, логи, try_umount и sus_su для miatoll-ядра</p>
+        <h1>Kernel Control</h1>
+        <p>SUSFS, обходная зарядка и тюнинг miatoll-ядра</p>
       </header>
 
       <section class="card" id="noBridge" hidden>
@@ -63,7 +63,7 @@
             <m3e-switch id="bypassSwitch"></m3e-switch>
           </div>
           <div class="chips">
-            <span class="chip" id="bypassState">обходная зарядка: ...</span>
+            <span class="chip" id="bypassState" hidden>обходная зарядка: ...</span>
           </div>
           <div class="chips">
             <span class="chip" id="batteryStatus">статус: ...</span>
@@ -141,6 +141,14 @@
         </section>
       </div>
 
+      <div class="page" data-page="tune" hidden>
+        <section class="card">
+          <h2>Тюнинг ядра</h2>
+          <p class="hint">Значения применяются сразу и восстанавливаются после загрузки. Пункты, которых нет в ядре, помечены.</p>
+          <div class="tune-list" id="tuneList"></div>
+        </section>
+      </div>
+
       <div class="page" data-page="su" hidden>
         <section class="card">
           <h2>sus_su</h2>
@@ -175,6 +183,12 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17v2h6v-2H3Zm0-12v2h10V5H3Zm10 16v-2h8v-2h-8v-2h-2v6h2ZM7 9v2H3v2h4v2h2V9H7Zm14 4v-2H11v2h10Zm-6-4h2V7h4V5h-4V3h-2v6Z"/></svg>
         </span>
         <span class="nav-label">Система</span>
+      </button>
+      <button class="nav-item" type="button" data-tab="tune">
+        <span class="nav-ind">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.38 8.57-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.27-10.43Zm-9.79 6.84a2 2 0 0 0 2.83 0l5.66-8.49-8.49 5.66a2 2 0 0 0 0 2.83Z"/></svg>
+        </span>
+        <span class="nav-label">Тюнинг</span>
       </button>
       <button class="nav-item" type="button" data-tab="su">
         <span class="nav-ind">

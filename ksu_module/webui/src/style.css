@@ -180,6 +180,28 @@ header p {
   margin-top: 14px;
 }
 
+.tune-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.tune-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tune-row .hint {
+  margin: 0;
+}
+
+.tune-row .field {
+  flex: none;
+  width: 100%;
+}
+
 .item {
   display: flex;
   align-items: center;

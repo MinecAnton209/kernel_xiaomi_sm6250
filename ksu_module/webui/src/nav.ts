@@ -4,11 +4,13 @@ import { refreshPaths } from './paths';
 import { loadStatus } from './status';
 import { loadSystem } from './system';
 import { loadSusSu } from './su';
+import { loadTune } from './tune';
 
 const loaders: Record<string, () => Promise<void>> = {
   status: loadStatus,
   paths: refreshPaths,
   system: loadSystem,
+  tune: loadTune,
   su: loadSusSu,
 };
 

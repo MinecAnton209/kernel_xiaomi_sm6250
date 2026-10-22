@@ -1,4 +1,4 @@
-import { confFile, quote } from './config';
+import { MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confFile, quote } from './config';
 import { byId, busy, type SwitchElement, type Togglable } from './dom';
 import { exec, run } from './ksu';
 import { renderMarkdown } from './markdown';
@@ -7,9 +7,7 @@ import { toast } from './toast';
 
 const REPO = 'MinecAnton209/kernel_xiaomi_sm6250';
 const CI_BRANCH = '16.0';
-const MODULE_DIR = '/data/adb/modules/ksu_susfs_ui';
 const FETCH = `${MODULE_DIR}/bin/fetch.sh`;
-const MODULE_ZIP = '/data/local/tmp/ksu_susfs_ui_update.zip';
 const KSUD = '/data/adb/ksud';
 const DEFAULT_DIR = '/sdcard/Download';
 const THREADS = 4;
@@ -171,7 +169,7 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
   await run(`printf '%s' ${Date.now()} > ${confFile('last_check')}`);
 
   const version = await installed();
-  const moduleAsset = findAsset(loaded, /^ksu_susfs_ui-.*\.zip$/);
+  const moduleAsset = findAsset(loaded, MODULE_ASSET_RE);
   let moduleUpdate = false;
   if (!moduleAsset) {
     setChip('moduleStatus', 'модуль: в релизе нет zip', 'off');
@@ -303,7 +301,7 @@ function failTransfer(result: Extract<TransferResult, { ok: false }>): void {
 }
 
 async function updateModule(): Promise<void> {
-  const asset = current ? findAsset(current, /^ksu_susfs_ui-.*\.zip$/) : undefined;
+  const asset = current ? findAsset(current, MODULE_ASSET_RE) : undefined;
   if (!asset || transferring) {
     if (!asset) toast('Сначала проверьте обновления');
     return;
