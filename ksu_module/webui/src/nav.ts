@@ -4,7 +4,7 @@ import { refreshPaths } from './paths';
 import { loadStatus } from './status';
 import { loadSystem } from './system';
 import { loadSusSu } from './su';
-import { loadTune } from './tune';
+import { loadTune, reloadTune } from './tune';
 
 const loaders: Record<string, () => Promise<void>> = {
   status: loadStatus,
@@ -14,6 +14,17 @@ const loaders: Record<string, () => Promise<void>> = {
   su: loadSusSu,
 };
 
+// Opening a tab may use cached values; pulling to refresh must read the kernel again.
+const refreshers: Record<string, () => Promise<void>> = { ...loaders, tune: reloadTune };
+
+let activeTab = 'status';
+
+export function refreshCurrentPage(): Promise<void> {
+  if (!hasBridge()) return Promise.resolve();
+  const refresh = refreshers[activeTab];
+  return refresh ? refresh() : Promise.resolve();
+}
+
 function loadPage(name: string): void {
   if (!hasBridge()) return;
   const load = loaders[name];
@@ -21,6 +32,7 @@ function loadPage(name: string): void {
 }
 
 export function showPage(name: string): void {
+  activeTab = name;
   document.querySelectorAll<HTMLElement>('.page').forEach((page) => {
     page.hidden = page.dataset['page'] !== name;
   });

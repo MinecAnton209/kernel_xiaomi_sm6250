@@ -1,6 +1,8 @@
 export type ChipState = 'ok' | 'off' | '';
 
 export interface ChipSpec {
+  /** Stable identity, so a refresh can update a chip in place instead of replacing it. */
+  key: string;
   text: string;
   state: ChipState;
 }
@@ -29,36 +31,48 @@ export function buildChargeChips(info: Map<string, string>): ChipSpec[] {
   const chips: ChipSpec[] = [];
 
   const type = info.get('usb_real_type');
-  if (type) chips.push({ text: `зарядник: ${type}`, state: '' });
+  if (type) chips.push({ key: 'type', text: `зарядник: ${type}`, state: '' });
 
   const pd = info.get('usb_pd_active');
-  if (pd !== undefined) chips.push({ text: pd === '1' ? 'PD: активен' : 'PD: нет', state: pd === '1' ? 'ok' : 'off' });
+  if (pd !== undefined) {
+    chips.push({ key: 'pd', text: pd === '1' ? 'PD: активен' : 'PD: нет', state: pd === '1' ? 'ok' : 'off' });
+  }
 
   const inputLimit = number(info, 'usb_input_limit');
-  if (inputLimit !== undefined) chips.push({ text: `лимит входа: ${Math.round(inputLimit / 1000)} мА`, state: '' });
+  if (inputLimit !== undefined) {
+    chips.push({ key: 'input-limit', text: `лимит входа: ${Math.round(inputLimit / 1000)} мА`, state: '' });
+  }
 
   const usbVoltage = number(info, 'usb_voltage');
-  if (usbVoltage !== undefined) chips.push({ text: `напряжение входа: ${(usbVoltage / 1e6).toFixed(2)} В`, state: '' });
+  if (usbVoltage !== undefined) {
+    chips.push({ key: 'usb-voltage', text: `напряжение входа: ${(usbVoltage / 1e6).toFixed(2)} В`, state: '' });
+  }
 
   const fccMax = number(info, 'batt_fcc_max');
-  if (fccMax !== undefined) chips.push({ text: `лимит тока батареи: ${(fccMax / 1e6).toFixed(2)} А`, state: '' });
+  if (fccMax !== undefined) {
+    chips.push({ key: 'fcc-max', text: `лимит тока батареи: ${(fccMax / 1e6).toFixed(2)} А`, state: '' });
+  }
 
   const level = number(info, 'batt_thermal_level');
-  if (level !== undefined) chips.push({ text: `температурный уровень: ${level}`, state: level === 0 ? 'ok' : '' });
+  if (level !== undefined) {
+    chips.push({ key: 'thermal-level', text: `температурный уровень: ${level}`, state: level === 0 ? 'ok' : '' });
+  }
 
   const chargeType = info.get('batt_charge_type');
-  if (chargeType) chips.push({ text: `режим заряда: ${chargeType}`, state: '' });
+  if (chargeType) chips.push({ key: 'charge-type', text: `режим заряда: ${chargeType}`, state: '' });
 
   const chargerTemp = number(info, 'batt_charger_temp');
-  if (chargerTemp !== undefined) chips.push({ text: `температура зарядника: ${(chargerTemp / 10).toFixed(1)} °C`, state: '' });
+  if (chargerTemp !== undefined) {
+    chips.push({ key: 'charger-temp', text: `температура зарядника: ${(chargerTemp / 10).toFixed(1)} °C`, state: '' });
+  }
 
   const voltage = number(info, 'batt_voltage');
   const current = number(info, 'batt_current');
   if (voltage !== undefined && current !== undefined && current < 0) {
     const watts = (voltage * -current) / 1e12;
-    chips.push({ text: `в батарею: ${watts.toFixed(1)} Вт`, state: '' });
+    chips.push({ key: 'power', text: `в батарею: ${watts.toFixed(1)} Вт`, state: '' });
   }
 
-  if (chips.length === 0) chips.push({ text: 'нет данных от драйвера зарядки', state: 'off' });
+  if (chips.length === 0) chips.push({ key: 'empty', text: 'нет данных от драйвера зарядки', state: 'off' });
   return chips;
 }

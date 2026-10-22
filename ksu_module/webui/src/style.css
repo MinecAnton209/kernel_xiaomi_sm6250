@@ -180,6 +180,39 @@ header p {
   margin-top: 14px;
 }
 
+m3e-loading-indicator {
+  --m3e-loading-indicator-container-size: 40px;
+  --m3e-loading-indicator-active-indicator-size: 32px;
+}
+
+.ptr {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  padding-top: env(safe-area-inset-top);
+  pointer-events: none;
+  opacity: var(--ptr-opacity, 0);
+  transform: translateY(calc(var(--ptr-offset, 0px) - 56px));
+  transition:
+    transform 0.4s var(--spring),
+    opacity 0.25s var(--standard);
+}
+
+/* While the finger is down the indicator must track it with no easing. */
+.ptr.dragging {
+  transition: none;
+}
+
+.tune-loading {
+  display: flex;
+  justify-content: center;
+  padding: 18px 0;
+}
+
 .card-head {
   display: flex;
   align-items: center;

@@ -1,14 +1,15 @@
 import '@m3e/web/button';
 import '@m3e/web/switch';
-import '@m3e/web/progress-indicator';
+import '@m3e/web/loading-indicator';
 import './style.css';
 import { hasBridge } from './ksu';
 import { addPath, applyAll } from './paths';
 import { byId, busy, type Togglable, type SwitchElement } from './dom';
-import { savedTab, showPage } from './nav';
+import { refreshCurrentPage, savedTab, showPage } from './nav';
+import { initPullToRefresh } from './pull';
 import { runUmount, setBypass, setLog, startBatteryPolling } from './system';
 import { setSusSu } from './su';
-import { initTuneHelp } from './tune';
+import { initTuneHelp, prefetchTune } from './tune';
 import { initUpdates, loadChannel } from './updates';
 
 function init(): void {
@@ -50,7 +51,9 @@ function init(): void {
 
   void loadChannel().then(initUpdates);
   showPage(savedTab());
+  prefetchTune();
   startBatteryPolling();
+  initPullToRefresh(refreshCurrentPage);
 }
 
 init();

@@ -54,6 +54,11 @@ for release tags (`vX.Y.Z`).
   (`tune.sh dump`) and caches the result until the WebUI page is closed,
   which stops it from stalling on open. A `?` button opens a help page that
   explains each setting and its values.
+- Kernel Control: pull to refresh on every tab with the M3E loading
+  indicator (needs @m3e/web 2.10.2), an M3E loading indicator for the
+  update check and for the Tuning tab, and settings that load in the
+  background when the WebUI opens. Charging chips now update in place
+  instead of replaying their entrance animation every refresh.
 - Kernel Control: Charging card on the System tab with the charger type,
   PD state, input limit, battery current limit, thermal level, charger
   temperature and charging power, refreshed every 2 s. It shows what

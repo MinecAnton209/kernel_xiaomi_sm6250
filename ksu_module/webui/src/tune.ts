@@ -28,8 +28,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-function readAll(): Promise<Map<string, TuneState>> {
-  if (cache) return Promise.resolve(cache);
+function readAll(force = false): Promise<Map<string, TuneState>> {
+  if (cache && !force) return Promise.resolve(cache);
   // A second call while the first is still running shares its result instead of starting another shell.
   pending ??= withTimeout(exec(`${quote(TUNE)} dump`), DUMP_TIMEOUT_MS)
     .then(({ stdout }) => {
@@ -48,6 +48,15 @@ function note(text: string): HTMLElement {
   paragraph.className = 'hint';
   paragraph.textContent = text;
   return paragraph;
+}
+
+function loadingIndicator(): HTMLElement {
+  const box = document.createElement('div');
+  box.className = 'tune-loading';
+  const indicator = document.createElement('m3e-loading-indicator');
+  indicator.setAttribute('aria-label', 'Загрузка настроек');
+  box.append(indicator);
+  return box;
 }
 
 function buildControl(state: TuneState): Control {
@@ -117,18 +126,32 @@ function renderRow(doc: TuneDoc, state: TuneState | undefined): HTMLElement {
   return row;
 }
 
-export async function loadTune(): Promise<void> {
+/**
+ * Starts reading the settings as soon as the page opens, so they are usually ready by the
+ * time the Tuning tab is opened. A failure is ignored here; opening the tab tries again.
+ */
+export function prefetchTune(): void {
+  readAll().catch(() => undefined);
+}
+
+export async function loadTune(force = false): Promise<void> {
   const list = byId('tuneList');
-  if (!cache) list.replaceChildren(note('Загрузка…'));
+  // With cached rows on screen a forced reload keeps them until the new values arrive.
+  if (!cache) list.replaceChildren(loadingIndicator());
 
   let states: Map<string, TuneState>;
   try {
-    states = await readAll();
+    states = await readAll(force);
   } catch {
     list.replaceChildren(note('Не удалось прочитать настройки ядра. Откройте вкладку ещё раз.'));
     return;
   }
   list.replaceChildren(...TUNE_DOCS.map((doc) => renderRow(doc, states.get(doc.key))));
+}
+
+/** Re-reads the kernel even when values are cached; used by pull to refresh. */
+export function reloadTune(): Promise<void> {
+  return loadTune(true);
 }
 
 function renderHelp(): void {

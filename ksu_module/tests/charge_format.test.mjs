@@ -93,3 +93,37 @@ test('empty output shows a single placeholder chip', () => {
   assert.equal(chips[0].text, 'нет данных от драйвера зарядки');
   assert.equal(chips[0].state, 'off');
 });
+
+const keys = (stdout) => buildChargeChips(parseInfo(stdout)).map((chip) => chip.key);
+
+test('every chip has a non-empty key and the keys are unique', () => {
+  const all = keys(FULL);
+  assert.equal(all.length, 9);
+  assert.ok(all.every((key) => key.length > 0));
+  assert.equal(new Set(all).size, all.length);
+});
+
+test('a chip keeps its key when its value changes', () => {
+  assert.deepEqual(keys('usb_input_limit=1000000'), keys('usb_input_limit=2000000'));
+  assert.deepEqual(keys('usb_pd_active=1'), keys('usb_pd_active=0'));
+  assert.deepEqual(keys('batt_thermal_level=0'), keys('batt_thermal_level=7'));
+});
+
+test('a chip keeps its key when other chips appear or disappear', () => {
+  const alone = keys('batt_charge_type=Fast');
+  const withNeighbours = keys('usb_real_type=USB\nusb_pd_active=1\nbatt_charge_type=Fast');
+  assert.deepEqual(alone, ['charge-type']);
+  assert.ok(withNeighbours.includes('charge-type'));
+});
+
+test('the charging power chip toggles without disturbing the others', () => {
+  const charging = keys('batt_charge_type=Fast\nbatt_voltage=4000000\nbatt_current=-2000000');
+  const idle = keys('batt_charge_type=Fast\nbatt_voltage=4000000\nbatt_current=0');
+  assert.deepEqual(charging, ['charge-type', 'power']);
+  assert.deepEqual(idle, ['charge-type']);
+});
+
+test('the placeholder chip has its own key so it is replaced once data arrives', () => {
+  assert.deepEqual(keys(''), ['empty']);
+  assert.ok(!keys('usb_real_type=USB').includes('empty'));
+});

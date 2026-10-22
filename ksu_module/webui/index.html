@@ -99,7 +99,7 @@
           <div class="notes" id="updateNotes"></div>
           <div class="row end">
             <m3e-button id="fullChangelogBtn" variant="text">Полный changelog</m3e-button>
-            <m3e-circular-progress-indicator id="checkSpinner" indeterminate hidden></m3e-circular-progress-indicator>
+            <m3e-loading-indicator id="checkSpinner" hidden aria-label="Проверка обновлений"></m3e-loading-indicator>
             <m3e-button id="checkUpdatesBtn" variant="tonal">Проверить</m3e-button>
           </div>
           <div class="row end" id="actionsRow" hidden>
@@ -180,6 +180,10 @@
           </div>
         </section>
       </div>
+    </div>
+
+    <div class="ptr" id="ptr" aria-hidden="true">
+      <m3e-loading-indicator id="ptrIndicator" variant="contained"></m3e-loading-indicator>
     </div>
 
     <nav class="navbar" aria-label="Разделы">
