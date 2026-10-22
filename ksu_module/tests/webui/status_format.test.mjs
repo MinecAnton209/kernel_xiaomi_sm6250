@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { featureSpecs } from '../webui/src/statusFormat.ts';
+import { featureSpecs } from '../../webui/src/logic/statusFormat.ts';
 
 test('featureSpecs makes one chip per feature line', () => {
   assert.deepEqual(featureSpecs('sus_path=1\nsus_mount=0'), [

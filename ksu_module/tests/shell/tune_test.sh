@@ -1,6 +1,6 @@
 #!/bin/sh
-# Runs bin/tune.sh against a fake sysfs tree. Usage: sh ksu_module/tests/tune_test.sh
-TUNE="$(cd "$(dirname "$0")/.." && pwd)/kernel_control/bin/tune.sh"
+# Runs bin/tune.sh against a fake sysfs tree. Usage: sh ksu_module/tests/shell/tune_test.sh
+TUNE="$(cd "$(dirname "$0")/../.." && pwd)/kernel_control/bin/tune.sh"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 

@@ -1,6 +1,6 @@
 #!/bin/sh
-# Runs bin/charge.sh against a fake sysfs tree. Usage: sh ksu_module/tests/charge_test.sh
-CHARGE="$(cd "$(dirname "$0")/.." && pwd)/kernel_control/bin/charge.sh"
+# Runs bin/charge.sh against a fake sysfs tree. Usage: sh ksu_module/tests/shell/charge_test.sh
+CHARGE="$(cd "$(dirname "$0")/../.." && pwd)/kernel_control/bin/charge.sh"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 

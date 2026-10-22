@@ -1,11 +1,11 @@
-import { TAB_KEY } from './config';
-import { hasBridge } from './ksu';
-import { refreshPaths } from './paths';
-import { hidePageSkeletons, showPageSkeletons } from './skeleton';
-import { loadStatus } from './status';
-import { loadSystem } from './system';
-import { loadSusSu } from './su';
-import { loadTune, prefetchTune, reloadTune } from './tune';
+import { TAB_KEY } from './core/config';
+import { hasBridge } from './core/ksu';
+import { refreshPaths } from './pages/paths';
+import { loadStatus } from './pages/status';
+import { loadSusSu } from './pages/su';
+import { loadSystem } from './pages/system';
+import { loadTune, prefetchTune, reloadTune } from './pages/tune';
+import { hidePageSkeletons, showPageSkeletons } from './ui/skeleton';
 
 const loaders: Record<string, () => Promise<void>> = {
   status: loadStatus,

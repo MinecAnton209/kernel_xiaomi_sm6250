@@ -1,4 +1,4 @@
-// Keep these in step with kernel_control/config.sh; tests/config_test.sh checks that they match.
+// Keep these in step with kernel_control/config.sh; tests/shell/config_test.sh checks that they match.
 export const MODULE_ID = 'kernel_control';
 export const MODULES_DIR = '/data/adb/modules';
 export const CONF = '/data/adb/kernel_control';

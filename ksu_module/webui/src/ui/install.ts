@@ -1,5 +1,5 @@
-import { byId } from './dom';
-import { barState, type BarState, type Progress } from './progressMath';
+import { byId } from '../core/dom';
+import { barState, type BarState, type Progress } from '../logic/progressMath';
 
 export type Step = 'download' | 'verify' | 'install';
 type PanelState = 'running' | 'success' | 'error';

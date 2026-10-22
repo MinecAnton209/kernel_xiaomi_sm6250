@@ -1,4 +1,4 @@
-import type { ChipSpec } from './chargeFormat';
+import type { ChipSpec } from '../logic/chargeFormat';
 
 export interface ChipList {
   update(specs: readonly ChipSpec[]): void;

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Checks that the module's shared names stay in one place and that customize.sh migrates
-# the pre-rename install. Usage: sh ksu_module/tests/config_test.sh
-BASE="$(cd "$(dirname "$0")/.." && pwd)"
+# the pre-rename install. Usage: sh ksu_module/tests/shell/config_test.sh
+BASE="$(cd "$(dirname "$0")/../.." && pwd)"
 MODULE="$BASE/kernel_control"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -35,15 +35,18 @@ content() {
 prop_id=$(grep '^id=' "$MODULE/module.prop")
 check 'module.prop id matches config.sh' "id=$MODULE_ID" "$prop_id"
 
-ts="$BASE/webui/src/config.ts"
+ts="$BASE/webui/src/core/config.ts"
 check 'config.ts MODULE_ID matches config.sh' "export const MODULE_ID = '$MODULE_ID';" "$(grep '^export const MODULE_ID' "$ts")"
 check 'config.ts MODULES_DIR matches config.sh' "export const MODULES_DIR = '$MODULES_DIR';" "$(grep '^export const MODULES_DIR' "$ts")"
 check 'config.ts CONF matches config.sh' "export const CONF = '$CONF_DIR';" "$(grep '^export const CONF ' "$ts")"
 
 # Scripts and sources must use the shared names instead of repeating the literals.
-literals=$(grep -rlE '/data/adb/(kernel_control|susfs_ui|modules)|ksu_susfs_ui' \
-	"$MODULE/service.sh" "$MODULE/customize.sh" "$MODULE/bin/tune.sh" "$MODULE/bin/fetch.sh" \
-	"$BASE"/webui/src/*.ts 2> /dev/null | grep -v '/config\.ts$' | tr '\n' ' ')
+literals=$(
+	{
+		printf '%s\n' "$MODULE/service.sh" "$MODULE/customize.sh" "$MODULE/bin/tune.sh" "$MODULE/bin/fetch.sh"
+		find "$BASE/webui/src" -name '*.ts'
+	} | xargs grep -lE '/data/adb/(kernel_control|susfs_ui|modules)|ksu_susfs_ui' 2> /dev/null | grep -v '/core/config\.ts$' | tr '\n' ' '
+)
 check 'no hardcoded module paths outside the config files' '' "$literals"
 
 # customize.sh runs inside the manager, which provides ui_print and set_perm.

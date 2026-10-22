@@ -1,5 +1,5 @@
 # Names and paths shared by service.sh, customize.sh and bin/tune.sh. The WebUI keeps the
-# same values in webui/src/config.ts; tests/config_test.sh fails if the two drift apart.
+# same values in webui/src/core/config.ts; tests/shell/config_test.sh fails if the two drift apart.
 MODULE_ID=kernel_control
 MODULES_DIR=/data/adb/modules
 CONF_DIR=/data/adb/kernel_control

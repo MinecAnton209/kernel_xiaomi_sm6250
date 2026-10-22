@@ -1,11 +1,11 @@
-import { MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confFile, quote } from './config';
-import { byId, busy, type SwitchElement, type Togglable } from './dom';
-import { exec, run } from './ksu';
-import { renderMarkdown } from './markdown';
-import { parseProgress } from './progressMath';
-import { closePanel, initPanel, openPanel, setProgress, setStep, showError, showSuccess, type Step } from './install';
-import { hideSkeleton, showSkeleton } from './skeleton';
-import { toast } from './toast';
+import { MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confFile, quote } from '../core/config';
+import { byId, busy, type SwitchElement, type Togglable } from '../core/dom';
+import { exec, run } from '../core/ksu';
+import { toast } from '../core/toast';
+import { parseProgress } from '../logic/progressMath';
+import { closePanel, initPanel, openPanel, setProgress, setStep, showError, showSuccess, type Step } from '../ui/install';
+import { renderMarkdown } from '../ui/markdown';
+import { hideSkeleton, showSkeleton } from '../ui/skeleton';
 
 const REPO = 'MinecAnton209/kernel_xiaomi_sm6250';
 const CI_BRANCH = '16.0';

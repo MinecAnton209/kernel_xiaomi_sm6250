@@ -3,10 +3,10 @@ import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { TUNE_DOCS } from '../webui/src/tuneDocs.ts';
-import { parseDump, rangeOf } from '../webui/src/tuneDump.ts';
+import { TUNE_DOCS } from '../../webui/src/logic/tuneDocs.ts';
+import { parseDump, rangeOf } from '../../webui/src/logic/tuneDump.ts';
 
-const TUNE_SH = join(dirname(fileURLToPath(import.meta.url)), '..', 'kernel_control', 'bin', 'tune.sh');
+const TUNE_SH = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'kernel_control', 'bin', 'tune.sh');
 
 test('parseDump reads key, active value and options', () => {
   const states = parseDump('io_scheduler\tdeadline\tnoop deadline cfq\nswappiness\t60\trange 0 100\n');

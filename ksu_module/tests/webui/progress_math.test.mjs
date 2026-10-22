@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { barState, parseProgress, partRange, slowestFraction } from '../webui/src/progressMath.ts';
+import { barState, parseProgress, partRange, slowestFraction } from '../../webui/src/logic/progressMath.ts';
 
 test('parseProgress reads done, total and per part sizes', () => {
   assert.deepEqual(parseProgress('100 400 40 30 20 10'), { done: 100, total: 400, parts: [40, 30, 20, 10] });

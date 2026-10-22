@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', 'webui');
+const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'webui');
 const css = readFileSync(join(SRC, 'src', 'style.css'), 'utf8');
 const html = readFileSync(join(SRC, 'index.html'), 'utf8');
 

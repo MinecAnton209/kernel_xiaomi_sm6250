@@ -11,7 +11,7 @@ import {
   pullProgress,
   shouldRefresh,
   startsPull,
-} from '../webui/src/pullMath.ts';
+} from '../../webui/src/logic/pullMath.ts';
 
 test('pullProgress is one turn per 120px and never negative', () => {
   assert.equal(pullProgress(0), 0);

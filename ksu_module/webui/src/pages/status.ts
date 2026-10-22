@@ -1,9 +1,9 @@
-import { createChipList, type ChipList } from './chipList';
-import { BIN, quote } from './config';
-import { byId } from './dom';
-import { exec } from './ksu';
-import { joinCommands, splitSections } from './shellOut';
-import { featureSpecs } from './statusFormat';
+import { BIN, quote } from '../core/config';
+import { byId } from '../core/dom';
+import { exec } from '../core/ksu';
+import { joinCommands, splitSections } from '../core/shellOut';
+import { featureSpecs } from '../logic/statusFormat';
+import { createChipList, type ChipList } from '../ui/chipList';
 
 let featureChips: ChipList | undefined;
 

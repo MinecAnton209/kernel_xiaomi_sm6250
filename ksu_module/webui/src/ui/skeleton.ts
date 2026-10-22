@@ -1,4 +1,4 @@
-import { byId } from './dom';
+import { byId } from '../core/dom';
 import {
   PAGE_REGIONS,
   REGIONS,
@@ -7,7 +7,7 @@ import {
   type PlaceholderGroup,
   type PlaceholderNode,
   type RegionId,
-} from './skeletonSpecs';
+} from '../logic/skeletonSpecs';
 
 const active = new Map<RegionId, HTMLElement>();
 

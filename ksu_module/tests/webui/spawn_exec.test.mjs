@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { mock, test } from 'node:test';
-import { createRunner, probeSpawn, spawnCommand } from '../webui/src/spawnExec.ts';
+import { createRunner, probeSpawn, spawnCommand } from '../../webui/src/core/spawnExec.ts';
 
 /**
  * Behaves like the manager's WebViewInterface.spawn: it returns at once and later calls

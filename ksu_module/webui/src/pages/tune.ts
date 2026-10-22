@@ -1,9 +1,9 @@
-import { TUNE, quote } from './config';
-import { byId } from './dom';
-import { exec, run } from './ksu';
-import { hideSkeleton, showSkeleton } from './skeleton';
-import { TUNE_DOCS, type TuneDoc } from './tuneDocs';
-import { parseDump, rangeOf, type TuneState } from './tuneDump';
+import { TUNE, quote } from '../core/config';
+import { byId } from '../core/dom';
+import { exec, run } from '../core/ksu';
+import { TUNE_DOCS, type TuneDoc } from '../logic/tuneDocs';
+import { parseDump, rangeOf, type TuneState } from '../logic/tuneDump';
+import { hideSkeleton, showSkeleton } from '../ui/skeleton';
 
 type Control = HTMLSelectElement | HTMLInputElement;
 

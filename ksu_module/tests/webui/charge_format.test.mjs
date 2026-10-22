@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildBatteryChips, buildChargeChips, bypassOf, parseInfo } from '../webui/src/chargeFormat.ts';
+import { buildBatteryChips, buildChargeChips, bypassOf, parseInfo } from '../../webui/src/logic/chargeFormat.ts';
 
 const FULL = [
   'usb_real_type=USB_PD',

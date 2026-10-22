@@ -1,8 +1,8 @@
-import { buildBatteryChips, buildChargeChips, bypassOf, parseInfo } from './chargeFormat';
-import { createChipList, type ChipList } from './chipList';
-import { BIN, CHARGE, confFile, quote } from './config';
-import { byId, type SwitchElement } from './dom';
-import { exec, run } from './ksu';
+import { BIN, CHARGE, confFile, quote } from '../core/config';
+import { byId, type SwitchElement } from '../core/dom';
+import { exec, run } from '../core/ksu';
+import { buildBatteryChips, buildChargeChips, bypassOf, parseInfo } from '../logic/chargeFormat';
+import { createChipList, type ChipList } from '../ui/chipList';
 
 export async function loadLog(): Promise<void> {
   const saved = (await exec(`cat ${confFile('log')} 2>/dev/null`)).stdout.trim();

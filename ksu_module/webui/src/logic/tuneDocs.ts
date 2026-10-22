@@ -19,7 +19,7 @@ const CPU_GOVERNORS: Record<string, string> = {
 const CPU_ADVICE =
   'schedutil подходит для повседневной работы. performance включайте на время тестов и игр и следите за температурой.';
 
-/** Keys must match `tune.sh keys`; tests/tune_dump.test.mjs fails when they drift apart. */
+/** Keys must match `tune.sh keys`; tests/webui/tune_dump.test.mjs fails when they drift apart. */
 export const TUNE_DOCS: readonly TuneDoc[] = [
   {
     key: 'io_scheduler',

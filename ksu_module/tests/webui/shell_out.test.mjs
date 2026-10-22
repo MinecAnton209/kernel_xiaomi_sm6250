@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { test } from 'node:test';
-import { SECTION_MARK, joinCommands, splitSections } from '../webui/src/shellOut.ts';
+import { SECTION_MARK, joinCommands, splitSections } from '../../webui/src/core/shellOut.ts';
 
 const run = (commands) => execFileSync('sh', ['-c', joinCommands(commands)], { encoding: 'utf8' });
 

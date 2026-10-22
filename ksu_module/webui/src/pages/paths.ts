@@ -1,7 +1,7 @@
-import { BIN, PATH_RE, confFile, quote } from './config';
-import { byId } from './dom';
-import { exec, run } from './ksu';
-import { toast } from './toast';
+import { BIN, PATH_RE, confFile, quote } from '../core/config';
+import { byId } from '../core/dom';
+import { exec, run } from '../core/ksu';
+import { toast } from '../core/toast';
 
 async function readPaths(): Promise<string[]> {
   const result = await exec(`cat ${confFile('paths.txt')} 2>/dev/null`);

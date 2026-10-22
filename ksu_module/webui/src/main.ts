@@ -4,15 +4,15 @@ import '@m3e/web/loading-indicator';
 import '@m3e/web/progress-indicator';
 import '@m3e/web/skeleton';
 import './style.css';
-import { hasBridge, warmUp } from './ksu';
-import { addPath, applyAll } from './paths';
-import { byId, busy, type Togglable, type SwitchElement } from './dom';
+import { byId, busy, type Togglable, type SwitchElement } from './core/dom';
+import { hasBridge, warmUp } from './core/ksu';
 import { prefetchPages, refreshCurrentPage, savedTab, showPage } from './nav';
-import { initPullToRefresh } from './pull';
-import { runUmount, setBypass, setLog, startLivePolling } from './system';
-import { setSusSu } from './su';
-import { initTuneHelp } from './tune';
-import { initUpdates, loadChannel } from './updates';
+import { addPath, applyAll } from './pages/paths';
+import { setSusSu } from './pages/su';
+import { runUmount, setBypass, setLog, startLivePolling } from './pages/system';
+import { initTuneHelp } from './pages/tune';
+import { initUpdates, loadChannel } from './pages/updates';
+import { initPullToRefresh } from './ui/pull';
 
 function init(): void {
   document.querySelectorAll<HTMLElement>('.nav-item').forEach((button) => {

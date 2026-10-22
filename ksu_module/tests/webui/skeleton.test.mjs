@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { PAGE_REGIONS, REGIONS, placeholderGroups, wrapperClass } from '../webui/src/skeletonSpecs.ts';
+import { PAGE_REGIONS, REGIONS, placeholderGroups, wrapperClass } from '../../webui/src/logic/skeletonSpecs.ts';
 
-const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', 'webui');
+const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'webui');
 const html = readFileSync(join(SRC, 'index.html'), 'utf8');
 const css = readFileSync(join(SRC, 'src', 'style.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 const main = readFileSync(join(SRC, 'src', 'main.ts'), 'utf8');

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Runs bin/fetch.sh end to end against file:// URLs, which curl serves with sizes and ranges.
-# Usage: sh ksu_module/tests/fetch_test.sh
-FETCH="$(cd "$(dirname "$0")/.." && pwd)/kernel_control/bin/fetch.sh"
+# Usage: sh ksu_module/tests/shell/fetch_test.sh
+FETCH="$(cd "$(dirname "$0")/../.." && pwd)/kernel_control/bin/fetch.sh"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 

@@ -1,7 +1,7 @@
-import { BIN, confFile, quote } from './config';
-import { byId, busy, type SwitchElement } from './dom';
-import { exec, run } from './ksu';
-import { joinCommands, splitSections } from './shellOut';
+import { BIN, confFile, quote } from '../core/config';
+import { byId, busy, type SwitchElement } from '../core/dom';
+import { exec, run } from '../core/ksu';
+import { joinCommands, splitSections } from '../core/shellOut';
 
 export async function loadSusSu(): Promise<void> {
   const { stdout } = await exec(

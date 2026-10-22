@@ -1,4 +1,4 @@
-import { byId } from './dom';
+import { byId } from '../core/dom';
 import {
   exceedsDeadZone,
   indicatorOffset,
@@ -6,7 +6,7 @@ import {
   pullProgress,
   shouldRefresh,
   startsPull,
-} from './pullMath';
+} from '../logic/pullMath';
 
 type PullIndicator = HTMLElement & { pullProgress: number | null };
 
