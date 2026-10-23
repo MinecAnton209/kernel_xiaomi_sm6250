@@ -715,9 +715,24 @@ m3e-skeleton {
   word-break: break-word;
 }
 
+.chip.changed {
+  animation: chip-changed 0.6s var(--standard);
+}
+
+@keyframes chip-changed {
+  0% {
+    transform: scale(1.08);
+  }
+}
+
+[data-advanced]:not([hidden]) {
+  animation: item-in 0.4s var(--standard);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .install,
-  .install * {
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition-duration: 0.01s !important;
   }

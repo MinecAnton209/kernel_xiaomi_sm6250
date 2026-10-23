@@ -4,6 +4,13 @@ export interface ChipList {
   update(specs: readonly ChipSpec[]): void;
 }
 
+/** Restarts the highlight on a chip whose value just changed, so the change is noticed. */
+function flash(node: HTMLElement): void {
+  node.classList.remove('changed');
+  void node.offsetWidth;
+  node.classList.add('changed');
+}
+
 /**
  * A row of chips that is updated in place. Replacing the chips on every refresh made each one
  * replay its entrance animation, so the whole card flickered every couple of seconds.
@@ -27,9 +34,17 @@ export function createChipList(box: HTMLElement): ChipList {
           node = document.createElement('span');
           nodes.set(spec.key, node);
         }
+        // The changed flag lives on the node, so the base classes are compared on their own.
         const className = spec.state ? `chip ${spec.state}` : 'chip';
-        if (node.className !== className) node.className = className;
-        if (node.textContent !== spec.text) node.textContent = spec.text;
+        if (node.dataset['base'] !== className) {
+          node.dataset['base'] = className;
+          node.className = className;
+        }
+        if (node.textContent !== spec.text) {
+          const isNew = node.textContent === '';
+          node.textContent = spec.text;
+          if (!isNew) flash(node);
+        }
         // Moving a node restarts its animation, so only touch the order when it really changed.
         if (box.children[index] !== node) box.insertBefore(node, box.children[index] ?? null);
       });

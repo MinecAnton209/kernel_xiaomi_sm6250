@@ -86,7 +86,8 @@ export async function setBypass(on: boolean): Promise<void> {
   await loadLive();
 }
 
-const LIVE_POLL_MS = 2000;
+// Every poll starts a root shell on the phone, which costs battery; 5 s still looks live on the cards.
+const LIVE_POLL_MS = 5000;
 let livePollBusy = false;
 
 /**
