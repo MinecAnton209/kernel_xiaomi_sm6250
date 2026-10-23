@@ -133,6 +133,7 @@ export const en: Record<MessageKey, string> = {
   'reboot.title': 'Reboot the phone?',
   'reboot.bodyModule': 'The module was updated. The changes take effect after a reboot.',
   'reboot.bodyKernel': 'The kernel was flashed. The phone runs it after a reboot.',
+  'reboot.bodyDevice': 'Device identity saved. Properties and the Zygisk hook take effect after a reboot.',
   'reboot.later': 'Later',
   'reboot.now': 'Reboot',
   'flash.button': 'Flash now',

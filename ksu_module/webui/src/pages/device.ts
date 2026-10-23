@@ -1,8 +1,9 @@
 import { SPOOF, quote } from '../core/config';
 import { busy, byId, type SelectElement, type SwitchElement, type Togglable } from '../core/dom';
-import { exec } from '../core/ksu';
+import { exec, rebootPhone } from '../core/ksu';
 import { joinCommands, splitSections } from '../core/shellOut';
 import { toast } from '../core/toast';
+import { askReboot } from '../ui/rebootDialog';
 import {
   CUSTOM_PROFILE,
   DEVICE_FIELDS,
@@ -323,7 +324,7 @@ export function initDevice(): void {
     'click',
     () =>
       void busy(applyButton, async () => {
-        await saveDevice();
+        if ((await saveDevice()) && (await askReboot('device'))) await rebootPhone();
       }),
   );
   const resetButton = byId<Togglable>('deviceReset');

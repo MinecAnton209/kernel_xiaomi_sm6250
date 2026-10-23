@@ -246,3 +246,8 @@ test('kernel text limits are one less than the kernel buffers that hold them', (
     assert.equal(field.maxLength, bufferSize(bufferOf[field.key]) - 1, field.key);
   }
 });
+
+test('Apply offers a reboot only after the settings were saved', () => {
+  const page = readFileSync(join(WEBUI, 'src/pages/device.ts'), 'utf8');
+  assert.ok(page.includes("if ((await saveDevice()) && (await askReboot('device'))) await rebootPhone();"));
+});
