@@ -90,15 +90,15 @@ const LIVE_POLL_MS = 2000;
 let livePollBusy = false;
 
 /**
- * Keeps the battery and charging cards live while the System tab is open. It skips a tick when
- * the tab or the whole page is hidden, and never overlaps with a slow previous read.
+ * Keeps the battery card (Status tab) and the charging cards (System tab) live while either tab is open.
+ * It skips a tick when both are hidden or the document is hidden, and never overlaps a slow previous read.
  */
 export function startLivePolling(): void {
-  const page = document.querySelector<HTMLElement>('.page[data-page="system"]');
-  if (!page) return;
+  const pages = ['status', 'system'].map((name) => document.querySelector<HTMLElement>(`.page[data-page="${name}"]`));
 
   setInterval(() => {
-    if (page.hidden || document.hidden || livePollBusy) return;
+    const shown = pages.some((page) => page !== null && !page.hidden);
+    if (!shown || document.hidden || livePollBusy) return;
     livePollBusy = true;
     void loadLive()
       .catch(() => undefined)

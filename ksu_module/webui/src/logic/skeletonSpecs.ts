@@ -28,9 +28,9 @@ export type RegionId = keyof typeof REGIONS;
 
 /** The regions a tab fills when it loads. The Tuning tab and the update notes manage their own. */
 export const PAGE_REGIONS: Readonly<Record<string, readonly RegionId[]>> = {
-  status: ['status', 'features'],
+  status: ['status', 'features', 'batteryInfo'],
   paths: ['pathList'],
-  system: ['batteryInfo', 'chargeInfo'],
+  system: ['chargeInfo'],
   su: ['susSuStatus'],
 };
 

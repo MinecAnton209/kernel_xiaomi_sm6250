@@ -73,6 +73,7 @@ export const en: Record<MessageKey, string> = {
   'charge.chargerTemp': 'charger temperature: {value} °C',
   'charge.power': 'into the battery: {value} W',
   'charge.empty': 'no data from the charging driver',
+  'battery.title': 'Battery',
   'battery.status': 'status: {value}',
   'battery.current': 'current: {value}',
   'battery.currentValue': '{value} mA',
