@@ -300,7 +300,9 @@ async function killTransfer(target: string): Promise<void> {
 
 // fetch.sh runs detached so ksu.exec returns at once; progress comes from files.
 async function download(asset: ManifestAsset, target: string, steps: readonly Step[]): Promise<TransferResult> {
-  const sha = asset.sha256 ? ` ${quote(asset.sha256)}` : '';
+  // Without a GitHub digest the file cannot be checked, so it is not fetched at all.
+  if (!asset.sha256) return { ok: false, cancelled: false, message: t('updates.noChecksum') };
+  const sha = ` ${quote(asset.sha256)}`;
   cancelRequested = false;
   await cleanupTransfer(target, true);
   const launch = await exec(
@@ -471,7 +473,7 @@ async function saveKernel(): Promise<void> {
 }
 
 async function downloadKernel(asset: ManifestAsset, target: string): Promise<void> {
-  const steps: readonly Step[] = asset.sha256 ? ['download', 'verify'] : ['download'];
+  const steps: readonly Step[] = ['download', 'verify'];
   setLocked(true);
   openPanel({
     title: t('install.kernelTitle'),

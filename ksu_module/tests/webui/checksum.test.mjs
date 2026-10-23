@@ -42,10 +42,13 @@ test('GitHub and the manifest agreeing gives that checksum', () => {
   assert.deepEqual(resolveSha256(A, `sha256:${A}`), { sha256: A, conflict: false });
 });
 
-test('GitHub alone is enough, and so is the manifest alone', () => {
+test('GitHub alone is enough', () => {
   assert.deepEqual(resolveSha256('', `sha256:${A}`), { sha256: A, conflict: false });
-  assert.deepEqual(resolveSha256(A, undefined), { sha256: A, conflict: false });
-  assert.deepEqual(resolveSha256(A, null), { sha256: A, conflict: false });
+});
+
+test('the manifest alone is not trusted: without a GitHub digest there is no checksum to use', () => {
+  assert.deepEqual(resolveSha256(A, undefined), { sha256: '', conflict: false });
+  assert.deepEqual(resolveSha256(A, null), { sha256: '', conflict: false });
 });
 
 test('no checksum anywhere is not a conflict, just unknown', () => {
@@ -63,6 +66,20 @@ test('a broken manifest checksum does not block a good GitHub digest', () => {
 
 test('the case of a checksum does not make two equal ones conflict', () => {
   assert.deepEqual(resolveSha256(A.toUpperCase(), `sha256:${A}`), { sha256: A, conflict: false });
+});
+
+test('a download is refused before fetch.sh runs when the asset has no checksum', () => {
+  const updates = read('src/pages/updates.ts');
+  const refusal = updates.indexOf('if (!asset.sha256) return { ok: false, cancelled: false');
+  const launch = updates.indexOf("( sh ${quote(FETCH)}");
+  assert.ok(refusal > 0, 'the refusal is missing');
+  assert.ok(launch > refusal, 'the refusal must come before the download starts');
+});
+
+test('kernel downloads always show and run the verify step', () => {
+  const updates = read('src/pages/updates.ts');
+  assert.ok(updates.includes("const steps: readonly Step[] = ['download', 'verify'];"));
+  assert.equal(updates.includes("asset.sha256 ? ['download', 'verify'] : ['download']"), false);
 });
 
 test('the release loader takes the digest of every asset and refuses a conflict', () => {

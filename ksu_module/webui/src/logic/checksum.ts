@@ -19,9 +19,9 @@ export interface ResolvedChecksum {
 }
 
 /**
- * Picks the checksum to trust for an asset. GitHub computes its digest itself when the file is
- * uploaded, so it is independent of the manifest our CI wrote, and it wins when both exist.
- * When both exist and differ, one of them is wrong and nothing should be flashed on either.
+ * Picks the checksum to trust for an asset: only the digest GitHub computed when the file was uploaded.
+ * The manifest our CI wrote is only checked against it; a file GitHub gives no digest for has no
+ * checksum to trust, so it is not downloaded. When both exist and differ, one of them is wrong.
  */
 export function resolveSha256(manifestSha: string | null | undefined, digest: string | null | undefined): ResolvedChecksum {
   const fromManifest = normalizeSha256(manifestSha);
@@ -29,5 +29,5 @@ export function resolveSha256(manifestSha: string | null | undefined, digest: st
   if (fromManifest !== '' && fromGithub !== '' && fromManifest !== fromGithub) {
     return { sha256: '', conflict: true };
   }
-  return { sha256: fromGithub || fromManifest, conflict: false };
+  return { sha256: fromGithub, conflict: false };
 }

@@ -100,6 +100,7 @@ export const ru = {
   'updates.changelogFailed': 'Не удалось загрузить changelog',
   'updates.checkFailed': 'Не удалось проверить обновления',
   'updates.checksumConflict': 'Контрольные суммы {name} в манифесте и на GitHub не совпадают, файл не предлагается',
+  'updates.noChecksum': 'На GitHub нет SHA-256 для этого файла, поэтому он не скачивается',
 
   'download.startFailed': 'Не удалось запустить загрузку',
   'download.cancelled': 'Загрузка отменена',

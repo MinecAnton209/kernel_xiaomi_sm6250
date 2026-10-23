@@ -103,6 +103,7 @@ export const en: Record<MessageKey, string> = {
   'updates.changelogFailed': 'Could not load the changelog',
   'updates.checkFailed': 'Could not check for updates',
   'updates.checksumConflict': 'The checksums of {name} in the manifest and on GitHub differ, so the file is not offered',
+  'updates.noChecksum': 'GitHub has no SHA-256 for this file, so it is not downloaded',
 
   'download.startFailed': 'Could not start the download',
   'download.cancelled': 'Download cancelled',
