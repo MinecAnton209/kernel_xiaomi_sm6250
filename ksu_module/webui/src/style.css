@@ -361,6 +361,11 @@ m3e-skeleton {
   width: 100%;
 }
 
+.tune-select {
+  width: 100%;
+  --m3e-form-field-width: 100%;
+}
+
 .item {
   display: flex;
   align-items: center;

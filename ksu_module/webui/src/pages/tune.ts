@@ -5,7 +5,13 @@ import { TUNE_DOCS, type TuneDoc } from '../logic/tuneDocs';
 import { parseDump, rangeOf, type TuneState } from '../logic/tuneDump';
 import { hideSkeleton, showSkeleton } from '../ui/skeleton';
 
-type Control = HTMLSelectElement | HTMLInputElement;
+/** The part of m3e-select this page uses; its value is a string in single-select mode. */
+interface M3eSelect extends HTMLElement {
+  value: string;
+  disabled: boolean;
+}
+
+type Control = M3eSelect | HTMLInputElement;
 
 const DUMP_TIMEOUT_MS = 10_000;
 
@@ -63,16 +69,26 @@ function buildControl(state: TuneState): Control {
     return input;
   }
 
-  const select = document.createElement('select');
-  select.className = 'field';
+  const select = document.createElement('m3e-select') as M3eSelect;
   for (const option of state.options) {
-    const item = document.createElement('option');
-    item.value = option;
+    const item = document.createElement('m3e-option');
+    item.setAttribute('value', option);
     item.textContent = option;
     select.append(item);
   }
   select.value = state.current;
   return select;
+}
+
+/** A select needs its form field for the outline and the arrow; a number input stands alone. */
+function wrapControl(control: Control): HTMLElement {
+  if (control instanceof HTMLInputElement) return control;
+  const field = document.createElement('m3e-form-field');
+  field.setAttribute('variant', 'outlined');
+  field.setAttribute('hide-subscript', '');
+  field.className = 'tune-select';
+  field.append(control);
+  return field;
 }
 
 async function apply(doc: TuneDoc, control: Control): Promise<void> {
@@ -114,7 +130,7 @@ function renderRow(doc: TuneDoc, state: TuneState | undefined): HTMLElement {
 
   const control = buildControl(state);
   control.addEventListener('change', () => void apply(doc, control));
-  row.append(control);
+  row.append(wrapControl(control));
   return row;
 }
 

@@ -61,6 +61,9 @@ for release tags (`vX.Y.Z`).
   real content, so nothing jumps when it appears, use the cheaper pulse
   animation, and are only built for a tab opened before its background load
   finished. The card is marked `aria-busy` meanwhile.
+- Kernel Control: the Tuning settings with a list of values (scheduler,
+  governor and the like) use the M3E select in an outlined form field instead
+  of the native dropdown. Settings with a numeric range keep a number input.
 - Kernel Control: the loading indicator of the update check is no longer
   squeezed by its flex row (it shrank from 38 to 32 px on a phone and its
   round container cut the corners off the shapes); the spinner and the check
