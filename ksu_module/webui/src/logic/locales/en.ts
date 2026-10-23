@@ -163,7 +163,7 @@ export const en: Record<MessageKey, string> = {
   'tune.saved': 'Settings saved',
   'tune.saveFailed': 'Settings not saved: {count}',
   'unsaved.title': 'Unsaved changes',
-  'unsaved.body': 'The Tuning tab has changes that are not saved. What should happen to them?',
+  'unsaved.body': 'This tab has changes that are not saved. What should happen to them?',
   'unsaved.stay': 'Stay',
   'unsaved.discard': 'Discard changes',
   'unsaved.save': 'Save',

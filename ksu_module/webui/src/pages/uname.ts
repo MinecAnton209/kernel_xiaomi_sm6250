@@ -149,13 +149,25 @@ function addApp(): void {
   renderApps();
 }
 
-async function apply(): Promise<void> {
+/** True while the form holds edits that Apply has not sent yet. */
+export function hasUnsavedUname(): boolean {
+  return dirty;
+}
+
+/** Drops the edits: the form is read again from what is saved. */
+export async function discardUname(): Promise<void> {
+  dirty = false;
+  await loadUname();
+}
+
+/** Sends the form to the module. Resolves to true when it was applied, false when it was refused. */
+export async function saveUname(): Promise<boolean> {
   const release = input('unameRelease').value.trim();
   const version = input('unameVersion').value.trim();
   const problem = validateText(release) ?? validateText(version);
   if (problem) {
     toast(t(problem));
-    return;
+    return false;
   }
 
   const enabled = byId<SwitchElement>('unameSwitch').checked;
@@ -173,17 +185,18 @@ async function apply(): Promise<void> {
   const result = await exec(command);
   if (result.errno === EXIT_UNSUPPORTED) {
     toast(t('uname.unsupportedToast'));
-    return;
+    return false;
   }
   if (result.errno !== 0) {
     toast(result.stderr.trim() || t('common.commandFailed'));
-    return;
+    return false;
   }
 
   dirty = false;
   const missing = parseMissing(result.stdout);
   toast(missing.length > 0 ? t('uname.missing', { apps: missing.join(', ') }) : t(enabled ? 'uname.applied' : 'uname.disabled'));
   await loadUname();
+  return true;
 }
 
 export function initUname(): void {
@@ -214,5 +227,11 @@ export function initUname(): void {
     if (event.key === 'Enter') addApp();
   });
   const applyButton = byId<Togglable>('unameApply');
-  applyButton.addEventListener('click', () => void busy(applyButton, apply));
+  applyButton.addEventListener(
+    'click',
+    () =>
+      void busy(applyButton, async () => {
+        await saveUname();
+      }),
+  );
 }

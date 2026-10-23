@@ -4,7 +4,7 @@ import { refreshPaths } from './pages/paths';
 import { loadStatus } from './pages/status';
 import { loadSusSu } from './pages/su';
 import { loadSystem } from './pages/system';
-import { loadUname } from './pages/uname';
+import { discardUname, hasUnsavedUname, loadUname, saveUname } from './pages/uname';
 import { discardTune, hasUnsavedTune, loadTune, prefetchTune, reloadTune, saveTune } from './pages/tune';
 import { hidePageSkeletons, showPageSkeletons } from './ui/skeleton';
 import { askUnsaved } from './ui/unsavedDialog';
@@ -129,24 +129,39 @@ export function showPage(name: string): void {
   loadPage(name);
 }
 
+/** A tab that keeps edits until the user saves them. */
+interface TabGuard {
+  hasUnsaved(): boolean;
+  /** Resolves to true when everything was saved, false when the user has to stay and look. */
+  save(): Promise<boolean>;
+  discard(): void | Promise<void>;
+}
+
+const guards: Readonly<Record<string, TabGuard>> = {
+  tune: { hasUnsaved: hasUnsavedTune, save: saveTune, discard: discardTune },
+  su: { hasUnsaved: hasUnsavedUname, save: saveUname, discard: discardUname },
+};
+
 let asking = false;
 
 /**
- * Opens a tab on the user's request. Leaving the Tuning tab with unsaved choices asks first:
- * save them, drop them, or stay. A tap on a tab while that question is open is ignored.
+ * Opens a tab on the user's request. Leaving a tab that has unsaved edits (Tuning, or the kernel
+ * version on SU) asks first: save them, drop them, or stay. A tap on a tab while that question is
+ * open is ignored.
  */
 export async function requestPage(name: string): Promise<void> {
   if (asking) return;
-  if (activeTab === 'tune' && name !== 'tune' && hasUnsavedTune()) {
+  const guard = guards[activeTab];
+  if (guard && name !== activeTab && guard.hasUnsaved()) {
     asking = true;
     try {
       const choice = await askUnsaved();
       if (choice === 'stay') return;
       if (choice === 'save') {
-        // A failed save keeps the choices, so the user stays and sees which ones were not applied.
-        if (!(await saveTune())) return;
+        // A failed save keeps the edits, so the user stays and sees what was not applied.
+        if (!(await guard.save())) return;
       } else {
-        discardTune();
+        await guard.discard();
       }
     } finally {
       asking = false;

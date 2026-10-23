@@ -116,6 +116,10 @@ for release tags (`vX.Y.Z`).
   `module.prop`, and the WebUI compares that number with the one in the name
   of the offered zip. Before, a module installed by hand was always offered
   an update, because the WebUI only knew a build it had installed itself.
+- Kernel Control: leaving the SU tab with edits in the kernel version card
+  that were not applied opens the same dialog as the Tuning tab (save,
+  discard or stay). The check is now a per-tab guard in `nav.ts`, and the
+  dialog text no longer names one tab.
 - CI: a module built from anything but a release tag gets the first seven
   characters of the commit appended to its version (`v1.1.0-e34731a`), so the
   module on a phone can be traced to its commit. A release keeps the plain

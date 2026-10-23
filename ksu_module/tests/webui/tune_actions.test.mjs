@@ -63,13 +63,45 @@ test('every tab button goes through the check for unsaved changes', () => {
   assert.ok(!/addEventListener\('click', \(\) => showPage\(/.test(main), 'a tab button still switches without asking');
 });
 
-test('only a visit to another tab from Tuning is guarded, and a failed save keeps the user there', () => {
+test('only a visit to another tab from a guarded tab is checked, and a failed save keeps the user there', () => {
   const guard = nav.slice(nav.indexOf('export async function requestPage'), nav.indexOf('export function savedTab'));
-  assert.ok(guard.includes("activeTab === 'tune' && name !== 'tune' && hasUnsavedTune()"));
+  assert.ok(guard.includes('const guard = guards[activeTab];'));
+  assert.ok(guard.includes('guard && name !== activeTab && guard.hasUnsaved()'));
   assert.ok(guard.includes("choice === 'stay'"));
-  assert.match(guard, /if \(!\(await saveTune\(\)\)\) return;/);
-  assert.ok(guard.includes('discardTune()'));
+  assert.match(guard, /if \(!\(await guard\.save\(\)\)\) return;/);
+  assert.ok(guard.includes('await guard.discard();'));
   assert.ok(guard.includes('if (asking) return;'), 'taps during the question must be ignored');
+});
+
+test('the Tuning and SU tabs are the guarded ones, each with its own save and discard', () => {
+  assert.match(nav, /tune: \{ hasUnsaved: hasUnsavedTune, save: saveTune, discard: discardTune \}/);
+  assert.match(nav, /su: \{ hasUnsaved: hasUnsavedUname, save: saveUname, discard: discardUname \}/);
+  for (const other of ['status', 'paths', 'system']) {
+    assert.ok(!new RegExp(`\\b${other}: \\{ hasUnsaved`).test(nav), `${other} has nothing to save`);
+  }
+});
+
+test('the SU form counts as unsaved once it is edited, and not after it is applied or dropped', () => {
+  const page = read('src/pages/uname.ts');
+  assert.match(page, /export function hasUnsavedUname\(\): boolean \{\s*return dirty;/);
+  const save = page.slice(page.indexOf('export async function saveUname'), page.indexOf('export function initUname'));
+  assert.ok(save.includes('dirty = false;'), 'applying clears the edits');
+  const discard = page.slice(page.indexOf('export async function discardUname'), page.indexOf('/** Sends the form'));
+  assert.ok(discard.includes('dirty = false;') && discard.includes('await loadUname();'), 'dropping reads the saved values back');
+});
+
+test('a refused or failed apply reports false, so leaving is cancelled', () => {
+  const page = read('src/pages/uname.ts');
+  const save = page.slice(page.indexOf('export async function saveUname'), page.indexOf('export function initUname'));
+  assert.equal((save.match(/return false;/g) ?? []).length, 3, 'invalid text, unsupported kernel and a failing command');
+  assert.equal((save.match(/return true;/g) ?? []).length, 1);
+});
+
+test('the dialog text is not about one tab', () => {
+  const ru = read('src/logic/locales/ru.ts');
+  const en = read('src/logic/locales/en.ts');
+  assert.ok(!/'unsaved\.body':[^\n]*Тюнинг/.test(ru));
+  assert.ok(!/'unsaved\.body':[^\n]*Tuning/.test(en));
 });
 
 test('the dialog texts exist in the catalogs through data-i18n', () => {
