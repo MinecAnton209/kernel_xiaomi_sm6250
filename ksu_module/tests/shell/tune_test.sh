@@ -178,5 +178,45 @@ out=$(tune dump)
 check 'dump on a kernel with no tunables still lists every key' '7' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
 check 'dump on a kernel with no tunables has no values' '0' "$(printf '%s\n' "$out" | cut -f2,3 | tr -d '\t' | grep -c .)"
 
+new_tree defaults_before_snapshot
+check 'defaults prints nothing before a snapshot' '' "$(tune defaults)"
+check 'defaults exits zero before a snapshot' '0' "$(tune defaults > /dev/null 2>&1; echo $?)"
+
+new_tree snapshot
+check 'snapshot exits zero' '0' "$(tune snapshot > /dev/null 2>&1; echo $?)"
+out=$(tune defaults)
+check 'defaults lists every key after a snapshot' '7' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+check 'default of a bracket list' "$(printf 'io_scheduler\tdeadline')" "$(printf '%s\n' "$out" | grep '^io_scheduler')"
+check 'default of THP' "$(printf 'thp\tmadvise')" "$(printf '%s\n' "$out" | grep '^thp')"
+check 'default of a plain list' "$(printf 'tcp_congestion\tcubic')" "$(printf '%s\n' "$out" | grep '^tcp_congestion')"
+check 'default of an integer' "$(printf 'swappiness\t60')" "$(printf '%s\n' "$out" | grep '^swappiness')"
+check 'defaults are in the order of the keys' "$(tune keys)" "$(printf '%s\n' "$out" | cut -f1)"
+
+tune set tcp_congestion bbr
+tune set swappiness 30
+check 'set does not change the defaults' "$out" "$(tune defaults)"
+check 'set changes the active value' 'bbr' "$(tune get tcp_congestion)"
+
+tune snapshot
+check 'a later snapshot takes the values of that moment' "$(printf 'tcp_congestion\tbbr')" "$(tune defaults | grep '^tcp_congestion')"
+
+new_tree snapshot_missing_node
+rm -f "$R/proc/sys/net/ipv4/tcp_congestion_control"
+tune snapshot
+check 'snapshot skips a key the kernel lacks' '6' "$(tune defaults | wc -l | tr -d ' ')"
+check 'and leaves no line for it' '0' "$(tune defaults | grep -c '^tcp_congestion')"
+check 'snapshot still exits zero' '0' "$(tune snapshot > /dev/null 2>&1; echo $?)"
+
+new_tree snapshot_keeps_old_when_missing
+tune snapshot
+rm -f "$R/proc/sys/vm/swappiness"
+tune snapshot
+check 'a key that vanished keeps its earlier default' "$(printf 'swappiness\t60')" "$(tune defaults | grep '^swappiness')"
+
+new_tree snapshot_empty_kernel
+rm -rf "$R/sys" "$R/proc"
+check 'snapshot on a kernel with no tunables exits zero' '0' "$(tune snapshot > /dev/null 2>&1; echo $?)"
+check 'and remembers nothing' '' "$(tune defaults)"
+
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

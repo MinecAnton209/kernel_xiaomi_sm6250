@@ -21,6 +21,16 @@ export function parseDump(stdout: string): Map<string, TuneState> {
   return states;
 }
 
+/** Parses `tune.sh defaults`: one `key<TAB>value` line per setting whose boot value was remembered. */
+export function parseDefaults(stdout: string): Map<string, string> {
+  const defaults = new Map<string, string>();
+  for (const line of stdout.split('\n')) {
+    const [key, value = ''] = line.split('\t');
+    if (key && key.trim() !== '' && value.trim() !== '') defaults.set(key.trim(), value.trim());
+  }
+  return defaults;
+}
+
 /** A numeric tunable reports its bounds as `range MIN MAX` instead of a list of values. */
 export function rangeOf(options: readonly string[]): { min: number; max: number } | undefined {
   if (options.length !== 3 || options[0] !== 'range') return undefined;

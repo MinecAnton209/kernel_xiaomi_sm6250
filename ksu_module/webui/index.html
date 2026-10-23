@@ -152,6 +152,14 @@
           </div>
           <p class="hint" data-i18n="tune.hint"></p>
           <div class="tune-list" id="tuneList"></div>
+          <div class="tune-actions" id="tuneActions" role="group" data-i18n-aria-label="tune.actionsLabel" hidden>
+            <span class="tune-pending" id="tunePending" aria-live="polite"></span>
+            <div class="row end">
+              <m3e-button id="tuneDefaults" variant="text" data-i18n="tune.defaults"></m3e-button>
+              <m3e-button id="tuneReset" variant="outlined" data-i18n="tune.reset"></m3e-button>
+              <m3e-button id="tuneSave" variant="filled" data-i18n="tune.save"></m3e-button>
+            </div>
+          </div>
         </section>
 
         <section class="card" id="tuneHelp" hidden>
@@ -215,6 +223,22 @@
         <span class="nav-label">SU</span>
       </button>
     </nav>
+
+    <m3e-dialog id="unsavedDialog" alert>
+      <span slot="header" data-i18n="unsaved.title"></span>
+      <p data-i18n="unsaved.body"></p>
+      <div slot="actions" end>
+        <m3e-button variant="text" autofocus>
+          <m3e-dialog-action return-value="stay" data-i18n="unsaved.stay"></m3e-dialog-action>
+        </m3e-button>
+        <m3e-button variant="text">
+          <m3e-dialog-action return-value="discard" data-i18n="unsaved.discard"></m3e-dialog-action>
+        </m3e-button>
+        <m3e-button variant="filled">
+          <m3e-dialog-action return-value="save" data-i18n="unsaved.save"></m3e-dialog-action>
+        </m3e-button>
+      </div>
+    </m3e-dialog>
 
     <div id="toast" role="status"></div>
 

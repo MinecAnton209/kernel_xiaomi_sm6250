@@ -387,6 +387,41 @@ m3e-skeleton {
   width: 100%;
 }
 
+.tune-row.changed > strong::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-inline-start: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  vertical-align: middle;
+}
+
+/* Stays above the navbar while the long list scrolls, so Save is always in reach. */
+.tune-actions {
+  position: sticky;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 18px -8px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  background: var(--surface-highest);
+}
+
+.tune-actions[hidden] {
+  display: none;
+}
+
+.tune-pending {
+  min-height: 1.2em;
+  font-size: 13px;
+  color: var(--on-surface-variant);
+}
+
 .tune-select {
   width: 100%;
   --m3e-form-field-width: 100%;

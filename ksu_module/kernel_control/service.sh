@@ -19,6 +19,9 @@ BYPASS_PATH=$(cat "$CONF_DIR/bypass_path")
 # The SMB5 driver resets bypass_charging on every boot, so the saved state is written back here.
 [ -n "$BYPASS_PATH" ] && [ "$(cat "$CONF_DIR/bypass" 2>/dev/null)" = "1" ] && printf '%s' 1 > "$BYPASS_PATH"
 
+# The values the kernel booted with, before restore changes them; the Tuning tab's Reset returns to these.
+"$MODDIR/bin/tune.sh" snapshot
+
 # HACK: vendor post_boot scripts may set governors right after boot_completed and would
 # overwrite the saved values, so tuning is restored after a short delay. It runs in the
 # background so the SUSFS paths below are not held up by it.

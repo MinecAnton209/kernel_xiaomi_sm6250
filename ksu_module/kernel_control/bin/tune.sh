@@ -6,11 +6,14 @@
 #   tune.sh dump              one tab separated line per key: key, active value, options
 #   tune.sh set KEY VALUE     validate, write to the kernel and remember for the next boot
 #   tune.sh restore           re-apply every remembered value
+#   tune.sh snapshot          remember the active values as the defaults of this boot
+#   tune.sh defaults          one tab separated line per remembered default: key, value
 # TUNE_ROOT and TUNE_CONF_DIR exist so the tests can run against a fake sysfs tree.
 . "$(cd "$(dirname "$0")/.." && pwd)/config.sh"
 ROOT=${TUNE_ROOT:-}
 CONF_DIR=${TUNE_CONF_DIR:-$CONF_DIR}
 SAVE_DIR="$CONF_DIR/tune"
+BOOT_DIR="$CONF_DIR/tune_boot"
 
 KEYS="io_scheduler cpu_governor_little cpu_governor_big gpu_governor tcp_congestion thp swappiness"
 
@@ -174,6 +177,27 @@ restore() {
 	return 0
 }
 
+# Called by service.sh before restore, while the kernel still has the values it booted with;
+# the WebUI's Reset button puts these back. A key the kernel lacks leaves no file.
+snapshot() {
+	mkdir -p "$BOOT_DIR"
+	for key in $KEYS; do
+		meta "$key" || continue
+		cur=$(current 2> /dev/null) || continue
+		[ -n "$cur" ] && printf '%s' "$cur" > "$BOOT_DIR/$key"
+	done
+	return 0
+}
+
+defaults() {
+	for key in $KEYS; do
+		[ -f "$BOOT_DIR/$key" ] || continue
+		read -r val < "$BOOT_DIR/$key"
+		printf '%s\t%s\n' "$key" "$val"
+	done
+	return 0
+}
+
 # The WebUI reads every key at once: one root shell instead of two per key keeps the
 # Tuning tab from stalling while a dozen shells start. A key the kernel lacks gets
 # empty fields.
@@ -210,8 +234,14 @@ set)
 restore)
 	restore
 	;;
+snapshot)
+	snapshot
+	;;
+defaults)
+	defaults
+	;;
 *)
-	echo "usage: $0 keys|get KEY|options KEY|dump|set KEY VALUE|restore" >&2
+	echo "usage: $0 keys|get KEY|options KEY|dump|set KEY VALUE|restore|snapshot|defaults" >&2
 	exit 1
 	;;
 esac

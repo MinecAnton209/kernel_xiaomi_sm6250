@@ -72,6 +72,13 @@ for release tags (`vX.Y.Z`).
   language follows the one of the phone (English for any other). The tuning
   help, the charging chips, the toasts and the update panel are translated as
   well. The download log lines written by `fetch.sh` are still Russian.
+- Kernel Control: the Tuning tab no longer applies a value the moment it is
+  picked. The choices wait for Save, which applies and remembers them in one
+  shell; Reset drops them, and Defaults fills in the values the kernel booted
+  with (`tune.sh snapshot` records them before the saved values are restored,
+  and `tune.sh defaults` prints them). Changed settings are marked, a counter
+  shows how many are pending, and leaving the tab with unsaved choices opens
+  an M3E dialog to save, discard or stay.
 - CI: a module built from anything but a release tag gets the first seven
   characters of the commit appended to its version (`v1.1.0-e34731a`), so the
   module on a phone can be traced to its commit. A release keeps the plain
