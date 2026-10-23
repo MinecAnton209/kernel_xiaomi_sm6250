@@ -1,5 +1,6 @@
 import '@m3e/web/button';
 import '@m3e/web/switch';
+import '@m3e/web/checkbox';
 import '@m3e/web/loading-indicator';
 import '@m3e/web/progress-indicator';
 import '@m3e/web/skeleton';
