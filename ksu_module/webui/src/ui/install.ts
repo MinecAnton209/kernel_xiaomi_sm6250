@@ -1,5 +1,5 @@
 import { byId } from '../core/dom';
-import { t } from '../logic/i18n';
+import { t, type MessageKey } from '../logic/i18n';
 import { barState, type BarState, type Progress } from '../logic/progressMath';
 
 export type Step = 'download' | 'verify' | 'install';
@@ -24,6 +24,14 @@ let lastSample: Sample | null = null;
 let speed = 0;
 let onCancel: (() => void) | null = null;
 let onRetry: (() => void) | null = null;
+let onFlash: (() => void) | null = null;
+let onReboot: (() => void) | null = null;
+
+/** Buttons a finished panel can offer besides Done. */
+export interface SuccessActions {
+  flash?: () => void;
+  reboot?: () => void;
+}
 
 function formatMib(bytes: number): string {
   return (bytes / MIB).toFixed(1);
@@ -62,10 +70,20 @@ function setIndicator(state: BarState): void {
   }
 }
 
-function setButtons(cancel: boolean, retry: boolean, done: boolean): void {
+function setButtons(cancel: boolean, retry: boolean, done: boolean, extras: SuccessActions = {}): void {
   byId('installCancel').hidden = !cancel;
   byId('installRetry').hidden = !retry;
   byId('installDone').hidden = !done;
+  byId('installFlash').hidden = !extras.flash;
+  byId('installReboot').hidden = !extras.reboot;
+}
+
+/** Shows the installer's output while it is still running; an empty text hides the box. */
+export function setLog(text: string): void {
+  const log = byId('installLog');
+  log.hidden = text === '';
+  log.textContent = text;
+  log.scrollTop = log.scrollHeight;
 }
 
 export interface PanelOptions {
@@ -81,6 +99,8 @@ export function openPanel(options: PanelOptions): void {
   speed = 0;
   onCancel = options.onCancel;
   onRetry = options.onRetry;
+  onFlash = null;
+  onReboot = null;
 
   const panel = byId('installPanel');
   // Restart the entrance animation when the panel is reopened for a retry.
@@ -101,7 +121,8 @@ export function openPanel(options: PanelOptions): void {
   panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-export function setStep(step: Step, steps: readonly Step[]): void {
+/** `message` replaces the module installer's text, for an install step that is something else, such as flashing. */
+export function setStep(step: Step, steps: readonly Step[], message?: MessageKey): void {
   setSteps(step, steps);
   if (step === 'verify') {
     setIndicator({ mode: 'indeterminate' });
@@ -109,7 +130,7 @@ export function setStep(step: Step, steps: readonly Step[]): void {
     byId('installPct').textContent = '100%';
   } else if (step === 'install') {
     setIndicator({ mode: 'indeterminate' });
-    byId('installMeta').textContent = t('install.installing');
+    byId('installMeta').textContent = t(message ?? 'install.installing');
     byId('installPct').textContent = '';
     setButtons(false, false, false);
   }
@@ -143,7 +164,9 @@ export function setProgress(progress: Progress, threads: number): void {
   byId('installMeta').textContent = parts.join(' · ');
 }
 
-export function showSuccess(title: string, detail: string): void {
+export function showSuccess(title: string, detail: string, actions: SuccessActions = {}): void {
+  onFlash = actions.flash ?? null;
+  onReboot = actions.reboot ?? null;
   setState('success');
   setIndicator(FULL);
   setSteps(null, ['download', 'verify', 'install']);
@@ -151,7 +174,7 @@ export function showSuccess(title: string, detail: string): void {
   byId('installSub').textContent = detail;
   byId('installPct').textContent = '';
   byId('installMeta').textContent = '';
-  setButtons(false, false, true);
+  setButtons(false, false, true, actions);
 }
 
 export function showError(title: string, detail: string, log: string, canRetry: boolean): void {
@@ -172,10 +195,14 @@ export function closePanel(): void {
   byId('installPanel').hidden = true;
   onCancel = null;
   onRetry = null;
+  onFlash = null;
+  onReboot = null;
 }
 
 export function initPanel(): void {
   byId('installCancel').addEventListener('click', () => onCancel?.());
   byId('installRetry').addEventListener('click', () => onRetry?.());
+  byId('installFlash').addEventListener('click', () => onFlash?.());
+  byId('installReboot').addEventListener('click', () => onReboot?.());
   byId('installDone').addEventListener('click', closePanel);
 }

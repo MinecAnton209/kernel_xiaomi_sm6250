@@ -127,6 +127,8 @@
             <div class="row end">
               <m3e-button id="installCancel" variant="text" data-i18n="install.cancel"></m3e-button>
               <m3e-button id="installRetry" variant="tonal" data-i18n="install.retry" hidden></m3e-button>
+              <m3e-button id="installFlash" variant="tonal" data-i18n="flash.button" hidden></m3e-button>
+              <m3e-button id="installReboot" variant="tonal" data-i18n="flash.reboot" hidden></m3e-button>
               <m3e-button id="installDone" variant="filled" data-i18n="install.done" hidden></m3e-button>
             </div>
           </div>
@@ -283,6 +285,19 @@
         </m3e-button>
         <m3e-button variant="filled">
           <m3e-dialog-action return-value="save" data-i18n="unsaved.save"></m3e-dialog-action>
+        </m3e-button>
+      </div>
+    </m3e-dialog>
+
+    <m3e-dialog id="flashDialog" alert>
+      <span slot="header" data-i18n="flash.confirmTitle"></span>
+      <p id="flashDialogBody"></p>
+      <div slot="actions" end>
+        <m3e-button variant="text" autofocus>
+          <m3e-dialog-action return-value="cancel" data-i18n="flash.confirmCancel"></m3e-dialog-action>
+        </m3e-button>
+        <m3e-button variant="filled">
+          <m3e-dialog-action return-value="flash" data-i18n="flash.confirmFlash"></m3e-dialog-action>
         </m3e-button>
       </div>
     </m3e-dialog>

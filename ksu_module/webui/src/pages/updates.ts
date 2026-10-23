@@ -1,10 +1,22 @@
-import { MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confFile, quote } from '../core/config';
+import { FLASH_KERNEL, FLASH_OUT, MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confFile, quote } from '../core/config';
 import { byId, busy, type SwitchElement, type Togglable } from '../core/dom';
 import { exec, run } from '../core/ksu';
 import { toast } from '../core/toast';
+import { flashOutcome, lastLogLine, parseFlashPoll } from '../logic/flashStatus';
 import { t } from '../logic/i18n';
 import { parseProgress } from '../logic/progressMath';
-import { closePanel, initPanel, openPanel, setProgress, setStep, showError, showSuccess, type Step } from '../ui/install';
+import { confirmFlash } from '../ui/flashDialog';
+import {
+  closePanel,
+  initPanel,
+  openPanel,
+  setLog,
+  setProgress,
+  setStep,
+  showError,
+  showSuccess,
+  type Step,
+} from '../ui/install';
 import { renderMarkdown } from '../ui/markdown';
 import { hideSkeleton, showSkeleton } from '../ui/skeleton';
 
@@ -430,7 +442,75 @@ async function downloadKernel(asset: ManifestAsset, target: string): Promise<voi
       return;
     }
     await cleanupTransfer(target, false);
-    showSuccess(t('install.kernelDone'), t('install.kernelDoneHint', { target }));
+    showSuccess(t('install.kernelDone'), t('install.kernelDoneHint', { target }), {
+      flash: () => void flashKernel(target),
+    });
+  } finally {
+    setLocked(false);
+  }
+}
+
+const FLASH_TIMEOUT_MS = 15 * 60 * 1000;
+
+type FlashResult = { ok: true } | { ok: false; message: string; log: string };
+
+/** Starts flash_kernel.sh detached and follows its state file and log until it ends. */
+async function runFlash(zip: string): Promise<FlashResult> {
+  const file = (ext: string) => quote(`${FLASH_OUT}.${ext}`);
+  await exec(`rm -f ${file('state')} ${file('log')} ${file('pid')}`);
+  const launch = await exec(`( sh ${quote(FLASH_KERNEL)} ${quote(zip)} ${quote(FLASH_OUT)} ) </dev/null >/dev/null 2>&1 &`);
+  if (launch.errno !== 0) {
+    return { ok: false, message: launch.stderr.trim() || t('flash.startFailed'), log: '' };
+  }
+
+  const poll =
+    `pid=$(cat ${file('pid')} 2>/dev/null); alive=0; [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && alive=1; ` +
+    `echo "$(cat ${file('state')} 2>/dev/null)|$alive"; tail -n 40 ${file('log')} 2>/dev/null`;
+  const startedAt = Date.now();
+  let seenAlive = false;
+  while (Date.now() - startedAt < FLASH_TIMEOUT_MS) {
+    await sleep(POLL_MS);
+    const status = parseFlashPoll((await exec(poll)).stdout);
+    if (status.alive) seenAlive = true;
+    setLog(status.log);
+    switch (flashOutcome(status, seenAlive, Date.now() - startedAt)) {
+      case 'done':
+        return { ok: true };
+      case 'error':
+        return { ok: false, message: lastLogLine(status.log) || t('flash.failed'), log: status.log };
+      case 'died':
+        return { ok: false, message: t('flash.exited'), log: status.log };
+      case 'running':
+        break;
+    }
+  }
+  // The script is left alone: killing an installer halfway through the boot partition is worse than waiting.
+  return { ok: false, message: t('flash.tooLong'), log: '' };
+}
+
+/** Writes a downloaded kernel zip to the boot partition, after the user confirmed it. */
+async function flashKernel(zip: string): Promise<void> {
+  if (transferring) return;
+  if (!(await confirmFlash(zip.slice(zip.lastIndexOf('/') + 1)))) return;
+
+  const steps: readonly Step[] = ['install'];
+  setLocked(true);
+  openPanel({
+    title: t('flash.title'),
+    subtitle: zip.slice(zip.lastIndexOf('/') + 1),
+    steps,
+    // Stopping the installer halfway could leave a broken boot image, so there is no cancel button.
+    onCancel: () => undefined,
+    onRetry: () => void flashKernel(zip),
+  });
+  setStep('install', steps, 'flash.running');
+  try {
+    const result = await runFlash(zip);
+    if (result.ok) {
+      showSuccess(t('flash.done'), t('flash.doneHint'), { reboot: () => void exec('reboot') });
+    } else {
+      showError(t('flash.failed'), result.message, result.log, true);
+    }
   } finally {
     setLocked(false);
   }

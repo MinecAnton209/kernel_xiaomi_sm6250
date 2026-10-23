@@ -96,6 +96,13 @@ for release tags (`vX.Y.Z`).
   `uname_scope`, because such a kernel would spoof for every process. The
   bundled `ksu_susfs` client knows `set_uname_scope`. `/proc/version` and
   `/proc/sys/kernel/osrelease` still show the real version.
+- Kernel Control: a downloaded kernel can be flashed from the update panel
+  with "Flash now", after a confirmation dialog. `bin/flash_kernel.sh` runs
+  the AnyKernel3 installer inside the zip with the KernelSU busybox, the same
+  way the manager does, and AnyKernel3 itself checks the device name. The
+  installer output is shown live, a flash cannot be cancelled once it has
+  started, and a Reboot button appears when it succeeds. The texts also say
+  that the zip can be flashed in the KernelSU manager or through recovery.
 - CI: a module built from anything but a release tag gets the first seven
   characters of the commit appended to its version (`v1.1.0-e34731a`), so the
   module on a phone can be traced to its commit. A release keeps the plain
