@@ -72,6 +72,10 @@ for release tags (`vX.Y.Z`).
   language follows the one of the phone (English for any other). The tuning
   help, the charging chips, the toasts and the update panel are translated as
   well. The download log lines written by `fetch.sh` are still Russian.
+- CI: a module built from anything but a release tag gets the first seven
+  characters of the commit appended to its version (`v1.1.0-e34731a`), so the
+  module on a phone can be traced to its commit. A release keeps the plain
+  version from `module.prop`.
 - Kernel Control: the loading indicator of the update check is no longer
   squeezed by its flex row (it shrank from 38 to 32 px on a phone and its
   round container cut the corners off the shapes); the spinner and the check

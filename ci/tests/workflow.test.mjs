@@ -156,3 +156,40 @@ test('what is kept never overlaps with what the skipped build would have produce
     assert.ok(!matches(name, KERNEL_KEEP), `${name} must not be kept when the kernel is skipped`);
   }
 });
+
+const stampIndex = lines.findIndex((line) => line.includes('name: Add the commit to the version of a non-release build'));
+const stampStep = stampIndex === -1 ? [] : lines.slice(stampIndex, lines.findIndex((line, i) => i > stampIndex && /^      - name:/.test(line)));
+
+test('the module job stamps the commit into the version before it packages the zip', () => {
+  assert.notEqual(stampIndex, -1, 'no step stamps the version');
+  const packageIndex = lines.findIndex((line) => line.includes('name: Package KernelSU module'));
+  assert.ok(stampIndex < packageIndex, 'the version must be stamped before the zip is made');
+  const moduleStart = lines.findIndex((line) => line === '  module:');
+  const moduleEnd = lines.findIndex((line, i) => i > moduleStart && /^  [a-z]+:$/.test(line));
+  assert.ok(stampIndex > moduleStart && stampIndex < moduleEnd, 'the step is not in the module job');
+});
+
+test('the stamp step runs the script on the module.prop that gets zipped, with the commit sha', () => {
+  const run = stampStep.find((line) => line.trim().startsWith('run:'));
+  assert.ok(run, 'the step has no run line');
+  assert.match(run, /ci\/stamp-module-version\.sh ksu_module\/kernel_control\/module\.prop "\$GITHUB_SHA"/);
+});
+
+test('only a build that is not a release gets the commit in its version', () => {
+  const line = stampStep.find((candidate) => candidate.trim().startsWith('if:'));
+  assert.ok(line, 'the step has no condition');
+  const condition = line.trim().replace(/^if: "/, '').replace(/"$/, '');
+  assert.equal(evaluate(condition, { ref: TAG }), false, 'a release tag keeps the plain version');
+  assert.equal(evaluate(condition, { ref: 'refs/tags/v1.1.0' }), false);
+  assert.equal(evaluate(condition, { ref: BRANCH }), true, 'a 16.0 push is stamped');
+  assert.equal(evaluate(condition, { ref: 'refs/heads/feature' }), true, 'a feature branch is stamped');
+  assert.equal(evaluate(condition, { eventName: 'pull_request', ref: 'refs/pull/7/merge' }), true);
+  assert.equal(evaluate(condition, { eventName: 'workflow_dispatch' }), true);
+});
+
+test('the stamp condition agrees with the one that decides a release build of the module', () => {
+  // The module job treats refs/tags/v* as a release, so the stamp must use the same prefix.
+  assert.ok(conditions.module.includes("startsWith(github.ref, 'refs/tags/v')"));
+  const line = stampStep.find((candidate) => candidate.trim().startsWith('if:'));
+  assert.ok(line?.includes("startsWith(github.ref, 'refs/tags/v')"));
+});

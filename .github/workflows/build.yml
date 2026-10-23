@@ -132,6 +132,12 @@ jobs:
         working-directory: ksu_module/webui
         run: pnpm build
 
+      # A release keeps the version of module.prop; any other build gets the commit appended
+      # (v1.1.0-e34731a), so a module on the phone can be traced to its commit.
+      - name: Add the commit to the version of a non-release build
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        run: bash ci/stamp-module-version.sh ksu_module/kernel_control/module.prop "$GITHUB_SHA"
+
       - name: Package KernelSU module
         working-directory: ksu_module/kernel_control
         run: zip -r9 "../kernel_control-${{ github.run_number }}.zip" .
