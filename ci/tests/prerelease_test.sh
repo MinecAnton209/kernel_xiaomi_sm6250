@@ -191,6 +191,11 @@ check 'clean with missing arguments fails' '1' "$(run clean > /dev/null 2>&1; ec
 if command -v jq > /dev/null 2>&1; then
   new_release manifest
   new_dir manifest kernel_control-11.zip
+  # The new module is a real zip, so that the manifest can read the version out of its module.prop.
+  mkdir -p "$WORK/manifest/module_src"
+  printf 'id=kernel_control\nversion=v1.1.0-7ae22c4\nbuild=11\n' > "$WORK/manifest/module_src/module.prop"
+  rm -f "$N/kernel_control-11.zip"
+  (cd "$WORK/manifest/module_src" && zip -q "$N/kernel_control-11.zip" module.prop)
   run gather unreleased "$KERNEL_KEEP" "$N" "$WORK/manifest/all"
   (cd "$ROOT" && REPO=o/r TAG=unreleased COMMIT=abc RUN_NUMBER=11 bash "$MANIFEST" Unreleased "$WORK/manifest/all" "$WORK/manifest/manifest.json")
   check 'the manifest lists the new module and the kept kernel assets' \
@@ -202,6 +207,15 @@ if command -v jq > /dev/null 2>&1; then
   check 'the manifest url points at the unreleased tag' \
     'https://github.com/o/r/releases/download/unreleased/miatoll-default-10.zip' \
     "$(jq -r '.assets[] | select(.name == "miatoll-default-10.zip") | .url' "$WORK/manifest/manifest.json")"
+  check 'the manifest names the version of the module zip' \
+    'v1.1.0-7ae22c4' \
+    "$(jq -r '.assets[] | select(.name == "kernel_control-11.zip") | .version' "$WORK/manifest/manifest.json")"
+  check 'a kernel asset has no version field' \
+    'false' \
+    "$(jq -r '.assets[] | select(.name == "miatoll-default-10.zip") | has("version")' "$WORK/manifest/manifest.json")"
+  check 'the other fields of the module entry are still there' \
+    'kernel_control-11.zip' \
+    "$(jq -r '.assets[] | select(.version != null) | .name' "$WORK/manifest/manifest.json")"
 else
   echo 'note: jq not installed, skipped the manifest checks'
 fi

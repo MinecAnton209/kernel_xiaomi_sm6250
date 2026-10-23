@@ -35,9 +35,27 @@ export function moduleIsCurrent(input: {
 }
 
 /**
- * What to call an offered build: its tag, or for the rolling pre-release the run number, since
- * "unreleased" says nothing about which build it is. Undefined means the caller shows the tag.
+ * The run number of an offered file when it comes from the rolling pre-release, whose tag names
+ * no version. Undefined for a tagged release.
  */
 export function rollingBuildNumber(tag: string, assetName: string): number | undefined {
   return tag.toLowerCase() === ROLLING_TAG ? buildNumberOf(assetName) : undefined;
+}
+
+/** How an offered file is named to the user. */
+export type Offer =
+  | { kind: 'version'; text: string }
+  | { kind: 'build'; number: number }
+  | { kind: 'tag'; text: string };
+
+/**
+ * What to call an offered file. Best is its own version (`v1.1.0-7ae22c4`, which the manifest takes
+ * from the module.prop inside the zip); then, for the rolling pre-release, its run number, because
+ * "unreleased" says nothing about which build it is; otherwise the tag.
+ */
+export function describeOffer(tag: string, assetName: string, version?: string | null): Offer {
+  const own = (version ?? '').trim();
+  if (own !== '') return { kind: 'version', text: own };
+  const number = rollingBuildNumber(tag, assetName);
+  return number === undefined ? { kind: 'tag', text: tag } : { kind: 'build', number };
 }

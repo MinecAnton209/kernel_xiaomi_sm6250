@@ -3,7 +3,13 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildNumberOf, installedBuild, moduleIsCurrent, rollingBuildNumber } from '../../webui/src/logic/buildInfo.ts';
+import {
+  buildNumberOf,
+  describeOffer,
+  installedBuild,
+  moduleIsCurrent,
+  rollingBuildNumber,
+} from '../../webui/src/logic/buildInfo.ts';
 
 const WEBUI = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'webui');
 const updates = readFileSync(join(WEBUI, 'src', 'pages', 'updates.ts'), 'utf8');
@@ -79,9 +85,41 @@ test('only the rolling pre-release is shown by its run number', () => {
   assert.equal(rollingBuildNumber('unreleased', 'manifest.json'), undefined);
 });
 
+test('an offered file is named by its own version when the manifest has one', () => {
+  assert.deepEqual(describeOffer('unreleased', 'kernel_control-52.zip', 'v1.1.0-7ae22c4'), {
+    kind: 'version',
+    text: 'v1.1.0-7ae22c4',
+  });
+  assert.deepEqual(describeOffer('v1.1.0', 'kernel_control-v1.1.0.zip', 'v1.1.0'), { kind: 'version', text: 'v1.1.0' });
+});
+
+test('without a version the rolling pre-release is named by its run number', () => {
+  for (const version of [undefined, null, '', '   ']) {
+    assert.deepEqual(describeOffer('unreleased', 'kernel_control-52.zip', version), { kind: 'build', number: 52 });
+  }
+  assert.deepEqual(describeOffer('unreleased', 'miatoll-default-52.zip'), { kind: 'build', number: 52 });
+});
+
+test('without a version a tagged release is named by its tag, and so is a file with no run number', () => {
+  assert.deepEqual(describeOffer('v1.1.0', 'kernel_control-v1.1.0.zip'), { kind: 'tag', text: 'v1.1.0' });
+  assert.deepEqual(describeOffer('unreleased', 'something.zip'), { kind: 'tag', text: 'unreleased' });
+});
+
+test('the version is trimmed', () => {
+  assert.deepEqual(describeOffer('unreleased', 'kernel_control-52.zip', '  v1.1.0-7ae22c4\n'), {
+    kind: 'version',
+    text: 'v1.1.0-7ae22c4',
+  });
+});
+
+test('the manifest asset can carry a version and the page passes it on', () => {
+  assert.match(updates, /version\?: string;/);
+  assert.ok(updates.includes('describeOffer(tag, asset.name, asset.version)'));
+});
+
 test('the chips never show the word unreleased: both go through offeredName', () => {
-  assert.ok(updates.includes("t('updates.module.available', { current: label, tag: offeredName(loaded.tag, moduleAsset.name) })"));
-  assert.ok(updates.includes("t('updates.kernel.available', { tag: offeredName(loaded.tag, kernelAsset.name) })"));
+  assert.ok(updates.includes("t('updates.module.available', { current: label, tag: offeredName(loaded.tag, moduleAsset) })"));
+  assert.ok(updates.includes("t('updates.kernel.available', { tag: offeredName(loaded.tag, kernelAsset) })"));
   assert.ok(!/updates\.(module|kernel)\.available'[^)]*tag: loaded\.tag/.test(updates), 'a chip still shows the raw tag');
 });
 

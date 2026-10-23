@@ -125,6 +125,12 @@ for release tags (`vX.Y.Z`).
   manager itself runs (`svc power reboot`, with `reboot` as a fallback). With
   "Later" a Reboot button stays on the panel, and a failed install or flash
   never asks.
+- Kernel Control: the update chip names an offered module by its own version
+  (`module: v1.1.0-85e8d5f → v1.1.0-7ae22c4`). `manifest.json` now has a
+  `version` for a module zip, which `ci/zip-version.sh` reads from the
+  `module.prop` inside the zip, so a module kept from an earlier run keeps its
+  own commit. Without a version (a manifest from before this change, or the
+  kernel zips) the chip falls back to `build 52`.
 - CI: a module built from anything but a release tag gets the first seven
   characters of the commit appended to its version (`v1.1.0-e34731a`), so the
   module on a phone can be traced to its commit. A release keeps the plain

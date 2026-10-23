@@ -17,12 +17,15 @@ assets=$(
   for file in "$assets_dir"/*; do
     name=$(basename "$file")
     [ "$name" = "manifest.json" ] && continue
+    # A module zip carries its own version (v1.1.0-7ae22c4); a zip kept from an earlier run keeps its own.
     jq -n \
       --arg name "$name" \
       --arg url "https://github.com/${REPO}/releases/download/${TAG}/${name}" \
       --argjson size "$(stat -c %s "$file")" \
       --arg sha256 "$(sha256sum "$file" | cut -d' ' -f1)" \
-      '{name: $name, url: $url, size: $size, sha256: $sha256}'
+      --arg version "$(bash "$(dirname "${BASH_SOURCE[0]}")/zip-version.sh" "$file")" \
+      '{name: $name, url: $url, size: $size, sha256: $sha256}
+        + (if $version == "" then {} else {version: $version} end)'
   done | jq -s '.'
 )
 

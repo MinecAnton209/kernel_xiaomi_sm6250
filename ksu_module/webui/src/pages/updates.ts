@@ -2,7 +2,7 @@ import { FLASH_KERNEL, FLASH_OUT, MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confF
 import { byId, busy, type SwitchElement, type Togglable } from '../core/dom';
 import { exec, rebootPhone, run } from '../core/ksu';
 import { toast } from '../core/toast';
-import { installedBuild, moduleIsCurrent, rollingBuildNumber } from '../logic/buildInfo';
+import { describeOffer, installedBuild, moduleIsCurrent } from '../logic/buildInfo';
 import { resolveSha256 } from '../logic/checksum';
 import { flashOutcome, lastLogLine, parseFlashPoll } from '../logic/flashStatus';
 import { t } from '../logic/i18n';
@@ -53,6 +53,8 @@ interface ManifestAsset {
   url: string;
   size: number;
   sha256: string;
+  /** The version in the module.prop of a module zip (`v1.1.0-7ae22c4`); other files have none. */
+  version?: string;
 }
 
 interface Manifest {
@@ -126,10 +128,10 @@ async function installed(): Promise<{ version: string; build: number | undefined
   return { version, build: installedBuild(prop, recorded) };
 }
 
-/** A tag says which version it is; the rolling pre-release's tag does not, so its run number is shown. */
-function offeredName(tag: string, assetName: string): string {
-  const number = rollingBuildNumber(tag, assetName);
-  return number === undefined ? tag : t('updates.build', { number });
+/** The file's own version when the manifest has one, else the run number for the rolling pre-release, else the tag. */
+function offeredName(tag: string, asset: ManifestAsset): string {
+  const offer = describeOffer(tag, asset.name, asset.version);
+  return offer.kind === 'build' ? t('updates.build', { number: offer.number }) : offer.text;
 }
 
 export async function loadChannel(): Promise<Channel> {
@@ -223,7 +225,7 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
     setChip(
       'moduleStatus',
       moduleUpdate
-        ? t('updates.module.available', { current: label, tag: offeredName(loaded.tag, moduleAsset.name) })
+        ? t('updates.module.available', { current: label, tag: offeredName(loaded.tag, moduleAsset) })
         : t('updates.module.current', { current: label }),
       moduleUpdate ? 'update' : 'ok',
     );
@@ -232,7 +234,7 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
   const kernelAsset = findAsset(loaded, /^miatoll-default-.*\.zip$/);
   setChip(
     'kernelStatus',
-    kernelAsset ? t('updates.kernel.available', { tag: offeredName(loaded.tag, kernelAsset.name) }) : t('updates.kernel.noBuild'),
+    kernelAsset ? t('updates.kernel.available', { tag: offeredName(loaded.tag, kernelAsset) }) : t('updates.kernel.noBuild'),
     kernelAsset ? 'update' : 'off',
   );
   setActions(moduleUpdate, Boolean(kernelAsset));
