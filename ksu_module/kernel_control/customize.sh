@@ -24,6 +24,8 @@ set_perm "$MODPATH/bin/spoof.sh" 0 0 0755
 set_perm "$MODPATH/bin/debug.sh" 0 0 0755
 set_perm "$MODPATH/bin/sensors.sh" 0 0 0755
 set_perm "$MODPATH/bin/profile.sh" 0 0 0755
+set_perm "$MODPATH/bin/logger.sh" 0 0 0755
+set_perm "$MODPATH/bin/kc_logger" 0 0 0755
 set_perm "$MODPATH/bin/flash_kernel.sh" 0 0 0755
 set_perm "$MODPATH/service.sh" 0 0 0755
 set_perm "$MODPATH/post-fs-data.sh" 0 0 0755

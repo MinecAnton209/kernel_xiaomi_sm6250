@@ -34,6 +34,9 @@ BYPASS_PATH=$(cat "$CONF_DIR/bypass_path")
 	"$MODDIR/bin/tune.sh" restore
 ) &
 
+# The history starts with boot so it has no gap; the WebUI restarts it when its settings change.
+"$MODDIR/bin/logger.sh" start > /dev/null 2>&1
+
 [ -f "$CONF_DIR/paths.txt" ] || exit 0
 while IFS= read -r path; do
 	[ -n "$path" ] && [ -e "$path" ] && "$BIN" add_sus_path "$path"
