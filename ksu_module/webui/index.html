@@ -184,6 +184,53 @@
             <span class="chip" id="susSuReady" data-i18n="su.deviceLoading"></span>
           </div>
         </section>
+
+        <section class="card" id="unameCard">
+          <h2 data-i18n="uname.title"></h2>
+          <p class="hint" data-i18n="uname.hint"></p>
+          <div class="chips">
+            <span class="chip" id="unameReal"></span>
+            <span class="chip off" id="unameUnsupported" data-i18n="uname.unsupported" hidden></span>
+          </div>
+          <div class="switch-row">
+            <span data-i18n="uname.switch"></span>
+            <m3e-switch id="unameSwitch"></m3e-switch>
+          </div>
+
+          <div class="uname-form" id="unameForm">
+            <m3e-form-field class="tune-select" variant="outlined" hide-subscript>
+              <label slot="label" for="unamePreset" data-i18n="uname.preset"></label>
+              <m3e-select id="unamePreset"></m3e-select>
+            </m3e-form-field>
+
+            <label class="field-label" for="unameRelease" data-i18n="uname.release"></label>
+            <input class="field" id="unameRelease" maxlength="64" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            <label class="field-label" for="unameVersion" data-i18n="uname.version"></label>
+            <input class="field" id="unameVersion" maxlength="64" autocomplete="off" autocapitalize="off" spellcheck="false" />
+
+            <m3e-form-field class="tune-select" variant="outlined" hide-subscript>
+              <label slot="label" for="unameScope" data-i18n="uname.scope"></label>
+              <m3e-select id="unameScope">
+                <m3e-option value="apps" data-i18n="uname.scopeApps"></m3e-option>
+                <m3e-option value="selected" data-i18n="uname.scopeSelected"></m3e-option>
+              </m3e-select>
+            </m3e-form-field>
+
+            <div class="uname-apps" id="unameAppsBlock" hidden>
+              <span class="field-label" data-i18n="uname.appsLabel"></span>
+              <div class="row">
+                <input class="field" id="unameAppInput" list="unamePackages" placeholder="com.example.app" autocomplete="off" autocapitalize="off" spellcheck="false" />
+                <m3e-button id="unameAddApp" variant="tonal" data-i18n="uname.addApp"></m3e-button>
+              </div>
+              <datalist id="unamePackages"></datalist>
+              <div class="list" id="unameApps"></div>
+            </div>
+
+            <div class="row end">
+              <m3e-button id="unameApply" variant="filled" data-i18n="uname.apply"></m3e-button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
 

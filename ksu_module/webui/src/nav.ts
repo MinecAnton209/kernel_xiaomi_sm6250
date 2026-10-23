@@ -4,6 +4,7 @@ import { refreshPaths } from './pages/paths';
 import { loadStatus } from './pages/status';
 import { loadSusSu } from './pages/su';
 import { loadSystem } from './pages/system';
+import { loadUname } from './pages/uname';
 import { discardTune, hasUnsavedTune, loadTune, prefetchTune, reloadTune, saveTune } from './pages/tune';
 import { hidePageSkeletons, showPageSkeletons } from './ui/skeleton';
 import { askUnsaved } from './ui/unsavedDialog';
@@ -13,7 +14,7 @@ const loaders: Record<string, () => Promise<void>> = {
   paths: refreshPaths,
   system: loadSystem,
   tune: loadTune,
-  su: loadSusSu,
+  su: () => Promise.all([loadSusSu(), loadUname()]).then(() => undefined),
 };
 
 // Opening a tab may use cached values; pulling to refresh must read the kernel again.

@@ -422,6 +422,33 @@ m3e-skeleton {
   color: var(--on-surface-variant);
 }
 
+.uname-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.uname-form .field {
+  flex: none;
+  width: 100%;
+}
+
+.field-label {
+  font-size: 13px;
+  color: var(--on-surface-variant);
+}
+
+.uname-apps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.uname-apps[hidden] {
+  display: none;
+}
+
 .tune-select {
   width: 100%;
   --m3e-form-field-width: 100%;

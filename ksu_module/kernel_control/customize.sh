@@ -19,4 +19,5 @@ fi
 set_perm "$MODPATH/bin/ksu_susfs" 0 0 0755
 set_perm "$MODPATH/bin/tune.sh" 0 0 0755
 set_perm "$MODPATH/bin/charge.sh" 0 0 0755
+set_perm "$MODPATH/bin/uname.sh" 0 0 0755
 set_perm "$MODPATH/service.sh" 0 0 0755

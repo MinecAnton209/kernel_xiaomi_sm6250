@@ -14,6 +14,7 @@
 #define CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY 0x55572
 #define CMD_SUSFS_ADD_TRY_UMOUNT 0x55580
 #define CMD_SUSFS_SET_UNAME 0x55590
+#define CMD_SUSFS_SET_UNAME_SCOPE 0x55591
 #define CMD_SUSFS_ENABLE_LOG 0x555a0
 #define CMD_SUSFS_SET_CMDLINE_OR_BOOTCONFIG 0x555b0
 #define CMD_SUSFS_ADD_OPEN_REDIRECT 0x555c0
@@ -28,6 +29,10 @@
 #define SUSFS_MAX_LEN_PATHNAME 256 // 256 should address many paths already unless you are doing some strange experimental stuff, then set your own desired length
 #define SUSFS_FAKE_CMDLINE_OR_BOOTCONFIG_SIZE 4096
 #define SUSFS_SHOW_BUF_LEN 512
+
+#define SUSFS_UNAME_MAX_APPIDS 64 /* apps a selected scope can name */
+#define SUSFS_UNAME_SCOPE_APPS 0 /* every app that has no su access */
+#define SUSFS_UNAME_SCOPE_SELECTED 1 /* only the apps named in the list, if they have no su access */
 
 #define TRY_UMOUNT_DEFAULT 0 /* used by susfs_try_umount() */
 #define TRY_UMOUNT_DETACH 1 /* used by susfs_try_umount() */

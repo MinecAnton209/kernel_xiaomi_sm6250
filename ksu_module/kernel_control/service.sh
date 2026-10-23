@@ -11,6 +11,8 @@ done
 
 [ -f "$CONF_DIR/log" ] && "$BIN" enable_log "$(cat "$CONF_DIR/log")"
 [ -f "$CONF_DIR/sus_su" ] && "$BIN" sus_su "$(cat "$CONF_DIR/sus_su")"
+# The version that apps see is kernel memory too. Boot has finished here, so pm can resolve the chosen apps.
+[ -f "$CONF_DIR/uname/enabled" ] && "$MODDIR/bin/uname.sh" apply > /dev/null 2>&1
 
 # The sysfs path depends on the device tree, so it is looked up once per boot and
 # the WebUI reads it from here. An empty file means the kernel has no bypass_charging.

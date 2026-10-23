@@ -162,6 +162,8 @@ static int susfs_show_features(void __user *arg)
 	len += scnprintf(buf + len, sizeof(buf) - len, "sus_kstat=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_SUS_KSTAT));
 	len += scnprintf(buf + len, sizeof(buf) - len, "try_umount=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_TRY_UMOUNT));
 	len += scnprintf(buf + len, sizeof(buf) - len, "spoof_uname=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_SPOOF_UNAME));
+	/* The module checks this before it relies on set_uname_scope; an older kernel would spoof for everyone. */
+	len += scnprintf(buf + len, sizeof(buf) - len, "uname_scope=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_SPOOF_UNAME));
 	len += scnprintf(buf + len, sizeof(buf) - len, "open_redirect=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_OPEN_REDIRECT));
 	len += scnprintf(buf + len, sizeof(buf) - len, "enable_log=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_ENABLE_LOG));
 	len += scnprintf(buf + len, sizeof(buf) - len, "sus_su=%d\n", IS_ENABLED(CONFIG_KSU_SUSFS_SUS_SU));
@@ -275,6 +277,8 @@ int susfs_ksu_dispatch(unsigned int cmd, void __user *arg)
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
 	case CMD_SUSFS_SET_UNAME:
 		return susfs_set_uname(arg);
+	case CMD_SUSFS_SET_UNAME_SCOPE:
+		return susfs_set_uname_scope(arg);
 #endif
 #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
 	case CMD_SUSFS_ENABLE_LOG: {

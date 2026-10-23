@@ -16,6 +16,7 @@ import { addPath, applyAll } from './pages/paths';
 import { setSusSu } from './pages/su';
 import { runUmount, setBypass, setLog, startLivePolling } from './pages/system';
 import { initTuneActions, initTuneHelp } from './pages/tune';
+import { initUname } from './pages/uname';
 import { initUpdates, loadChannel } from './pages/updates';
 import { pickLanguage, setLanguage } from './logic/i18n';
 import { initPullToRefresh } from './ui/pull';
@@ -31,6 +32,7 @@ function init(): void {
 
   initTuneHelp();
   initTuneActions();
+  initUname();
 
   if (!hasBridge()) {
     byId('noBridge').hidden = false;

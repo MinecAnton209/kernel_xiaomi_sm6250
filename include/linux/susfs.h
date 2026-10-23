@@ -97,6 +97,13 @@ struct st_susfs_uname {
 	char        release[__NEW_UTS_LEN+1];
 	char        version[__NEW_UTS_LEN+1];
 };
+
+/* Who sees the spoofed uname. An app id is uid % 100000, so one entry covers every user and work profile. */
+struct st_susfs_uname_scope {
+	int         scope;
+	int         count;
+	uid_t       appids[SUSFS_UNAME_MAX_APPIDS];
+};
 #endif
 
 /* open_redirect */
@@ -159,6 +166,7 @@ void susfs_auto_add_try_umount_for_bind_mount(struct path *path);
 /* spoof_uname */
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
 int susfs_set_uname(struct st_susfs_uname* __user user_info);
+int susfs_set_uname_scope(struct st_susfs_uname_scope* __user user_info);
 void susfs_spoof_uname(struct new_utsname* tmp);
 #endif
 /* set_log */

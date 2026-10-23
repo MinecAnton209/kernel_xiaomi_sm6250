@@ -653,10 +653,81 @@ out_free_pathname:
 
 /* spoof_uname */
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
+extern bool __ksu_is_allow_uid(uid_t uid);
+
+#define SUSFS_PER_USER_RANGE 100000
+#define SUSFS_FIRST_APP_ID 10000
+#define SUSFS_LAST_APP_ID 19999
+#define SUSFS_FIRST_ISOLATED_ID 90000
+#define SUSFS_LAST_ISOLATED_ID 99999
+
 static spinlock_t susfs_uname_spin_lock;
 static struct st_susfs_uname my_uname;
+static int my_uname_scope = SUSFS_UNAME_SCOPE_APPS;
+static uid_t my_uname_appids[SUSFS_UNAME_MAX_APPIDS];
+static int my_uname_appid_count;
 static void susfs_my_uname_init(void) {
 	memset(&my_uname, 0, sizeof(my_uname));
+	my_uname_scope = SUSFS_UNAME_SCOPE_APPS;
+	my_uname_appid_count = 0;
+}
+
+/* Only ordinary apps (and their isolated helper processes) are ever spoofed. Root, the shell and
+ * system services keep the real values, because the framework itself reads them. */
+static bool susfs_uid_is_app(uid_t appid) {
+	return (appid >= SUSFS_FIRST_APP_ID && appid <= SUSFS_LAST_APP_ID) ||
+		(appid >= SUSFS_FIRST_ISOLATED_ID && appid <= SUSFS_LAST_ISOLATED_ID);
+}
+
+/* Call with susfs_uname_spin_lock held. */
+static bool susfs_uname_applies_to(uid_t uid) {
+	uid_t appid = uid % SUSFS_PER_USER_RANGE;
+	int i;
+
+	if (!susfs_uid_is_app(appid))
+		return false;
+	/* Apps that were granted su always see the real kernel. */
+	if (__ksu_is_allow_uid(uid))
+		return false;
+	if (my_uname_scope == SUSFS_UNAME_SCOPE_APPS)
+		return true;
+	for (i = 0; i < my_uname_appid_count; i++) {
+		if (my_uname_appids[i] == appid)
+			return true;
+	}
+	return false;
+}
+
+int susfs_set_uname_scope(struct st_susfs_uname_scope* __user user_info) {
+	struct st_susfs_uname_scope info;
+	int i;
+
+	if (copy_from_user(&info, user_info, sizeof(struct st_susfs_uname_scope))) {
+		SUSFS_LOGE("failed copying from userspace.\n");
+		return 1;
+	}
+	if (info.scope != SUSFS_UNAME_SCOPE_APPS && info.scope != SUSFS_UNAME_SCOPE_SELECTED) {
+		SUSFS_LOGE("unknown scope: %d\n", info.scope);
+		return 1;
+	}
+	if (info.count < 0 || info.count > SUSFS_UNAME_MAX_APPIDS) {
+		SUSFS_LOGE("invalid app count: %d\n", info.count);
+		return 1;
+	}
+	for (i = 0; i < info.count; i++) {
+		if (!susfs_uid_is_app(info.appids[i])) {
+			SUSFS_LOGE("app id %u is not an app\n", info.appids[i]);
+			return 1;
+		}
+	}
+
+	spin_lock(&susfs_uname_spin_lock);
+	my_uname_scope = info.scope;
+	my_uname_appid_count = info.count;
+	memcpy(my_uname_appids, info.appids, info.count * sizeof(uid_t));
+	spin_unlock(&susfs_uname_spin_lock);
+	SUSFS_LOGI("uname scope: %d, apps: %d\n", info.scope, info.count);
+	return 0;
 }
 
 int susfs_set_uname(struct st_susfs_uname* __user user_info) {
@@ -666,6 +737,9 @@ int susfs_set_uname(struct st_susfs_uname* __user user_info) {
 		SUSFS_LOGE("failed copying from userspace.\n");
 		return 1;
 	}
+	/* The strings come from userspace, so make sure strcmp and strncpy stop. */
+	info.release[__NEW_UTS_LEN] = '\0';
+	info.version[__NEW_UTS_LEN] = '\0';
 
 	spin_lock(&susfs_uname_spin_lock);
 	if (!strcmp(info.release, "default")) {
@@ -685,10 +759,16 @@ int susfs_set_uname(struct st_susfs_uname* __user user_info) {
 }
 
 void susfs_spoof_uname(struct new_utsname* tmp) {
-	if (unlikely(my_uname.release[0] == '\0' || spin_is_locked(&susfs_uname_spin_lock)))
+	if (likely(my_uname.release[0] == '\0'))
 		return;
-	strncpy(tmp->release, my_uname.release, __NEW_UTS_LEN);
-	strncpy(tmp->version, my_uname.version, __NEW_UTS_LEN);
+	/* A syscall must not wait for the settings to be rewritten; it just shows the real values. */
+	if (!spin_trylock(&susfs_uname_spin_lock))
+		return;
+	if (susfs_uname_applies_to(current_uid().val)) {
+		strncpy(tmp->release, my_uname.release, __NEW_UTS_LEN);
+		strncpy(tmp->version, my_uname.version, __NEW_UTS_LEN);
+	}
+	spin_unlock(&susfs_uname_spin_lock);
 }
 #endif // #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
 

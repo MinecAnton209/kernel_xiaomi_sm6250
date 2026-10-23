@@ -7,6 +7,7 @@ export const MODULE_DIR = `${MODULES_DIR}/${MODULE_ID}`;
 export const BIN = `${MODULE_DIR}/bin/ksu_susfs`;
 export const TUNE = `${MODULE_DIR}/bin/tune.sh`;
 export const CHARGE = `${MODULE_DIR}/bin/charge.sh`;
+export const UNAME = `${MODULE_DIR}/bin/uname.sh`;
 export const MODULE_ZIP = `/data/local/tmp/${MODULE_ID}_update.zip`;
 export const MODULE_ASSET_RE = new RegExp(`^${MODULE_ID}-.*\\.zip$`);
 export const PATH_RE = /^\/[A-Za-z0-9._/-]{1,255}$/;

@@ -1,5 +1,7 @@
 export type Togglable = HTMLElement & { disabled: boolean };
 export type SwitchElement = HTMLElement & { checked: boolean; disabled: boolean };
+/** The part of m3e-select the pages use; its value is a string in single-select mode. */
+export type SelectElement = HTMLElement & { value: string; disabled: boolean };
 
 export function byId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id);

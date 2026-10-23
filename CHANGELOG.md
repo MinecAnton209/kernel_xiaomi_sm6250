@@ -79,6 +79,23 @@ for release tags (`vX.Y.Z`).
   and `tune.sh defaults` prints them). Changed settings are marked, a counter
   shows how many are pending, and leaving the tab with unsaved choices opens
   an M3E dialog to save, discard or stay.
+- SUSFS `spoof_uname` no longer changes `uname` for every process. The strings
+  from `set_uname` are shown only to ordinary apps (app ids 10000-19999 and
+  their isolated processes) that were not granted su; root, the shell, system
+  services, the manager and apps with su keep the real ones. A new command,
+  `set_uname_scope apps | selected [appid...]` (`CMD_SUSFS_SET_UNAME_SCOPE`),
+  limits it to a list of up to 64 app ids, which cover every user and work
+  profile. `show_features` reports `uname_scope=1` so the module can tell
+  whether the kernel has it. Release and version strings from userspace are
+  now always terminated before `strcmp` and `strncpy`.
+- Kernel Control: the SU tab has a "Kernel version for apps" card. It spoofs
+  `uname -r` and `uname -v` for every app without su or only for chosen
+  packages, with ready-made 4.14 strings (Xiaomi stock, Qualcomm CAF, Android
+  common) or your own, and is applied again after every boot by
+  `bin/uname.sh`. The module sends nothing to a kernel without
+  `uname_scope`, because such a kernel would spoof for every process. The
+  bundled `ksu_susfs` client knows `set_uname_scope`. `/proc/version` and
+  `/proc/sys/kernel/osrelease` still show the real version.
 - CI: a module built from anything but a release tag gets the first seven
   characters of the commit appended to its version (`v1.1.0-e34731a`), so the
   module on a phone can be traced to its commit. A release keeps the plain

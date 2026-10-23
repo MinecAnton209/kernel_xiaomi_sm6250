@@ -18,6 +18,7 @@
 #define CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY 0x55572
 #define CMD_SUSFS_ADD_TRY_UMOUNT 0x55580
 #define CMD_SUSFS_SET_UNAME 0x55590
+#define CMD_SUSFS_SET_UNAME_SCOPE 0x55591
 #define CMD_SUSFS_ENABLE_LOG 0x555a0
 #define CMD_SUSFS_SET_CMDLINE_OR_BOOTCONFIG 0x555b0
 #define CMD_SUSFS_ADD_OPEN_REDIRECT 0x555c0
@@ -34,6 +35,9 @@
 #define SUSFS_UTS_LEN 65
 #define SUSFS_CMDLINE_MAX 4096
 #define SUSFS_SUS_SU_PATH_LEN 256
+#define SUSFS_UNAME_MAX_APPIDS 64
+#define SUSFS_UNAME_SCOPE_APPS 0
+#define SUSFS_UNAME_SCOPE_SELECTED 1
 #define TRY_UMOUNT_DEFAULT 0
 #define TRY_UMOUNT_DETACH 1
 #define SUS_SU_DISABLED 0
@@ -75,6 +79,12 @@ struct st_susfs_try_umount {
 struct st_susfs_uname {
 	char release[SUSFS_UTS_LEN];
 	char version[SUSFS_UTS_LEN];
+};
+
+struct st_susfs_uname_scope {
+	int scope;
+	int count;
+	unsigned int appids[SUSFS_UNAME_MAX_APPIDS];
 };
 
 struct st_susfs_open_redirect {
@@ -301,6 +311,54 @@ static int cmd_set_uname(int argc, char **argv)
 	return 0;
 }
 
+/* An app id is the uid without the user part, 10000 to 19999 for an ordinary app. */
+static int parse_appid(const char *text, unsigned int *appid)
+{
+	char *end;
+	unsigned long value;
+
+	if (*text < '0' || *text > '9')
+		return 1;
+	errno = 0;
+	value = strtoul(text, &end, 10);
+	if (errno || *end != '\0' || value < 10000 || value > 19999) {
+		fprintf(stderr, "not an app id (10000-19999): %s\n", text);
+		return 1;
+	}
+	*appid = (unsigned int)value;
+	return 0;
+}
+
+static int cmd_set_uname_scope(int argc, char **argv)
+{
+	struct st_susfs_uname_scope info;
+	int i;
+
+	if (argc < 1)
+		return 1;
+	memset(&info, 0, sizeof(info));
+	if (strcmp(argv[0], "apps") == 0) {
+		if (argc != 1)
+			return 1;
+		info.scope = SUSFS_UNAME_SCOPE_APPS;
+	} else if (strcmp(argv[0], "selected") == 0) {
+		info.scope = SUSFS_UNAME_SCOPE_SELECTED;
+		if (argc - 1 > SUSFS_UNAME_MAX_APPIDS) {
+			fprintf(stderr, "at most %d apps\n", SUSFS_UNAME_MAX_APPIDS);
+			return 1;
+		}
+		for (i = 1; i < argc; i++) {
+			if (parse_appid(argv[i], &info.appids[i - 1]))
+				return 1;
+		}
+		info.count = argc - 1;
+	} else {
+		return 1;
+	}
+	susfs_request(CMD_SUSFS_SET_UNAME_SCOPE, &info);
+	return 0;
+}
+
 static int cmd_enable_log(int argc, char **argv)
 {
 	int enabled;
@@ -477,6 +535,7 @@ static const struct susfs_command commands[] = {
 	{ .name = "add_try_umount", .args = "<path> [detach]", .run = cmd_add_try_umount, .shows_reply = 0 },
 	{ .name = "run_umount", .args = "", .run = cmd_run_umount, .shows_reply = 0 },
 	{ .name = "set_uname", .args = "<release> <version>", .run = cmd_set_uname, .shows_reply = 0 },
+	{ .name = "set_uname_scope", .args = "<apps | selected [appid...]>", .run = cmd_set_uname_scope, .shows_reply = 0 },
 	{ .name = "enable_log", .args = "<0|1>", .run = cmd_enable_log, .shows_reply = 0 },
 	{ .name = "set_cmdline", .args = "<file>", .run = cmd_set_cmdline, .shows_reply = 0 },
 	{ .name = "add_open_redirect", .args = "<target> <redirected>", .run = cmd_add_open_redirect, .shows_reply = 0 },
