@@ -6,6 +6,7 @@ import { toast } from '../core/toast';
 import { t } from '../logic/i18n';
 import { buildLabel, featureSpecs } from '../logic/statusFormat';
 import { parseSensors, sensorSpecs } from '../logic/sensorsFormat';
+import { loadProfile } from './profile';
 import { createChipList, type ChipList } from '../ui/chipList';
 
 /** Runs debug.sh and shows its report, which the user can copy into a bug report. */
@@ -94,5 +95,5 @@ export async function loadStatus(): Promise<void> {
   featureChips ??= createChipList(byId('features'));
   featureChips.update(featureSpecs(features));
 
-  await loadSensors();
+  await Promise.all([loadSensors(), loadProfile()]);
 }
