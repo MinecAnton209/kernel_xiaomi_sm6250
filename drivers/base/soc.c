@@ -14,6 +14,8 @@
 #include <linux/sys_soc.h>
 #include <linux/err.h>
 #include <linux/glob.h>
+#include <linux/cred.h>
+#include <linux/devspoof.h>
 
 static DEFINE_IDA(soc_ida);
 
@@ -70,15 +72,25 @@ static ssize_t soc_info_get(struct device *dev,
 			    char *buf)
 {
 	struct soc_device *soc_dev = container_of(dev, struct soc_device, dev);
+	struct devspoof_soc ds;
+	bool spoof = devspoof_get_soc(current_uid().val, &ds);
 
 	if (attr == &dev_attr_machine)
-		return sprintf(buf, "%s\n", soc_dev->attr->machine);
+		return sprintf(buf, "%s\n",
+			       spoof && ds.machine_set ? ds.machine :
+			       soc_dev->attr->machine);
 	if (attr == &dev_attr_family)
-		return sprintf(buf, "%s\n", soc_dev->attr->family);
+		return sprintf(buf, "%s\n",
+			       spoof && ds.family_set ? ds.family :
+			       soc_dev->attr->family);
 	if (attr == &dev_attr_revision)
-		return sprintf(buf, "%s\n", soc_dev->attr->revision);
+		return sprintf(buf, "%s\n",
+			       spoof && ds.revision_set ? ds.revision :
+			       soc_dev->attr->revision);
 	if (attr == &dev_attr_soc_id)
-		return sprintf(buf, "%s\n", soc_dev->attr->soc_id);
+		return sprintf(buf, "%s\n",
+			       spoof && ds.soc_id_set ? ds.soc_id :
+			       soc_dev->attr->soc_id);
 
 	return -EINVAL;
 

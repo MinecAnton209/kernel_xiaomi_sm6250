@@ -3,6 +3,10 @@
 MODULE_ID=kernel_control
 MODULES_DIR=/data/adb/modules
 CONF_DIR=/data/adb/kernel_control
+# NeoZygisk installs under the historical ZygiskNext id; the module ships a zygisk/ payload for it.
+ZYGISK_MODULE_ID=zygisksu
+ZYGISK_DIR=$MODULES_DIR/$ZYGISK_MODULE_ID
+KSU_BIN_DIR=/data/adb/ksu/bin
 
 # Names from before the module was renamed from SUSFS Control to Kernel Control.
 OLD_MODULE_ID=ksu_susfs_ui

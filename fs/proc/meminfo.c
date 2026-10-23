@@ -3,6 +3,8 @@
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/mm.h>
+#include <linux/cred.h>
+#include <linux/devspoof.h>
 #include <linux/hugetlb.h>
 #include <linux/mman.h>
 #include <linux/mmzone.h>
@@ -52,6 +54,8 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
 	unsigned long pages[NR_LRU_LISTS];
 	unsigned long sreclaimable, sunreclaim;
 	int lru;
+	struct devspoof_mem ds;
+	bool spoof = devspoof_get_mem(current_uid().val, &ds);
 
 	si_meminfo(&i);
 	si_swapinfo(&i);
@@ -69,7 +73,10 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
 	sreclaimable = global_node_page_state(NR_SLAB_RECLAIMABLE);
 	sunreclaim = global_node_page_state(NR_SLAB_UNRECLAIMABLE);
 
-	show_val_kb(m, "MemTotal:       ", i.totalram);
+	if (spoof && ds.total_set)
+		seq_printf(m, "MemTotal:       %8llu kB\n", ds.total_kb);
+	else
+		show_val_kb(m, "MemTotal:       ", i.totalram);
 	show_val_kb(m, "MemFree:        ", i.freeram);
 	show_val_kb(m, "MemAvailable:   ", available);
 	show_val_kb(m, "Buffers:        ", i.bufferram);

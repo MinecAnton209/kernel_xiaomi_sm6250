@@ -24,6 +24,8 @@
 #include <linux/bitops.h>
 #include <linux/bug.h>
 #include <linux/compat.h>
+#include <linux/cred.h>
+#include <linux/devspoof.h>
 #include <linux/elf.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -132,9 +134,14 @@ static int c_show(struct seq_file *m, void *v)
 {
 	int i, j;
 	bool compat = personality(current->personality) == PER_LINUX32;
+	struct devspoof_cpu ds;
+	bool spoof = devspoof_get_cpu(current_uid().val, &ds);
 
-	seq_printf(m, "Processor\t: AArch64 Processor rev %d (%s)\n",
-		read_cpuid_id() & 15, ELF_PLATFORM);
+	if (spoof && ds.processor_set)
+		seq_printf(m, "Processor\t: %s\n", ds.processor);
+	else
+		seq_printf(m, "Processor\t: AArch64 Processor rev %d (%s)\n",
+			read_cpuid_id() & 15, ELF_PLATFORM);
 	for_each_present_cpu(i) {
 		struct cpuinfo_arm64 *cpuinfo = &per_cpu(cpu_data, i);
 		u32 midr = cpuinfo->reg_midr;
@@ -145,9 +152,14 @@ static int c_show(struct seq_file *m, void *v)
 		 * "processor".  Give glibc what it expects.
 		 */
 		seq_printf(m, "processor\t: %d\n", i);
-		if (compat)
-			seq_printf(m, "model name\t: ARMv8 Processor rev %d (%s)\n",
-				   MIDR_REVISION(midr), COMPAT_ELF_PLATFORM);
+		if (compat) {
+			if (spoof && ds.model_name_set)
+				seq_printf(m, "model name\t: %s\n",
+					   ds.model_name);
+			else
+				seq_printf(m, "model name\t: ARMv8 Processor rev %d (%s)\n",
+					   MIDR_REVISION(midr), COMPAT_ELF_PLATFORM);
+		}
 
 		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n",
 			   loops_per_jiffy / (500000UL/HZ),
@@ -178,14 +190,24 @@ static int c_show(struct seq_file *m, void *v)
 		seq_puts(m, "\n");
 
 		seq_printf(m, "CPU implementer\t: 0x%02x\n",
+			   spoof && ds.implementer_set ? ds.implementer :
 			   MIDR_IMPLEMENTOR(midr));
-		seq_printf(m, "CPU architecture: 8\n");
-		seq_printf(m, "CPU variant\t: 0x%x\n", MIDR_VARIANT(midr));
-		seq_printf(m, "CPU part\t: 0x%03x\n", MIDR_PARTNUM(midr));
-		seq_printf(m, "CPU revision\t: %d\n\n", MIDR_REVISION(midr));
+		seq_printf(m, "CPU architecture: %u\n",
+			   spoof && ds.architecture_set ? ds.architecture : 8);
+		seq_printf(m, "CPU variant\t: 0x%x\n",
+			   spoof && ds.variant_set ? ds.variant :
+			   MIDR_VARIANT(midr));
+		seq_printf(m, "CPU part\t: 0x%03x\n",
+			   spoof && ds.part_set ? ds.part :
+			   MIDR_PARTNUM(midr));
+		seq_printf(m, "CPU revision\t: %d\n\n",
+			   spoof && ds.revision_set ? ds.revision :
+			   MIDR_REVISION(midr));
 	}
 
-	if (!arch_read_hardware_id)
+	if (spoof && ds.hardware_set)
+		seq_printf(m, "Hardware\t: %s\n", ds.hardware);
+	else if (!arch_read_hardware_id)
 		seq_printf(m, "Hardware\t: %s\n", machine_name);
 	else
 		seq_printf(m, "Hardware\t: %s\n", arch_read_hardware_id());

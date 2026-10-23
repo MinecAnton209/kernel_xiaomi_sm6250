@@ -449,6 +449,19 @@ m3e-skeleton {
   display: none;
 }
 
+.device-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.device-group h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
 .tune-select {
   width: 100%;
   --m3e-form-field-width: 100%;

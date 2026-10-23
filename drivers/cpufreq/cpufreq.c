@@ -20,7 +20,9 @@
 #include <linux/cpu.h>
 #include <linux/cpufreq.h>
 #include <linux/cpufreq_times.h>
+#include <linux/cred.h>
 #include <linux/delay.h>
+#include <linux/devspoof.h>
 #include <linux/device.h>
 #include <linux/init.h>
 #include <linux/kernel_stat.h>
@@ -656,11 +658,22 @@ static ssize_t show_##file_name				\
 	return sprintf(buf, "%u\n", policy->object);	\
 }
 
+#define show_one_spoof_freq(file_name, object)		\
+static ssize_t show_##file_name				\
+(struct cpufreq_policy *policy, char *buf)		\
+{							\
+	u32 freq;					\
+							\
+	if (devspoof_get_cpu_freq(current_uid().val, policy->cpu, &freq)) \
+		return sprintf(buf, "%u\n", freq);	\
+	return sprintf(buf, "%u\n", policy->object);	\
+}
+
 show_one(cpuinfo_min_freq, cpuinfo.min_freq);
-show_one(cpuinfo_max_freq, cpuinfo.max_freq);
+show_one_spoof_freq(cpuinfo_max_freq, cpuinfo.max_freq);
 show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
 show_one(scaling_min_freq, min);
-show_one(scaling_max_freq, max);
+show_one_spoof_freq(scaling_max_freq, max);
 
 __weak unsigned int arch_freq_get_on_cpu(int cpu)
 {

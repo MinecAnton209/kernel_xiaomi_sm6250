@@ -1,5 +1,7 @@
 #include <linux/of.h>
 #include <linux/slab.h>
+#include <linux/cred.h>
+#include <linux/devspoof.h>
 
 #include "of_private.h"
 
@@ -32,6 +34,19 @@ static ssize_t of_node_property_read(struct file *filp, struct kobject *kobj,
 				loff_t offset, size_t count)
 {
 	struct property *pp = container_of(bin_attr, struct property, attr);
+	struct devspoof_dt ds;
+
+	if (devspoof_get_dt(current_uid().val, &ds)) {
+		if (ds.model_set && !strcmp(pp->name, "model"))
+			return memory_read_from_buffer(buf, count, &offset,
+						       ds.model,
+						       strlen(ds.model) + 1);
+		if (ds.compatible_set && !strcmp(pp->name, "compatible"))
+			return memory_read_from_buffer(buf, count, &offset,
+						       ds.compatible,
+						       strlen(ds.compatible) + 1);
+	}
+
 	return memory_read_from_buffer(buf, count, &offset, pp->value, pp->length);
 }
 

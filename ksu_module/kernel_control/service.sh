@@ -13,6 +13,8 @@ done
 [ -f "$CONF_DIR/sus_su" ] && "$BIN" sus_su "$(cat "$CONF_DIR/sus_su")"
 # The version that apps see is kernel memory too. Boot has finished here, so pm can resolve the chosen apps.
 [ -f "$CONF_DIR/uname/enabled" ] && "$MODDIR/bin/uname.sh" apply > /dev/null 2>&1
+# The spoofed identity is kernel memory too; the saved settings are sent again after boot.
+[ -f "$CONF_DIR/spoof/config" ] && "$MODDIR/bin/spoof.sh" apply > /dev/null 2>&1
 
 # The sysfs path depends on the device tree, so it is looked up once per boot and
 # the WebUI reads it from here. An empty file means the kernel has no bypass_charging.

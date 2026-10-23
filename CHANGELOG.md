@@ -10,6 +10,13 @@ for release tags (`vX.Y.Z`).
 
 ### Added
 
+- Per-app device identity spoofing: the kernel reports a different CPU, SoC,
+  GPU, device tree and memory size to the chosen apps through
+  `/sys/kernel/device_spoof`, and Kernel Control sets it from the Device tab.
+  Build properties go through resetprop at boot.
+- A Zygisk hook in the module changes `GL_RENDERER` for the chosen apps. It
+  needs NeoZygisk, and the Device tab turns the switch on only when it is
+  installed.
 - The kernel stores its build version and reports it through
   `ksu_susfs show_build`: `1.0.0` on a `v*` release and `1.0.0-<commit>` on
   every other build. The WebUI status tab shows it next to SUSFS, and the

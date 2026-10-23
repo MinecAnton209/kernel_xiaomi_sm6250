@@ -43,7 +43,7 @@ check 'config.ts CONF matches config.sh' "export const CONF = '$CONF_DIR';" "$(g
 # Scripts and sources must use the shared names instead of repeating the literals.
 literals=$(
 	{
-		printf '%s\n' "$MODULE/service.sh" "$MODULE/customize.sh" "$MODULE/bin/tune.sh" "$MODULE/bin/fetch.sh" "$MODULE/bin/uname.sh"
+		printf '%s\n' "$MODULE/service.sh" "$MODULE/post-fs-data.sh" "$MODULE/customize.sh" "$MODULE/bin/tune.sh" "$MODULE/bin/fetch.sh" "$MODULE/bin/uname.sh" "$MODULE/bin/spoof.sh"
 		find "$BASE/webui/src" -name '*.ts'
 	} | xargs grep -lE '/data/adb/(kernel_control|susfs_ui|modules)|ksu_susfs_ui' 2> /dev/null | grep -v '/core/config\.ts$' | tr '\n' ' '
 )

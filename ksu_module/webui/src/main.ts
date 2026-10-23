@@ -16,6 +16,7 @@ import { addPath, applyAll } from './pages/paths';
 import { setSusSu } from './pages/su';
 import { runUmount, setBypass, setLog, startLivePolling } from './pages/system';
 import { initTuneActions, initTuneHelp } from './pages/tune';
+import { initDevice } from './pages/device';
 import { initUname } from './pages/uname';
 import { initUpdates, loadChannel } from './pages/updates';
 import { pickLanguage, setLanguage } from './logic/i18n';
@@ -32,6 +33,7 @@ function init(): void {
 
   initTuneHelp();
   initTuneActions();
+  initDevice();
   initUname();
 
   if (!hasBridge()) {

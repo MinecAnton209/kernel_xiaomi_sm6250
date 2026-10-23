@@ -20,5 +20,17 @@ set_perm "$MODPATH/bin/ksu_susfs" 0 0 0755
 set_perm "$MODPATH/bin/tune.sh" 0 0 0755
 set_perm "$MODPATH/bin/charge.sh" 0 0 0755
 set_perm "$MODPATH/bin/uname.sh" 0 0 0755
+set_perm "$MODPATH/bin/spoof.sh" 0 0 0755
 set_perm "$MODPATH/bin/flash_kernel.sh" 0 0 0755
 set_perm "$MODPATH/service.sh" 0 0 0755
+set_perm "$MODPATH/post-fs-data.sh" 0 0 0755
+
+if [ -d "$ZYGISK_DIR" ] && [ ! -f "$ZYGISK_DIR/disable" ]; then
+	ui_print "- NeoZygisk found: per-app Build/GL spoofing is available"
+else
+	ui_print "- NeoZygisk not found: per-app Build/GL spoofing stays off"
+	ui_print "  https://github.com/JingMatrix/NeoZygisk"
+fi
+if [ ! -f "$MODPATH/zygisk/arm64-v8a.so" ]; then
+	ui_print "- Zygisk payload is missing: kernel and property spoofing still work"
+fi

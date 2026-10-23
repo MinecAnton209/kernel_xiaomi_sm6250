@@ -1,0 +1,15 @@
+menu "Device spoofing"
+
+config DEVSPOOF
+	bool "Per-app device identity spoofing"
+	depends on KSU
+	default y
+	help
+	  Allow Kernel Control to report a different CPU, GPU, SoC and memory
+	  size to selected apps.  Settings are written to
+	  /sys/kernel/device_spoof by the module.
+
+	  This does not hide the real values from root or from the kernel
+	  itself; it only changes the procfs and sysfs files that apps read.
+
+endmenu

@@ -13,6 +13,8 @@
 
 #include <linux/export.h>
 #include <linux/interrupt.h>
+#include <linux/cred.h>
+#include <linux/devspoof.h>
 #include <asm/page.h>
 #include <linux/pm_runtime.h>
 #include <linux/msm-bus.h>
@@ -862,6 +864,10 @@ static ssize_t kgsl_pwrctrl_max_gpuclk_show(struct device *dev,
 					char *buf)
 {
 	struct kgsl_device *device = kgsl_device_from_dev(dev);
+	struct devspoof_gpu ds;
+
+	if (devspoof_get_gpu(current_uid().val, &ds) && ds.max_clk_set)
+		return snprintf(buf, PAGE_SIZE, "%u\n", ds.max_clk);
 
 	return snprintf(buf, PAGE_SIZE, "%d\n",
 		kgsl_pwrctrl_max_clock_get(device));
@@ -1313,9 +1319,13 @@ static ssize_t kgsl_pwrctrl_gpu_model_show(struct device *dev,
 {
 	struct kgsl_device *device = kgsl_device_from_dev(dev);
 	char model_str[32] = {0};
+	struct devspoof_gpu ds;
 
 	if (device == NULL)
 		return 0;
+
+	if (devspoof_get_gpu(current_uid().val, &ds) && ds.model_set)
+		return snprintf(buf, PAGE_SIZE, "%s\n", ds.model);
 
 	device->ftbl->gpu_model(device, model_str, sizeof(model_str));
 

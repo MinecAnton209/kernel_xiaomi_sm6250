@@ -4,6 +4,7 @@ import { refreshPaths } from './pages/paths';
 import { loadStatus } from './pages/status';
 import { loadSusSu } from './pages/su';
 import { loadSystem } from './pages/system';
+import { discardDevice, hasUnsavedDevice, loadDevice, saveDevice } from './pages/device';
 import { discardUname, hasUnsavedUname, loadUname, saveUname } from './pages/uname';
 import { discardTune, hasUnsavedTune, loadTune, prefetchTune, reloadTune, saveTune } from './pages/tune';
 import { hidePageSkeletons, showPageSkeletons } from './ui/skeleton';
@@ -13,6 +14,7 @@ const loaders: Record<string, () => Promise<void>> = {
   status: loadStatus,
   paths: refreshPaths,
   system: loadSystem,
+  device: loadDevice,
   tune: loadTune,
   su: () => Promise.all([loadSusSu(), loadUname()]).then(() => undefined),
 };
@@ -138,6 +140,7 @@ interface TabGuard {
 }
 
 const guards: Readonly<Record<string, TabGuard>> = {
+  device: { hasUnsaved: hasUnsavedDevice, save: saveDevice, discard: discardDevice },
   tune: { hasUnsaved: hasUnsavedTune, save: saveTune, discard: discardTune },
   su: { hasUnsaved: hasUnsavedUname, save: saveUname, discard: discardUname },
 };

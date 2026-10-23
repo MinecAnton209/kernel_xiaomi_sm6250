@@ -320,5 +320,6 @@ config FILE_TABLE_DEBUG
 	  This option enables debug of the open files using a global filetable
 
 source "fs/Kconfig.susfs"
+source "fs/Kconfig.devspoof"
 
 endmenu

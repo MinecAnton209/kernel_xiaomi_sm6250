@@ -8,6 +8,7 @@ export const BIN = `${MODULE_DIR}/bin/ksu_susfs`;
 export const TUNE = `${MODULE_DIR}/bin/tune.sh`;
 export const CHARGE = `${MODULE_DIR}/bin/charge.sh`;
 export const UNAME = `${MODULE_DIR}/bin/uname.sh`;
+export const SPOOF = `${MODULE_DIR}/bin/spoof.sh`;
 export const FLASH_KERNEL = `${MODULE_DIR}/bin/flash_kernel.sh`;
 /** Prefix of the .log, .state and .pid files that flash_kernel.sh writes. */
 export const FLASH_OUT = `/data/local/tmp/${MODULE_ID}_flash`;
