@@ -276,3 +276,18 @@ test('a refresh keeps unapplied edits: the form is only refilled when nothing wa
   assert.equal(/\bdirty\b/.test(page), false, 'the old dirty flag must not come back');
   assert.ok(page.split('loadDevice(true)').length - 1 >= 3, 'Apply, Reset and Discard must replace the form');
 });
+
+test('switching Advanced mode on always asks first, and the choice is not remembered', () => {
+  const page = read('src/pages/device.ts');
+  assert.ok(page.includes("const result = await showDialog('advancedDialog', 'cancel');"));
+  assert.ok(page.includes("return result === 'enable' && ack.checked;"));
+  assert.equal(page.includes('localStorage'), false, 'the mode must start off on every visit');
+});
+
+test('the Advanced dialog has a checkbox, and Enable stays disabled until it is ticked', () => {
+  const html = read('index.html');
+  assert.ok(html.includes('<m3e-dialog id="advancedDialog">'));
+  assert.ok(html.includes('<m3e-checkbox id="advancedAck">'));
+  assert.match(html, /<m3e-button variant="filled" id="advancedEnable" disabled>/);
+  assert.ok(read('src/pages/device.ts').includes("byId<Togglable>('advancedEnable').disabled = !byId<SwitchElement>('advancedAck').checked;"));
+});

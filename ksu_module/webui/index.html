@@ -160,11 +160,13 @@
             <span data-i18n="device.switch"></span>
             <m3e-switch id="deviceSwitch"></m3e-switch>
           </div>
-          <div class="switch-row">
-            <span data-i18n="device.advanced"></span>
-            <m3e-switch id="deviceAdvanced"></m3e-switch>
+          <div class="device-advanced">
+            <div class="switch-row">
+              <span data-i18n="device.advanced"></span>
+              <m3e-switch id="deviceAdvanced"></m3e-switch>
+            </div>
+            <p class="hint" data-i18n="device.advancedHint"></p>
           </div>
-          <p class="hint" data-i18n="device.advancedHint"></p>
 
           <div class="uname-form" id="deviceForm">
             <m3e-form-field class="tune-select" variant="outlined" hide-subscript>
@@ -385,6 +387,23 @@
         </m3e-button>
         <m3e-button variant="filled">
           <m3e-dialog-action return-value="reboot" data-i18n="reboot.now"></m3e-dialog-action>
+        </m3e-button>
+      </div>
+    </m3e-dialog>
+
+    <m3e-dialog id="advancedDialog">
+      <span slot="header" data-i18n="device.advancedTitle"></span>
+      <p data-i18n="device.advancedWarning"></p>
+      <label class="dialog-check">
+        <m3e-checkbox id="advancedAck"></m3e-checkbox>
+        <span data-i18n="device.advancedAck"></span>
+      </label>
+      <div slot="actions" end>
+        <m3e-button variant="text">
+          <m3e-dialog-action return-value="cancel" data-i18n="device.advancedCancel"></m3e-dialog-action>
+        </m3e-button>
+        <m3e-button variant="filled" id="advancedEnable" disabled>
+          <m3e-dialog-action return-value="enable" data-i18n="device.advancedEnable"></m3e-dialog-action>
         </m3e-button>
       </div>
     </m3e-dialog>

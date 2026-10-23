@@ -3,6 +3,7 @@ import { busy, byId, type SelectElement, type SwitchElement, type Togglable } fr
 import { exec, rebootPhone } from '../core/ksu';
 import { joinCommands, splitSections } from '../core/shellOut';
 import { toast } from '../core/toast';
+import { showDialog } from '../ui/dialog';
 import { askReboot } from '../ui/rebootDialog';
 import {
   CUSTOM_PROFILE,
@@ -43,7 +44,6 @@ let selectedApps: string[] = [];
 /** The form as it was last filled from the module; undefined until the first load. */
 let baseline: string | undefined;
 
-const ADVANCED_PREFERENCE = 'kernelControl.deviceAdvanced';
 let optionsBuilt = false;
 let fieldsBuilt = false;
 
@@ -189,20 +189,26 @@ function setAdvancedVisible(visible: boolean): void {
   }
 }
 
-function readAdvancedPreference(): boolean {
-  try {
-    return localStorage.getItem(ADVANCED_PREFERENCE) === '1';
-  } catch {
-    return false;
-  }
+/**
+ * Asks before Advanced mode is switched on, every time: the checkbox must be ticked before the
+ * Enable button works. Closing the dialog any other way keeps the mode off.
+ */
+async function confirmAdvanced(): Promise<boolean> {
+  const ack = byId<SwitchElement>('advancedAck');
+  ack.checked = false;
+  byId<Togglable>('advancedEnable').disabled = true;
+  const result = await showDialog('advancedDialog', 'cancel');
+  return result === 'enable' && ack.checked;
 }
 
-function saveAdvancedPreference(visible: boolean): void {
-  try {
-    localStorage.setItem(ADVANCED_PREFERENCE, visible ? '1' : '0');
-  } catch {
-    // The switch still works for this session; the choice is only remembered when storage allows it.
+async function toggleAdvanced(advanced: SwitchElement): Promise<void> {
+  if (!advanced.checked) {
+    setAdvancedVisible(false);
+    return;
   }
+  const confirmed = await confirmAdvanced();
+  advanced.checked = confirmed;
+  setAdvancedVisible(confirmed);
 }
 
 function fillForm(state: DeviceState): void {
@@ -349,11 +355,11 @@ export function initDevice(): void {
   select('deviceScope').addEventListener('change', showScope);
 
   const advanced = byId<SwitchElement>('deviceAdvanced');
-  advanced.checked = readAdvancedPreference();
-  setAdvancedVisible(advanced.checked);
-  advanced.addEventListener('change', () => {
-    setAdvancedVisible(advanced.checked);
-    saveAdvancedPreference(advanced.checked);
+  advanced.checked = false;
+  setAdvancedVisible(false);
+  advanced.addEventListener('change', () => void toggleAdvanced(advanced));
+  byId('advancedAck').addEventListener('change', () => {
+    byId<Togglable>('advancedEnable').disabled = !byId<SwitchElement>('advancedAck').checked;
   });
   byId('deviceAddApp').addEventListener('click', addApp);
   input('deviceAppInput').addEventListener('keydown', (event) => {

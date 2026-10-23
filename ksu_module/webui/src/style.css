@@ -462,6 +462,19 @@ m3e-skeleton {
   font-weight: 600;
 }
 
+.device-advanced {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--surface-highest);
+}
+
+.dialog-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .tune-select {
   width: 100%;
   --m3e-form-field-width: 100%;

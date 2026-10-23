@@ -188,6 +188,12 @@ export const en: Record<MessageKey, string> = {
   'device.advanced': 'Advanced mode',
   'device.advancedHint':
     'Shows the settings that change what the system reads at boot: hardware and board names, which pick the vendor drivers, and system properties. A wrong value there can stop the phone from starting properly.',
+  'device.advancedTitle': 'Enable Advanced mode?',
+  'device.advancedWarning':
+    'Advanced settings change hardware names, CPU and GPU data and system properties. Some apps can stop working or crash because of them, and a wrong hardware or board name can stop the phone from starting properly. Change them only if you know the values.',
+  'device.advancedAck': 'I understand this can break apps and the system',
+  'device.advancedCancel': 'Cancel',
+  'device.advancedEnable': 'Enable',
   'device.props': 'Spoof system properties (global)',
   'device.propsHint':
     'ro.product.*, ro.soc.* and ro.hardware through KSU resetprop. It affects everything, including the system; after switching it off, the old values return on the next boot.',
