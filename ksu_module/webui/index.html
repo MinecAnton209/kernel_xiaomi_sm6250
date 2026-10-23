@@ -160,6 +160,11 @@
             <span data-i18n="device.switch"></span>
             <m3e-switch id="deviceSwitch"></m3e-switch>
           </div>
+          <div class="switch-row">
+            <span data-i18n="device.advanced"></span>
+            <m3e-switch id="deviceAdvanced"></m3e-switch>
+          </div>
+          <p class="hint" data-i18n="device.advancedHint"></p>
 
           <div class="uname-form" id="deviceForm">
             <m3e-form-field class="tune-select" variant="outlined" hide-subscript>
@@ -187,11 +192,11 @@
               <div class="list" id="deviceApps"></div>
             </div>
 
-            <div class="switch-row">
+            <div class="switch-row" data-advanced>
               <span data-i18n="device.props"></span>
               <m3e-switch id="deviceProps"></m3e-switch>
             </div>
-            <p class="hint" data-i18n="device.propsHint"></p>
+            <p class="hint" data-i18n="device.propsHint" data-advanced></p>
 
             <div class="switch-row">
               <span data-i18n="device.zygisk"></span>

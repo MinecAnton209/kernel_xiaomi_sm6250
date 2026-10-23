@@ -49,6 +49,32 @@ export type DeviceKey = DeviceField['key'];
 
 export const DEVICE_KEYS: readonly DeviceKey[] = DEVICE_FIELDS.map((field) => field.key);
 
+/**
+ * Fields hidden until Advanced mode is on; their saved values still apply. Two groups: names the system
+ * reads at boot to choose vendor drivers and configs (hardware, board, device, product), and values that
+ * make apps see an inconsistent CPU, GPU, memory or device tree and so can crash them.
+ */
+export const ADVANCED_KEYS: readonly DeviceKey[] = [
+  'hardware',
+  'board',
+  'device',
+  'product',
+  'cpu_implementer',
+  'cpu_architecture',
+  'cpu_variant',
+  'cpu_part',
+  'cpu_revision',
+  'cpu_max_freqs',
+  'gpu_max_clk',
+  'mem_total_kb',
+  'dt_model',
+  'dt_compatible',
+];
+
+export function isAdvancedKey(key: DeviceKey): boolean {
+  return ADVANCED_KEYS.includes(key);
+}
+
 export const DEVICE_GROUPS = [
   { id: 'identity', title: 'device.group.identity' },
   { id: 'soc', title: 'device.group.soc' },

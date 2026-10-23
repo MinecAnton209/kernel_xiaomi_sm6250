@@ -184,6 +184,9 @@ export const en: Record<MessageKey, string> = {
   'device.addApp': 'Add',
   'device.noApps': 'No apps selected, so nobody will see the spoof',
   'device.remove': 'Remove',
+  'device.advanced': 'Advanced mode',
+  'device.advancedHint':
+    'Shows the settings that change what the system reads at boot: hardware and board names, which pick the vendor drivers, and system properties. A wrong value there can stop the phone from starting properly.',
   'device.props': 'Spoof system properties (global)',
   'device.propsHint':
     'ro.product.*, ro.soc.* and ro.hardware through KSU resetprop. It affects everything, including the system; after switching it off, the old values return on the next boot.',

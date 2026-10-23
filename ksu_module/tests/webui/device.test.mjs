@@ -4,8 +4,10 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
+  ADVANCED_KEYS,
   CUSTOM_PROFILE,
   DEVICE_FIELDS,
+  isAdvancedKey,
   DEVICE_GROUPS,
   DEVICE_KEYS,
   DEVICE_PRESETS,
@@ -205,7 +207,7 @@ test('the tab is registered, prefetched, guarded and initialized', () => {
 test('the page applies through spoof.sh set with a quoted payload', () => {
   const page = read('src/pages/device.ts');
   assert.ok(page.includes('quote(SPOOF)} set ${quote(payload)}'));
-  assert.ok(page.includes('if (!dirty) fillForm(state);'));
+  assert.ok(page.includes('if (force || baseline === undefined || !hasEdits()) fillForm(state);'));
   assert.ok(page.includes('devicePayload('));
 });
 
@@ -250,4 +252,27 @@ test('kernel text limits are one less than the kernel buffers that hold them', (
 test('Apply offers a reboot only after the settings were saved', () => {
   const page = readFileSync(join(WEBUI, 'src/pages/device.ts'), 'utf8');
   assert.ok(page.includes("if ((await saveDevice()) && (await askReboot('device'))) await rebootPhone();"));
+});
+
+test('Advanced mode hides only fields that can break the system or mislead apps', () => {
+  for (const key of ADVANCED_KEYS) assert.ok(DEVICE_KEYS.includes(key), key);
+  for (const key of ['hardware', 'board', 'device', 'product', 'cpu_implementer', 'cpu_part', 'cpu_max_freqs', 'dt_model']) {
+    assert.equal(isAdvancedKey(key), true, key);
+  }
+  for (const key of ['brand', 'manufacturer', 'model', 'soc_model', 'cpu_hardware', 'gpu_model', 'gl_renderer']) {
+    assert.equal(isAdvancedKey(key), false, key);
+  }
+});
+
+test('the Advanced switch is in the page and the system properties row is marked as advanced', () => {
+  const html = read('index.html');
+  assert.ok(html.includes('id="deviceAdvanced"'));
+  assert.match(html, /<div class="switch-row" data-advanced>\s*<span data-i18n="device\.props">/);
+});
+
+test('a refresh keeps unapplied edits: the form is only refilled when nothing was changed or on force', () => {
+  const page = read('src/pages/device.ts');
+  assert.ok(page.includes('if (force || baseline === undefined || !hasEdits()) fillForm(state);'));
+  assert.equal(/\bdirty\b/.test(page), false, 'the old dirty flag must not come back');
+  assert.ok(page.split('loadDevice(true)').length - 1 >= 3, 'Apply, Reset and Discard must replace the form');
 });

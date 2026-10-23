@@ -12,6 +12,7 @@ import {
   DEVICE_PRESETS,
   devicePayload,
   formatMemory,
+  isAdvancedKey,
   matchProfile,
   normalizeDeviceValues,
   parseDevice,
@@ -39,7 +40,10 @@ const FORM_CONTROLS = [
 const EXIT_UNSUPPORTED = 3;
 
 let selectedApps: string[] = [];
-let dirty = false;
+/** The form as it was last filled from the module; undefined until the first load. */
+let baseline: string | undefined;
+
+const ADVANCED_PREFERENCE = 'kernelControl.deviceAdvanced';
 let optionsBuilt = false;
 let fieldsBuilt = false;
 
@@ -86,8 +90,11 @@ function renderFields(): void {
       control.autocapitalize = 'off';
       control.spellcheck = false;
       if (field.type === 'freqs') control.placeholder = '1800000 1800000 …';
+      if (isAdvancedKey(field.key)) {
+        label.dataset.advanced = '';
+        control.dataset.advanced = '';
+      }
       control.addEventListener('input', () => {
-        dirty = true;
         select('deviceProfile').value = CUSTOM_PROFILE;
       });
       section.append(label, control);
@@ -146,7 +153,6 @@ function renderApps(): void {
     remove.textContent = t('device.remove');
     remove.addEventListener('click', () => {
       selectedApps = selectedApps.filter((app) => app !== name);
-      dirty = true;
       renderApps();
     });
     item.append(code, remove);
@@ -158,6 +164,45 @@ function readValues(): Record<string, string> {
   const values: Record<string, string> = {};
   for (const key of DEVICE_KEYS) values[key] = fieldInput(key).value;
   return values;
+}
+
+/** Everything the user can change, as one string: a difference from the baseline is an unsaved edit. */
+function snapshot(): string {
+  return JSON.stringify({
+    values: readValues(),
+    enabled: byId<SwitchElement>('deviceSwitch').checked,
+    props: byId<SwitchElement>('deviceProps').checked,
+    zygisk: byId<SwitchElement>('deviceZygiskSwitch').checked,
+    scope: currentScope(),
+    apps: selectedApps,
+    profile: select('deviceProfile').value,
+  });
+}
+
+function hasEdits(): boolean {
+  return baseline !== undefined && snapshot() !== baseline;
+}
+
+function setAdvancedVisible(visible: boolean): void {
+  for (const element of document.querySelectorAll<HTMLElement>('#deviceForm [data-advanced]')) {
+    element.hidden = !visible;
+  }
+}
+
+function readAdvancedPreference(): boolean {
+  try {
+    return localStorage.getItem(ADVANCED_PREFERENCE) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function saveAdvancedPreference(visible: boolean): void {
+  try {
+    localStorage.setItem(ADVANCED_PREFERENCE, visible ? '1' : '0');
+  } catch {
+    // The switch still works for this session; the choice is only remembered when storage allows it.
+  }
 }
 
 function fillForm(state: DeviceState): void {
@@ -176,6 +221,7 @@ function fillForm(state: DeviceState): void {
   select('deviceProfile').value = DEVICE_PRESETS.some((preset) => preset.id === profile) ? profile : CUSTOM_PROFILE;
   showScope();
   renderApps();
+  baseline = snapshot();
 }
 
 function fillSuggestions(packages: readonly string[]): void {
@@ -188,7 +234,11 @@ function fillSuggestions(packages: readonly string[]): void {
   );
 }
 
-export async function loadDevice(): Promise<void> {
+/**
+ * Reads the module and fills the form. Edits the user has not applied are kept, so a refresh never
+ * wipes them; only `force` (after Apply, Reset or Discard) replaces the form with what is saved.
+ */
+export async function loadDevice(force = false): Promise<void> {
   buildProfileOptions();
   renderFields();
   try {
@@ -197,7 +247,7 @@ export async function loadDevice(): Promise<void> {
     const state = parseDevice(info);
     syncStatus(state);
     fillSuggestions(parsePackages(apps));
-    if (!dirty) fillForm(state);
+    if (force || baseline === undefined || !hasEdits()) fillForm(state);
     setControlsDisabled(!state.supported);
   } catch {
     toast(t('device.loadFailed'));
@@ -215,7 +265,6 @@ function addApp(): void {
   }
   selectedApps = [...selectedApps, name];
   field.value = '';
-  dirty = true;
   renderApps();
 }
 
@@ -234,13 +283,12 @@ function currentScope(): DeviceScope {
 
 /** True while the form holds edits that Apply has not sent yet. */
 export function hasUnsavedDevice(): boolean {
-  return dirty;
+  return hasEdits();
 }
 
 /** Drops the edits: the form is read again from what is saved. */
 export async function discardDevice(): Promise<void> {
-  dirty = false;
-  await loadDevice();
+  await loadDevice(true);
 }
 
 /** Sends the form to the module. Resolves to true when it was applied, false when it was refused. */
@@ -274,10 +322,9 @@ export async function saveDevice(): Promise<boolean> {
     return false;
   }
 
-  dirty = false;
   const missing = parseMissing(result.stdout);
   toast(missing.length > 0 ? t('device.missing', { apps: missing.join(', ') }) : t(enabled ? 'device.applied' : 'device.disabled'));
-  await loadDevice();
+  await loadDevice(true);
   return true;
 }
 
@@ -287,32 +334,26 @@ async function resetDevice(): Promise<void> {
     toast(result.stderr.trim() || t('common.commandFailed'));
     return;
   }
-  dirty = false;
   toast(t('device.resetDone'));
-  await loadDevice();
+  await loadDevice(true);
 }
 
 export function initDevice(): void {
   buildProfileOptions();
   renderFields();
 
-  const markDirty = () => {
-    dirty = true;
-  };
-
-  for (const id of ['deviceSwitch', 'deviceProps', 'deviceZygiskSwitch']) byId(id).addEventListener('change', markDirty);
   select('deviceProfile').addEventListener('change', () => {
     const preset = DEVICE_PRESETS.find((candidate) => candidate.id === select('deviceProfile').value);
-    if (!preset) {
-      markDirty();
-      return;
-    }
-    for (const key of DEVICE_KEYS) fieldInput(key).value = preset.values[key];
-    markDirty();
+    if (preset) for (const key of DEVICE_KEYS) fieldInput(key).value = preset.values[key];
   });
-  select('deviceScope').addEventListener('change', () => {
-    markDirty();
-    showScope();
+  select('deviceScope').addEventListener('change', showScope);
+
+  const advanced = byId<SwitchElement>('deviceAdvanced');
+  advanced.checked = readAdvancedPreference();
+  setAdvancedVisible(advanced.checked);
+  advanced.addEventListener('change', () => {
+    setAdvancedVisible(advanced.checked);
+    saveAdvancedPreference(advanced.checked);
   });
   byId('deviceAddApp').addEventListener('click', addApp);
   input('deviceAppInput').addEventListener('keydown', (event) => {
