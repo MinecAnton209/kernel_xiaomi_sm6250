@@ -7,6 +7,7 @@ import {
   buildNumberOf,
   describeOffer,
   installedBuild,
+  kernelStatus,
   moduleIsCurrent,
   rollingBuildNumber,
 } from '../../webui/src/logic/buildInfo.ts';
@@ -119,11 +120,29 @@ test('the manifest asset can carry a version and the page passes it on', () => {
 
 test('the chips never show the word unreleased: both go through offeredName', () => {
   assert.ok(updates.includes("t('updates.module.available', { current: label, tag: offeredName(loaded.tag, moduleAsset) })"));
-  assert.ok(updates.includes("t('updates.kernel.available', { tag: offeredName(loaded.tag, kernelAsset) })"));
+  assert.ok(updates.includes("kernelStatus(running, kernelAsset.version || offeredName(tag, kernelAsset))"));
+  assert.ok(updates.includes("t('updates.kernel.available', { tag: status.offered })"));
   assert.ok(!/updates\.(module|kernel)\.available'[^)]*tag: loaded\.tag/.test(updates), 'a chip still shows the raw tag');
 });
 
 test('the update check uses the build comparison, not the old name comparison', () => {
   assert.ok(updates.includes('!moduleIsCurrent({'));
   assert.ok(!updates.includes('version.build !== moduleAsset.name'));
+});
+
+test('kernelStatus offers the kernel alone when the running one does not report its build', () => {
+  assert.deepEqual(kernelStatus(undefined, '1.0.0'), { kind: 'offer', offered: '1.0.0' });
+});
+
+test('kernelStatus says the kernel is current when the running build is the offered one', () => {
+  assert.deepEqual(kernelStatus('1.0.0', '1.0.0'), { kind: 'current', current: '1.0.0' });
+  assert.deepEqual(kernelStatus('1.0.0-3f9a2c1', '1.0.0-3f9a2c1'), { kind: 'current', current: '1.0.0-3f9a2c1' });
+});
+
+test('kernelStatus shows the running build against the offer when they differ', () => {
+  assert.deepEqual(kernelStatus('1.0.0', '1.0.0-3f9a2c1'), {
+    kind: 'update',
+    current: '1.0.0',
+    offered: '1.0.0-3f9a2c1',
+  });
 });

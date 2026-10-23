@@ -171,6 +171,21 @@ static int susfs_show_features(void __user *arg)
 	return susfs_show_text(arg, buf);
 }
 
+#ifndef KERNEL_BUILD_VERSION
+#define KERNEL_BUILD_VERSION "unknown"
+#endif
+#ifndef KERNEL_BUILD_COMMIT
+#define KERNEL_BUILD_COMMIT "unknown"
+#endif
+
+static int susfs_show_build(void __user *arg)
+{
+	char buf[SUSFS_SHOW_BUF_LEN];
+
+	scnprintf(buf, sizeof(buf), "build_version=%s\nbuild_commit=%s\n", KERNEL_BUILD_VERSION, KERNEL_BUILD_COMMIT);
+	return susfs_show_text(arg, buf);
+}
+
 #ifdef CONFIG_KSU_SUSFS_SUS_SU
 /* "/dev/" plus the random name sus_su generates (at most 248 chars) and the NUL */
 #define SUS_SU_DRV_PATH_LEN 256
@@ -256,6 +271,8 @@ int susfs_ksu_dispatch(unsigned int cmd, void __user *arg)
 		return susfs_show_text(arg, SUSFS_VARIANT);
 	case CMD_SUSFS_SHOW_ENABLED_FEATURES:
 		return susfs_show_features(arg);
+	case CMD_SUSFS_SHOW_BUILD:
+		return susfs_show_build(arg);
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	case CMD_SUSFS_ADD_SUS_MOUNT:
 		return susfs_add_sus_mount(arg);

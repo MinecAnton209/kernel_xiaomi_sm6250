@@ -18,6 +18,7 @@ export const en: Record<MessageKey, string> = {
   'status.hint': 'The SUSFS version and the enabled features come from the kernel.',
   'status.kernelLoading': 'kernel: ...',
   'status.kernel': 'kernel: {version}',
+  'status.build': 'build: {build}',
   'status.susfsNoReply': 'SUSFS: the kernel does not answer',
 
   'paths.title': 'Hidden paths',
@@ -87,6 +88,8 @@ export const en: Record<MessageKey, string> = {
   'updates.module.available': 'module: {current} → {tag}',
   'updates.module.current': 'module: {current}, up to date',
   'updates.kernel.available': 'kernel: {tag} available',
+  'updates.kernel.updateFrom': 'kernel: {current} → {offered}',
+  'updates.kernel.current': 'kernel: {current}, up to date',
   'updates.kernel.noBuild': 'kernel: no build in the release',
   'updates.fullChangelog': 'Full changelog',
   'updates.onlyLatest': 'Latest only',

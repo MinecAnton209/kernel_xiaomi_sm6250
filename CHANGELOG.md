@@ -10,6 +10,10 @@ for release tags (`vX.Y.Z`).
 
 ### Added
 
+- The kernel stores its build version and reports it through
+  `ksu_susfs show_build`: `1.0.0` on a `v*` release and `1.0.0-<commit>` on
+  every other build. The WebUI status tab shows it next to SUSFS, and the
+  kernel line in the update panel reads `current → offered`.
 - DualSense Edge support in `hid-playstation`: device bind for `0x0df2`,
   Fn1/Fn2 buttons and rear paddles (`BTN_TRIGGER_HAPPY1-4`), Edge-aware
   gamepad creation.

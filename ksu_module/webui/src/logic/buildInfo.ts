@@ -59,3 +59,17 @@ export function describeOffer(tag: string, assetName: string, version?: string |
   const number = rollingBuildNumber(tag, assetName);
   return number === undefined ? { kind: 'tag', text: tag } : { kind: 'build', number };
 }
+
+export type KernelStatus =
+  | { kind: 'offer'; offered: string }
+  | { kind: 'current'; current: string }
+  | { kind: 'update'; current: string; offered: string };
+
+/**
+ * The kernel panel: the running build against the offered one. A kernel too old to report its build
+ * (`running` undefined) can only be offered.
+ */
+export function kernelStatus(running: string | undefined, offered: string): KernelStatus {
+  if (running === undefined) return { kind: 'offer', offered };
+  return running === offered ? { kind: 'current', current: running } : { kind: 'update', current: running, offered };
+}

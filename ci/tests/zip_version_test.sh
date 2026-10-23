@@ -41,8 +41,20 @@ check 'only the first version line counts' 'v1' "$(bash "$SCRIPT" "$WORK/twice.z
 make_zip noversion module.prop $'id=x\nname=y\n'
 check 'a module.prop without a version prints nothing' '' "$(bash "$SCRIPT" "$WORK/noversion.zip")"
 
-make_zip kernel META-INF/com/google/android/update-binary 'echo hi'
-check 'a kernel zip has no module.prop and prints nothing' '' "$(bash "$SCRIPT" "$WORK/kernel.zip")"
+make_zip kernel kernel_version $'1.0.0-3f9a2c1\n'
+check 'a kernel zip names its version from kernel_version' '1.0.0-3f9a2c1' "$(bash "$SCRIPT" "$WORK/kernel.zip")"
+
+make_zip kernelrelease kernel_version $'1.0.0\n'
+check 'a kernel release zip names the plain version' '1.0.0' "$(bash "$SCRIPT" "$WORK/kernelrelease.zip")"
+
+make_zip kernelnone META-INF/com/google/android/update-binary 'echo hi'
+check 'a zip with neither module.prop nor kernel_version prints nothing' '' "$(bash "$SCRIPT" "$WORK/kernelnone.zip")"
+
+mkdir -p "$WORK/both"
+printf 'version=v4.0.0\n' > "$WORK/both/module.prop"
+printf '1.0.0\n' > "$WORK/both/kernel_version"
+(cd "$WORK/both" && zip -q -r "$WORK/both.zip" .)
+check 'a module.prop version wins over kernel_version' 'v4.0.0' "$(bash "$SCRIPT" "$WORK/both.zip")"
 
 make_zip nested sub/module.prop $'version=v9.9.9\n'
 check 'a module.prop that is not at the root is ignored' '' "$(bash "$SCRIPT" "$WORK/nested.zip")"

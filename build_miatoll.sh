@@ -103,6 +103,10 @@ fi
 cp "$IMG" "$AK3_DIR/Image.gz"
 (cd "$AK3_DIR" && zip -r9 "$KDIR/$ZIP_NAME" * \
 	-x '.git*' README.md AnyKernel3.png Image.gz.bak)
+# The version travels in the zip so the release manifest can name the kernel without unpacking Image.gz.
+mkdir -p "$OUT_DIR"
+bash "$KDIR/ci/kernel-version.sh" "$KDIR" > "$OUT_DIR/kernel_version"
+zip -j9 "$KDIR/$ZIP_NAME" "$OUT_DIR/kernel_version"
 
 echo "==> done: $KDIR/$ZIP_NAME"
 ls -lh "$KDIR/$ZIP_NAME"

@@ -1,12 +1,13 @@
-import { FLASH_KERNEL, FLASH_OUT, MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confFile, quote } from '../core/config';
+import { BIN, FLASH_KERNEL, FLASH_OUT, MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confFile, quote } from '../core/config';
 import { byId, busy, type SwitchElement, type Togglable } from '../core/dom';
 import { exec, rebootPhone, run } from '../core/ksu';
 import { toast } from '../core/toast';
-import { describeOffer, installedBuild, moduleIsCurrent } from '../logic/buildInfo';
+import { describeOffer, installedBuild, kernelStatus, moduleIsCurrent } from '../logic/buildInfo';
 import { resolveSha256 } from '../logic/checksum';
 import { flashOutcome, lastLogLine, parseFlashPoll } from '../logic/flashStatus';
 import { t } from '../logic/i18n';
 import { parseProgress } from '../logic/progressMath';
+import { buildVersion } from '../logic/statusFormat';
 import { confirmFlash } from '../ui/flashDialog';
 import { askReboot } from '../ui/rebootDialog';
 import {
@@ -128,6 +129,26 @@ async function installed(): Promise<{ version: string; build: number | undefined
   return { version, build: installedBuild(prop, recorded) };
 }
 
+async function showKernelStatus(kernelAsset: ManifestAsset | undefined, tag: string): Promise<void> {
+  if (!kernelAsset) {
+    setChip('kernelStatus', t('updates.kernel.noBuild'), 'off');
+    return;
+  }
+  const running = buildVersion((await exec(`${quote(BIN)} show_build 2> /dev/null`)).stdout);
+  const status = kernelStatus(running, kernelAsset.version || offeredName(tag, kernelAsset));
+  switch (status.kind) {
+    case 'offer':
+      setChip('kernelStatus', t('updates.kernel.available', { tag: status.offered }), 'update');
+      break;
+    case 'current':
+      setChip('kernelStatus', t('updates.kernel.current', { current: status.current }), 'ok');
+      break;
+    case 'update':
+      setChip('kernelStatus', t('updates.kernel.updateFrom', { current: status.current, offered: status.offered }), 'update');
+      break;
+  }
+}
+
 /** The file's own version when the manifest has one, else the run number for the rolling pre-release, else the tag. */
 function offeredName(tag: string, asset: ManifestAsset): string {
   const offer = describeOffer(tag, asset.name, asset.version);
@@ -232,11 +253,7 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
   }
 
   const kernelAsset = findAsset(loaded, /^miatoll-default-.*\.zip$/);
-  setChip(
-    'kernelStatus',
-    kernelAsset ? t('updates.kernel.available', { tag: offeredName(loaded.tag, kernelAsset) }) : t('updates.kernel.noBuild'),
-    kernelAsset ? 'update' : 'off',
-  );
+  await showKernelStatus(kernelAsset, loaded.tag);
   setActions(moduleUpdate, Boolean(kernelAsset));
 }
 

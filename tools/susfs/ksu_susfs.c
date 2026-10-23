@@ -27,6 +27,7 @@
 #define CMD_SUSFS_SHOW_ENABLED_FEATURES 0x555e2
 #define CMD_SUSFS_SHOW_VARIANT 0x555e3
 #define CMD_SUSFS_SHOW_SUS_SU_WORKING_MODE 0x555e4
+#define CMD_SUSFS_SHOW_BUILD 0x555e5
 #define CMD_SUSFS_IS_SUS_SU_READY 0x555f0
 #define CMD_SUSFS_SUS_SU 0x60000
 #define SUSFS_SHOW_BUF_LEN 512
@@ -449,6 +450,14 @@ static int cmd_show_features(int argc, char **argv)
 	return cmd_show(CMD_SUSFS_SHOW_ENABLED_FEATURES);
 }
 
+static int cmd_show_build(int argc, char **argv)
+{
+	(void)argv;
+	if (argc != 0)
+		return 1;
+	return cmd_show(CMD_SUSFS_SHOW_BUILD);
+}
+
 static int cmd_show_sus_su_working_mode(int argc, char **argv)
 {
 	(void)argv;
@@ -542,6 +551,7 @@ static const struct susfs_command commands[] = {
 	{ .name = "show_version", .args = "", .run = cmd_show_version, .shows_reply = 1 },
 	{ .name = "show_variant", .args = "", .run = cmd_show_variant, .shows_reply = 1 },
 	{ .name = "show_features", .args = "", .run = cmd_show_features, .shows_reply = 1 },
+	{ .name = "show_build", .args = "", .run = cmd_show_build, .shows_reply = 1 },
 	{ .name = "sus_su", .args = "<0|2>", .run = cmd_sus_su, .shows_reply = 0 },
 	{ .name = "show_sus_su_working_mode", .args = "", .run = cmd_show_sus_su_working_mode, .shows_reply = 1 },
 	{ .name = "is_sus_su_ready", .args = "", .run = cmd_is_sus_su_ready, .shows_reply = 1 },

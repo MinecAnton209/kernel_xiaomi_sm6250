@@ -16,6 +16,7 @@ export const ru = {
   'status.hint': 'Версия SUSFS и включённые функции берутся из ядра.',
   'status.kernelLoading': 'ядро: ...',
   'status.kernel': 'ядро: {version}',
+  'status.build': 'сборка: {build}',
   'status.susfsNoReply': 'SUSFS: нет ответа от ядра',
 
   'paths.title': 'Скрытые пути',
@@ -84,6 +85,8 @@ export const ru = {
   'updates.module.available': 'модуль: {current} → {tag}',
   'updates.module.current': 'модуль: {current}, актуален',
   'updates.kernel.available': 'ядро: {tag} доступно',
+  'updates.kernel.updateFrom': 'ядро: {current} → {offered}',
+  'updates.kernel.current': 'ядро: {current}, актуально',
   'updates.kernel.noBuild': 'ядро: в релизе нет сборки',
   'updates.fullChangelog': 'Полный changelog',
   'updates.onlyLatest': 'Только последнее',

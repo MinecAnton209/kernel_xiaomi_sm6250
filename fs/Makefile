@@ -15,6 +15,9 @@ obj-y :=	open.o read_write.o file_table.o super.o \
 		stack.o fs_struct.o statfs.o fs_pin.o nsfs.o
 
 obj-$(CONFIG_KSU_SUSFS) += susfs.o susfs_ksu.o
+# Stamped per build so the WebUI can show which kernel it talks to; ci/kernel-version.sh decides whether a commit is part of the version.
+CFLAGS_susfs_ksu.o += -DKERNEL_BUILD_VERSION=\"$(shell bash $(srctree)/ci/kernel-version.sh $(srctree))\"
+CFLAGS_susfs_ksu.o += -DKERNEL_BUILD_COMMIT=\"$(shell git -C $(srctree) rev-parse --short HEAD 2>/dev/null || echo unknown)\"
 obj-$(CONFIG_KSU_SUSFS_SUS_SU) += sus_su.o
 
 ifeq ($(CONFIG_BLOCK),y)
