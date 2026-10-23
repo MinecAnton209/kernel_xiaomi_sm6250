@@ -20,6 +20,7 @@ import { initTuneActions, initTuneHelp } from './pages/tune';
 import { initDevice } from './pages/device';
 import { initDebugReport, initSensorPolling } from './pages/status';
 import { initProfiles } from './pages/profile';
+import { initLogger } from './pages/logger';
 import { initUname } from './pages/uname';
 import { initUpdates, loadChannel } from './pages/updates';
 import { pickLanguage, setLanguage } from './logic/i18n';
@@ -40,6 +41,7 @@ function init(): void {
   initDebugReport();
   initSensorPolling();
   initProfiles();
+  initLogger();
   initUname();
 
   if (!hasBridge()) {
