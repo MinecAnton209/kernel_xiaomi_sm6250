@@ -94,6 +94,7 @@ export const ru = {
   'updates.githubFailed': 'Не удалось загрузить данные с GitHub',
   'updates.changelogFailed': 'Не удалось загрузить changelog',
   'updates.checkFailed': 'Не удалось проверить обновления',
+  'updates.checksumConflict': 'Контрольные суммы {name} в манифесте и на GitHub не совпадают, файл не предлагается',
 
   'download.startFailed': 'Не удалось запустить загрузку',
   'download.cancelled': 'Загрузка отменена',
@@ -126,6 +127,8 @@ export const ru = {
   'flash.confirmTitle': 'Прошить ядро?',
   'flash.confirmBody':
     '{file} будет записан в раздел boot. Убедитесь, что это сборка для вашего телефона. Если он не загрузится, прежнее ядро можно вернуть из recovery или через fastboot.',
+  'flash.confirmChecksum': 'Перед записью файл будет проверен по контрольной сумме SHA-256.',
+  'flash.confirmNoChecksum': 'Контрольная сумма этого файла неизвестна, поэтому подлинность проверить нельзя.',
   'flash.confirmCancel': 'Отмена',
   'flash.confirmFlash': 'Прошить',
   'flash.running': 'Идёт прошивка, не выключайте телефон…',

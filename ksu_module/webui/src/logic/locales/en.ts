@@ -97,6 +97,7 @@ export const en: Record<MessageKey, string> = {
   'updates.githubFailed': 'Could not load data from GitHub',
   'updates.changelogFailed': 'Could not load the changelog',
   'updates.checkFailed': 'Could not check for updates',
+  'updates.checksumConflict': 'The checksums of {name} in the manifest and on GitHub differ, so the file is not offered',
 
   'download.startFailed': 'Could not start the download',
   'download.cancelled': 'Download cancelled',
@@ -129,6 +130,8 @@ export const en: Record<MessageKey, string> = {
   'flash.confirmTitle': 'Flash the kernel?',
   'flash.confirmBody':
     '{file} will be written to the boot partition. Make sure it is a build for your phone. If the phone does not boot, the earlier kernel can be restored from recovery or with fastboot.',
+  'flash.confirmChecksum': 'The file will be checked against its SHA-256 checksum before it is written.',
+  'flash.confirmNoChecksum': 'The checksum of this file is unknown, so it cannot be verified.',
   'flash.confirmCancel': 'Cancel',
   'flash.confirmFlash': 'Flash',
   'flash.running': 'Flashing, do not turn the phone off…',

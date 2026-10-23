@@ -103,6 +103,13 @@ for release tags (`vX.Y.Z`).
   installer output is shown live, a flash cannot be cancelled once it has
   started, and a Reboot button appears when it succeeds. The texts also say
   that the zip can be flashed in the KernelSU manager or through recovery.
+- Kernel Control: the SHA-256 of a release asset now also comes from the
+  `digest` field of the GitHub API, which GitHub computes when the file is
+  uploaded. It wins over the checksum in `manifest.json`, and an asset whose
+  two checksums differ is not offered. `flash_kernel.sh` takes the checksum as
+  a third argument and checks it on its own copy of the zip, right before
+  that copy is flashed, so a file that changed after the download is refused;
+  the confirmation dialog says whether a checksum is known.
 - CI: a module built from anything but a release tag gets the first seven
   characters of the commit appended to its version (`v1.1.0-e34731a`), so the
   module on a phone can be traced to its commit. A release keeps the plain

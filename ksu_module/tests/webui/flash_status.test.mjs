@@ -91,7 +91,7 @@ test('flashing asks first and does nothing when the answer is no', () => {
 });
 
 test('the kernel download offers flashing, and only a finished flash offers a reboot', () => {
-  assert.match(updates, /showSuccess\(t\('install\.kernelDone'\)[\s\S]*?flash: \(\) => void flashKernel\(target\)/);
+  assert.match(updates, /showSuccess\(t\('install\.kernelDone'\)[\s\S]*?flash: \(\) => void flashKernel\(target, asset\.sha256\)/);
   assert.match(updates, /showSuccess\(t\('flash\.done'\)[\s\S]*?reboot:/);
 });
 

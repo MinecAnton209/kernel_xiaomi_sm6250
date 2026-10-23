@@ -2,6 +2,7 @@ import { FLASH_KERNEL, FLASH_OUT, MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confF
 import { byId, busy, type SwitchElement, type Togglable } from '../core/dom';
 import { exec, run } from '../core/ksu';
 import { toast } from '../core/toast';
+import { resolveSha256 } from '../logic/checksum';
 import { flashOutcome, lastLogLine, parseFlashPoll } from '../logic/flashStatus';
 import { t } from '../logic/i18n';
 import { parseProgress } from '../logic/progressMath';
@@ -35,6 +36,8 @@ export type Channel = 'release' | 'ci';
 interface GhAsset {
   name: string;
   browser_download_url: string;
+  /** `sha256:<hex>`, computed by GitHub when the file was uploaded; absent on older assets. */
+  digest?: string | null;
 }
 
 interface GhRelease {
@@ -94,7 +97,12 @@ async function loadRelease(channel: Channel): Promise<Loaded> {
   const manifestAsset = release.assets.find((asset) => asset.name === 'manifest.json');
   if (manifestAsset) {
     const manifest = await getJson<Manifest>(manifestAsset.browser_download_url);
-    return { tag: manifest.tag, changelog: manifest.changelog, assets: manifest.assets };
+    const assets = manifest.assets.map((asset) => {
+      const { sha256, conflict } = resolveSha256(asset.sha256, release.assets.find((ghAsset) => ghAsset.name === asset.name)?.digest);
+      if (conflict) throw new Error(t('updates.checksumConflict', { name: asset.name }));
+      return { ...asset, sha256 };
+    });
+    return { tag: manifest.tag, changelog: manifest.changelog, assets };
   }
   return {
     tag: release.tag_name,
@@ -103,7 +111,7 @@ async function loadRelease(channel: Channel): Promise<Loaded> {
       name: asset.name,
       url: asset.browser_download_url,
       size: 0,
-      sha256: '',
+      sha256: resolveSha256('', asset.digest).sha256,
     })),
   };
 }
@@ -443,7 +451,7 @@ async function downloadKernel(asset: ManifestAsset, target: string): Promise<voi
     }
     await cleanupTransfer(target, false);
     showSuccess(t('install.kernelDone'), t('install.kernelDoneHint', { target }), {
-      flash: () => void flashKernel(target),
+      flash: () => void flashKernel(target, asset.sha256),
     });
   } finally {
     setLocked(false);
@@ -455,10 +463,14 @@ const FLASH_TIMEOUT_MS = 15 * 60 * 1000;
 type FlashResult = { ok: true } | { ok: false; message: string; log: string };
 
 /** Starts flash_kernel.sh detached and follows its state file and log until it ends. */
-async function runFlash(zip: string): Promise<FlashResult> {
+async function runFlash(zip: string, sha256: string): Promise<FlashResult> {
   const file = (ext: string) => quote(`${FLASH_OUT}.${ext}`);
   await exec(`rm -f ${file('state')} ${file('log')} ${file('pid')}`);
-  const launch = await exec(`( sh ${quote(FLASH_KERNEL)} ${quote(zip)} ${quote(FLASH_OUT)} ) </dev/null >/dev/null 2>&1 &`);
+  // The script checks the checksum against its own copy of the zip, right before it flashes that copy.
+  const checksum = sha256 ? ` ${quote(sha256)}` : '';
+  const launch = await exec(
+    `( sh ${quote(FLASH_KERNEL)} ${quote(zip)} ${quote(FLASH_OUT)}${checksum} ) </dev/null >/dev/null 2>&1 &`,
+  );
   if (launch.errno !== 0) {
     return { ok: false, message: launch.stderr.trim() || t('flash.startFailed'), log: '' };
   }
@@ -489,9 +501,9 @@ async function runFlash(zip: string): Promise<FlashResult> {
 }
 
 /** Writes a downloaded kernel zip to the boot partition, after the user confirmed it. */
-async function flashKernel(zip: string): Promise<void> {
+async function flashKernel(zip: string, sha256: string): Promise<void> {
   if (transferring) return;
-  if (!(await confirmFlash(zip.slice(zip.lastIndexOf('/') + 1)))) return;
+  if (!(await confirmFlash(zip.slice(zip.lastIndexOf('/') + 1), sha256 !== ''))) return;
 
   const steps: readonly Step[] = ['install'];
   setLocked(true);
@@ -501,11 +513,11 @@ async function flashKernel(zip: string): Promise<void> {
     steps,
     // Stopping the installer halfway could leave a broken boot image, so there is no cancel button.
     onCancel: () => undefined,
-    onRetry: () => void flashKernel(zip),
+    onRetry: () => void flashKernel(zip, sha256),
   });
   setStep('install', steps, 'flash.running');
   try {
-    const result = await runFlash(zip);
+    const result = await runFlash(zip, sha256);
     if (result.ok) {
       showSuccess(t('flash.done'), t('flash.doneHint'), { reboot: () => void exec('reboot') });
     } else {
