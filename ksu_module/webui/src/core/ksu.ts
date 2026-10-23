@@ -1,4 +1,5 @@
 import { t } from '../logic/i18n';
+import { REBOOT_COMMAND } from './config';
 import { createRunner, type ExecResult, type Registry, type SpawnBridge } from './spawnExec';
 import { toast } from './toast';
 
@@ -52,6 +53,11 @@ const runner = createRunner({
 /** Runs a command in a root shell in the background; the page stays responsive meanwhile. */
 export function exec(command: string): Promise<ExecResult> {
   return runner.exec(command);
+}
+
+/** Reboots the phone the way the KernelSU manager does. The page goes away with the phone. */
+export async function rebootPhone(): Promise<void> {
+  await exec(REBOOT_COMMAND);
 }
 
 /** Starts the check that decides between `spawn` and `exec`, so the first real command does not wait for it. */

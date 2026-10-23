@@ -302,6 +302,19 @@
       </div>
     </m3e-dialog>
 
+    <m3e-dialog id="rebootDialog">
+      <span slot="header" data-i18n="reboot.title"></span>
+      <p id="rebootDialogBody"></p>
+      <div slot="actions" end>
+        <m3e-button variant="text" autofocus>
+          <m3e-dialog-action return-value="later" data-i18n="reboot.later"></m3e-dialog-action>
+        </m3e-button>
+        <m3e-button variant="filled">
+          <m3e-dialog-action return-value="reboot" data-i18n="reboot.now"></m3e-dialog-action>
+        </m3e-button>
+      </div>
+    </m3e-dialog>
+
     <div id="toast" role="status"></div>
 
     <script type="module" src="./src/main.ts"></script>

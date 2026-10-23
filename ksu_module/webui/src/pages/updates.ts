@@ -1,6 +1,6 @@
 import { FLASH_KERNEL, FLASH_OUT, MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confFile, quote } from '../core/config';
 import { byId, busy, type SwitchElement, type Togglable } from '../core/dom';
-import { exec, run } from '../core/ksu';
+import { exec, rebootPhone, run } from '../core/ksu';
 import { toast } from '../core/toast';
 import { installedBuild, moduleIsCurrent, rollingBuildNumber } from '../logic/buildInfo';
 import { resolveSha256 } from '../logic/checksum';
@@ -8,6 +8,7 @@ import { flashOutcome, lastLogLine, parseFlashPoll } from '../logic/flashStatus'
 import { t } from '../logic/i18n';
 import { parseProgress } from '../logic/progressMath';
 import { confirmFlash } from '../ui/flashDialog';
+import { askReboot } from '../ui/rebootDialog';
 import {
   closePanel,
   initPanel,
@@ -382,7 +383,12 @@ async function updateModule(): Promise<void> {
       return;
     }
     await run(`printf '%s' ${quote(asset.name)} > ${confFile('module_build')}`);
-    showSuccess(t('install.moduleDone'), t('install.moduleDoneHint'));
+    showSuccess(t('install.moduleDone'), t('install.moduleDoneHint'), { reboot: () => void rebootPhone() });
+    // KernelSU applies an installed module on the next boot; the button stays on the panel if the answer is later.
+    if (await askReboot('module')) {
+      await rebootPhone();
+      return;
+    }
   } finally {
     setLocked(false);
   }
@@ -533,7 +539,9 @@ async function flashKernel(zip: string, sha256: string): Promise<void> {
   try {
     const result = await runFlash(zip, sha256);
     if (result.ok) {
-      showSuccess(t('flash.done'), t('flash.doneHint'), { reboot: () => void exec('reboot') });
+      showSuccess(t('flash.done'), t('flash.doneHint'), { reboot: () => void rebootPhone() });
+      // The new kernel only runs after a reboot; the button stays on the panel if the answer is later.
+      if (await askReboot('kernel')) await rebootPhone();
     } else {
       showError(t('flash.failed'), result.message, result.log, true);
     }

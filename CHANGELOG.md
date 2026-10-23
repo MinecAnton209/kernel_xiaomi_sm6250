@@ -120,6 +120,11 @@ for release tags (`vX.Y.Z`).
   that were not applied opens the same dialog as the Tuning tab (save,
   discard or stay). The check is now a per-tab guard in `nav.ts`, and the
   dialog text no longer names one tab.
+- Kernel Control: after a module update or a kernel flash succeeds, a dialog
+  asks whether to reboot now or later. The reboot is the one the KernelSU
+  manager itself runs (`svc power reboot`, with `reboot` as a fallback). With
+  "Later" a Reboot button stays on the panel, and a failed install or flash
+  never asks.
 - CI: a module built from anything but a release tag gets the first seven
   characters of the commit appended to its version (`v1.1.0-e34731a`), so the
   module on a phone can be traced to its commit. A release keeps the plain

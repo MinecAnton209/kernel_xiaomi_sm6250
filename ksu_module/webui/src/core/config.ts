@@ -11,6 +11,8 @@ export const UNAME = `${MODULE_DIR}/bin/uname.sh`;
 export const FLASH_KERNEL = `${MODULE_DIR}/bin/flash_kernel.sh`;
 /** Prefix of the .log, .state and .pid files that flash_kernel.sh writes. */
 export const FLASH_OUT = `/data/local/tmp/${MODULE_ID}_flash`;
+/** What the KernelSU manager runs to reboot (KsuCli.kt, `reboot()`): the power service first, the binary as a fallback. */
+export const REBOOT_COMMAND = '/system/bin/svc power reboot || /system/bin/reboot';
 export const MODULE_ZIP = `/data/local/tmp/${MODULE_ID}_update.zip`;
 export const MODULE_ASSET_RE = new RegExp(`^${MODULE_ID}-.*\\.zip$`);
 export const PATH_RE = /^\/[A-Za-z0-9._/-]{1,255}$/;
