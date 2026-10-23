@@ -1,0 +1,237 @@
+export const ru = {
+  'app.subtitle': 'SUSFS, обходная зарядка и тюнинг miatoll-ядра',
+  'app.noBridge.title': 'Нет связи с KernelSU',
+  'app.noBridge.hint': 'Открой страницу из менеджера KernelSU-Next, а не в браузере.',
+  'common.noData': 'нет данных',
+  'common.commandFailed': 'Команда не выполнена',
+
+  'nav.label': 'Разделы',
+  'nav.status': 'Статус',
+  'nav.paths': 'Пути',
+  'nav.system': 'Система',
+  'nav.tune': 'Тюнинг',
+  'ptr.label': 'Обновление',
+
+  'status.title': 'Состояние',
+  'status.hint': 'Версия SUSFS и включённые функции берутся из ядра.',
+  'status.kernelLoading': 'ядро: ...',
+  'status.kernel': 'ядро: {version}',
+  'status.susfsNoReply': 'SUSFS: нет ответа от ядра',
+
+  'paths.title': 'Скрытые пути',
+  'paths.hint': 'Путь должен существовать. Список сохраняется и применяется после каждой загрузки.',
+  'paths.add': 'Добавить',
+  'paths.apply': 'Применить сейчас',
+  'paths.empty': 'Список пуст',
+  'paths.remove': 'Убрать',
+  'paths.invalid': 'Путь должен начинаться с / и содержать только латиницу, цифры, . _ - /',
+  'paths.duplicate': 'Этот путь уже в списке',
+  'paths.missing': 'Файла или папки по этому пути нет',
+  'paths.added': 'Путь добавлен',
+  'paths.removed': 'Убрано из списка. В ядре путь скрыт до перезагрузки',
+  'paths.failed': 'Не применено путей: {count}',
+  'paths.applied': 'Пути применены',
+
+  'logs.title': 'Логи SUSFS',
+  'logs.hint': 'Записи о работе SUSFS в лог ядра.',
+  'logs.switch': 'Писать в лог ядра',
+  'logs.on': 'Лог включён',
+  'logs.off': 'Лог выключен',
+
+  'bypass.title': 'Обходная зарядка',
+  'bypass.hint':
+    'Отключает зарядку батареи, система питается от USB. Нужен блок не слабее 2 А, иначе батарея будет понемногу разряжаться. Состояние восстанавливается после каждой загрузки.',
+  'bypass.switch': 'Отключить зарядку батареи',
+  'bypass.chipLoading': 'обходная зарядка: ...',
+  'bypass.unsupported': 'ядро без bypass_charging',
+  'bypass.on': 'Обходная зарядка включена',
+  'bypass.off': 'Обходная зарядка выключена',
+
+  'charge.title': 'Зарядка',
+  'charge.hint':
+    'Что ограничивает ток: тип зарядника, лимит входа и температурный уровень драйвера (0 — без температурного ограничения). Обновляется само.',
+  'charge.type': 'зарядник: {value}',
+  'charge.pdOn': 'PD: активен',
+  'charge.pdOff': 'PD: нет',
+  'charge.inputLimit': 'лимит входа: {value} мА',
+  'charge.inputVoltage': 'напряжение входа: {value} В',
+  'charge.batteryLimit': 'лимит тока батареи: {value} А',
+  'charge.thermalLevel': 'температурный уровень: {value}',
+  'charge.mode': 'режим заряда: {value}',
+  'charge.chargerTemp': 'температура зарядника: {value} °C',
+  'charge.power': 'в батарею: {value} Вт',
+  'charge.empty': 'нет данных от драйвера зарядки',
+  'battery.status': 'статус: {value}',
+  'battery.current': 'ток: {value}',
+  'battery.currentValue': '{value} мА',
+  'battery.capacity': 'заряд: {value}',
+  'battery.capacityValue': '{value}%',
+  'battery.temperature': 'температура: {value}',
+  'battery.temperatureValue': '{value} °C',
+
+  'umount.hint': 'Размонтирует пути для текущего mnt namespace прямо сейчас.',
+  'umount.button': 'Размонтировать сейчас',
+  'umount.done': 'Try umount выполнен',
+
+  'updates.title': 'Обновления',
+  'updates.hint': 'Проверка по GitHub. Модуль ставится через KernelSU, ядро скачивается в Загрузки и прошивается через recovery.',
+  'updates.ciSwitch': 'CI-сборки (выкл. = только релизы)',
+  'updates.module.idle': 'модуль: проверьте обновления',
+  'updates.kernel.idle': 'ядро: проверьте обновления',
+  'updates.module.noZip': 'модуль: в релизе нет zip',
+  'updates.module.notInstalled': 'не установлен',
+  'updates.module.available': 'модуль: {current} → {tag}',
+  'updates.module.current': 'модуль: {current}, актуален',
+  'updates.kernel.available': 'ядро: {tag} доступно',
+  'updates.kernel.noBuild': 'ядро: в релизе нет сборки',
+  'updates.fullChangelog': 'Полный changelog',
+  'updates.onlyLatest': 'Только последнее',
+  'updates.checking': 'Проверка обновлений',
+  'updates.check': 'Проверить',
+  'updates.kernelDownload': 'Скачать ядро…',
+  'updates.moduleUpdate': 'Обновить модуль',
+  'updates.checkFirst': 'Сначала проверьте обновления',
+  'updates.githubFailed': 'Не удалось загрузить данные с GitHub',
+  'updates.changelogFailed': 'Не удалось загрузить changelog',
+  'updates.checkFailed': 'Не удалось проверить обновления',
+
+  'download.startFailed': 'Не удалось запустить загрузку',
+  'download.cancelled': 'Загрузка отменена',
+  'download.failed': 'Загрузка не удалась',
+  'download.exited': 'Процесс загрузки завершился неожиданно',
+  'download.tooLong': 'Загрузка заняла слишком много времени',
+
+  'install.moduleTitle': 'Обновление модуля',
+  'install.kernelTitle': 'Загрузка ядра',
+  'install.failedHeading': 'Не удалось',
+  'install.installFailed': 'Установка не удалась',
+  'install.ksuError': 'KernelSU вернул ошибку',
+  'install.moduleDone': 'Модуль обновлён',
+  'install.moduleDoneHint': 'Перезагрузите телефон, чтобы применить',
+  'install.kernelDone': 'Ядро сохранено',
+  'install.kernelDoneHint': '{target}. Прошейте его через recovery',
+  'install.connecting': 'Подключение…',
+  'install.verifying': 'Проверяем контрольную сумму…',
+  'install.installing': 'KernelSU устанавливает модуль…',
+  'install.progress': '{done} из {total} MB',
+  'install.barLabel': 'Прогресс загрузки и установки',
+  'install.stepDownload': 'Загрузка',
+  'install.stepVerify': 'Проверка',
+  'install.stepInstall': 'Установка',
+  'install.cancel': 'Отмена',
+  'install.retry': 'Повторить',
+  'install.done': 'Готово',
+  'install.seconds': '~{seconds} с',
+  'install.minutes': '~{minutes} мин {seconds} с',
+
+  'picker.title': 'Куда сохранить ядро',
+  'picker.up': 'Вверх',
+  'picker.cancel': 'Отмена',
+  'picker.select': 'Сохранить сюда',
+  'picker.noFolders': 'Вложенных папок нет',
+
+  'tune.title': 'Тюнинг ядра',
+  'tune.hint': 'Значения применяются сразу и восстанавливаются после загрузки. Пункты, которых нет в ядре, помечены.',
+  'tune.helpOpen': 'Справка',
+  'tune.helpBack': 'Назад к настройкам',
+  'tune.helpTitle': 'Справка по тюнингу',
+  'tune.helpIntro':
+    'Значения применяются сразу и сохраняются: после каждой загрузки модуль возвращает их через несколько секунд. Чтобы вернуть прежнее поведение, выберите другое значение; после перезагрузки применится то, что выбрано сейчас.',
+  'tune.unsupported': 'ядро не поддерживает',
+  'tune.readFailed': 'Не удалось прочитать настройки ядра. Откройте вкладку ещё раз.',
+  'tune.advice': 'Совет: {text}',
+
+  'tune.io_scheduler.title': 'Планировщик ввода-вывода',
+  'tune.io_scheduler.hint': 'Порядок обращений к накопителю. Применяется ко всем дискам sd*.',
+  'tune.io_scheduler.about':
+    'Решает, в каком порядке ядро отправляет запросы чтения и записи в память телефона (UFS). Влияет на скорость запуска приложений и плавность при фоновых записях.',
+  'tune.io_scheduler.noop':
+    'Без переупорядочивания, минимум работы процессора. Подходит для быстрой флеш-памяти, но не защищает от задержек при большой записи.',
+  'tune.io_scheduler.deadline':
+    'Следит, чтобы ни один запрос не ждал слишком долго. Хороший баланс для телефона; по умолчанию в этом ядре.',
+  'tune.io_scheduler.cfq':
+    'Делит ввод-вывод между процессами по справедливости. Тяжелее для процессора, на флеш-памяти обычно не даёт выигрыша.',
+  'tune.io_scheduler.mq-deadline': 'Версия deadline для многоочередных устройств. Только если есть в ядре.',
+  'tune.io_scheduler.kyber': 'Ограничивает глубину очереди ради низких задержек. Только если есть в ядре.',
+  'tune.io_scheduler.bfq':
+    'Распределяет пропускную способность между приложениями. Требует больше процессорного времени; только если есть в ядре.',
+  'tune.io_scheduler.advice': 'Оставьте deadline. Меняйте, только если сами замеряете скорость диска.',
+
+  'tune.cpu_governor_little.title': 'Governor CPU: малые ядра',
+  'tune.cpu_governor_little.hint': 'Кластер policy0 (ядра 0–5).',
+  'tune.cpu_governor_little.about':
+    'Алгоритм, который выбирает частоту энергоэффективных ядер (Kryo Silver). Они выполняют основную фоновую работу и лёгкие задачи.',
+  'tune.cpu_governor_big.title': 'Governor CPU: большие ядра',
+  'tune.cpu_governor_big.hint': 'Кластер policy6 (ядра 6–7).',
+  'tune.cpu_governor_big.about':
+    'Два быстрых ядра (Kryo Gold) включаются под тяжёлые задачи: игры, запуск приложений, сборку страниц.',
+  'tune.cpu_governor.schedutil':
+    'Частота подстраивается под нагрузку, которую видит планировщик задач. Плавно и экономично; по умолчанию в этом ядре.',
+  'tune.cpu_governor.performance': 'Всегда максимальная частота. Максимальная отзывчивость, но выше нагрев и расход заряда.',
+  'tune.cpu_governor.powersave': 'Всегда минимальная частота. Телефон будет заметно тормозить.',
+  'tune.cpu_governor.ondemand': 'Классический алгоритм: частота растёт при нагрузке. Только если есть в ядре.',
+  'tune.cpu_governor.conservative': 'Как ondemand, но меняет частоту плавнее. Только если есть в ядре.',
+  'tune.cpu_governor.userspace': 'Частотой управляет программа в userspace. Обычно не нужен.',
+  'tune.cpu_governor.advice':
+    'schedutil подходит для повседневной работы. performance включайте на время тестов и игр и следите за температурой.',
+
+  'tune.gpu_governor.title': 'Governor GPU',
+  'tune.gpu_governor.hint': 'Adreno 618, kgsl devfreq.',
+  'tune.gpu_governor.about': 'Алгоритм, выбирающий частоту графического процессора. Влияет на FPS в играх и на нагрев.',
+  'tune.gpu_governor.msm-adreno-tz': 'Штатный: частотой управляет прошивка TrustZone по загрузке GPU. Безопасный выбор.',
+  'tune.gpu_governor.performance':
+    'Максимальная частота GPU всегда. Больше FPS на тяжёлых сценах, но растут нагрев и расход заряда.',
+  'tune.gpu_governor.powersave': 'Минимальная частота. Графика будет тормозить.',
+  'tune.gpu_governor.simple_ondemand': 'Частота растёт и падает по загрузке. Только если есть в ядре.',
+  'tune.gpu_governor.advice': 'Оставьте msm-adreno-tz. performance на время игры допустим, но проверьте температуру.',
+
+  'tune.tcp_congestion.title': 'Управление перегрузкой TCP',
+  'tune.tcp_congestion.hint': 'Как соединения подстраивают скорость. Действует на новые соединения.',
+  'tune.tcp_congestion.about':
+    'Алгоритм, который решает, насколько быстро отправлять данные и когда притормозить, чтобы не перегружать сеть.',
+  'tune.tcp_congestion.cubic': 'Стандарт Linux. Хорош в стабильной сети.',
+  'tune.tcp_congestion.bbr':
+    'Ориентируется на измеренную пропускную способность и задержку, а не на потерю пакетов. Часто быстрее на Wi-Fi и мобильной сети с потерями.',
+  'tune.tcp_congestion.reno': 'Старый консервативный алгоритм. Нужен редко.',
+  'tune.tcp_congestion.westwood': 'Оценивает доступную полосу по подтверждениям. Только если есть в ядре.',
+  'tune.tcp_congestion.advice':
+    'bbr можно попробовать при нестабильном соединении; если станет хуже, вернитесь на cubic. Уже открытые соединения продолжат со старым алгоритмом.',
+
+  'tune.thp.title': 'Transparent Huge Pages',
+  'tune.thp.hint': 'Крупные страницы памяти по 2 МБ.',
+  'tune.thp.about':
+    'Ядро может объединять обычные страницы памяти в крупные. Это снижает накладные расходы на управление памятью, но может увеличить расход ОЗУ и вызывать паузы при их сборке.',
+  'tune.thp.always':
+    'Ядро объединяет страницы само, для всех приложений. Выше риск лишнего расхода памяти и задержек.',
+  'tune.thp.madvise': 'Только для приложений, которые сами попросили. Безопасный компромисс; по умолчанию в этом ядре.',
+  'tune.thp.never':
+    'Выключено. Меньше задержек и расход памяти, но некоторые тяжёлые приложения могут терять немного скорости.',
+  'tune.thp.advice': 'Для телефона подходит madvise.',
+
+  'tune.swappiness.title': 'Swappiness',
+  'tune.swappiness.hint': 'Насколько охотно память уходит в zram.',
+  'tune.swappiness.about':
+    'Число от 0 до 100: насколько активно ядро выгружает редко используемые данные приложений в сжатый swap (zram) вместо сброса файлового кэша.',
+  'tune.swappiness.0':
+    'Swap только при крайней необходимости. Приложения дольше остаются в ОЗУ, но файловый кэш сбрасывается чаще.',
+  'tune.swappiness.60': 'Значение по умолчанию в Linux.',
+  'tune.swappiness.100':
+    'Память приложений выгружается так же охотно, как сбрасывается кэш. Это обычный выбор при zram.',
+  'tune.swappiness.advice':
+    'Начните со значений 60–100. Очень высокое значение на слабом процессоре даёт лишнюю нагрузку на сжатие.',
+
+  'su.hint':
+    'Root для приложений из списка KernelSU-Next через скрытое символьное устройство. Устройство создаётся при включении и пересоздаётся после загрузки.',
+  'su.switch': 'Включить sus_su',
+  'su.modeLoading': 'режим: ...',
+  'su.deviceLoading': 'устройство: ...',
+  'su.unsupported': 'ядро без sus_su',
+  'su.modeOn': 'режим: включён',
+  'su.modeOff': 'режим: выключен',
+  'su.deviceReady': 'устройство: готово',
+  'su.deviceNo': 'устройство: нет',
+  'su.on': 'sus_su включён',
+  'su.off': 'sus_su выключен',
+} as const;
+
+export type MessageKey = keyof typeof ru;

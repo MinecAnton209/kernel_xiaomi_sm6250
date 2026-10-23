@@ -1,0 +1,238 @@
+import type { MessageKey } from './ru.ts';
+
+export const en: Record<MessageKey, string> = {
+  'app.subtitle': 'SUSFS, bypass charging and tuning for the miatoll kernel',
+  'app.noBridge.title': 'No connection to KernelSU',
+  'app.noBridge.hint': 'Open this page from the KernelSU-Next manager, not in a browser.',
+  'common.noData': 'no data',
+  'common.commandFailed': 'The command failed',
+
+  'nav.label': 'Sections',
+  'nav.status': 'Status',
+  'nav.paths': 'Paths',
+  'nav.system': 'System',
+  'nav.tune': 'Tuning',
+  'ptr.label': 'Refreshing',
+
+  'status.title': 'State',
+  'status.hint': 'The SUSFS version and the enabled features come from the kernel.',
+  'status.kernelLoading': 'kernel: ...',
+  'status.kernel': 'kernel: {version}',
+  'status.susfsNoReply': 'SUSFS: the kernel does not answer',
+
+  'paths.title': 'Hidden paths',
+  'paths.hint': 'The path must exist. The list is saved and applied after every boot.',
+  'paths.add': 'Add',
+  'paths.apply': 'Apply now',
+  'paths.empty': 'The list is empty',
+  'paths.remove': 'Remove',
+  'paths.invalid': 'The path must start with / and contain only Latin letters, digits and . _ - /',
+  'paths.duplicate': 'This path is already in the list',
+  'paths.missing': 'There is no file or folder at this path',
+  'paths.added': 'Path added',
+  'paths.removed': 'Removed from the list. The kernel keeps hiding it until reboot',
+  'paths.failed': 'Paths not applied: {count}',
+  'paths.applied': 'Paths applied',
+
+  'logs.title': 'SUSFS log',
+  'logs.hint': 'Writes what SUSFS does to the kernel log.',
+  'logs.switch': 'Write to the kernel log',
+  'logs.on': 'Log enabled',
+  'logs.off': 'Log disabled',
+
+  'bypass.title': 'Bypass charging',
+  'bypass.hint':
+    'Stops charging the battery and powers the system from USB. Use a charger of at least 2 A, or the battery will slowly drain. The state is restored after every boot.',
+  'bypass.switch': 'Stop charging the battery',
+  'bypass.chipLoading': 'bypass charging: ...',
+  'bypass.unsupported': 'kernel without bypass_charging',
+  'bypass.on': 'Bypass charging enabled',
+  'bypass.off': 'Bypass charging disabled',
+
+  'charge.title': 'Charging',
+  'charge.hint':
+    'What limits the current: the charger type, the input limit and the thermal level of the driver (0 means no thermal limit). Updates by itself.',
+  'charge.type': 'charger: {value}',
+  'charge.pdOn': 'PD: active',
+  'charge.pdOff': 'PD: no',
+  'charge.inputLimit': 'input limit: {value} mA',
+  'charge.inputVoltage': 'input voltage: {value} V',
+  'charge.batteryLimit': 'battery current limit: {value} A',
+  'charge.thermalLevel': 'thermal level: {value}',
+  'charge.mode': 'charge mode: {value}',
+  'charge.chargerTemp': 'charger temperature: {value} °C',
+  'charge.power': 'into the battery: {value} W',
+  'charge.empty': 'no data from the charging driver',
+  'battery.status': 'status: {value}',
+  'battery.current': 'current: {value}',
+  'battery.currentValue': '{value} mA',
+  'battery.capacity': 'level: {value}',
+  'battery.capacityValue': '{value}%',
+  'battery.temperature': 'temperature: {value}',
+  'battery.temperatureValue': '{value} °C',
+
+  'umount.hint': 'Unmounts the paths for the current mnt namespace right now.',
+  'umount.button': 'Unmount now',
+  'umount.done': 'Try umount done',
+
+  'updates.title': 'Updates',
+  'updates.hint':
+    'Checks GitHub. The module is installed through KernelSU; the kernel is downloaded to Downloads and flashed through recovery.',
+  'updates.ciSwitch': 'CI builds (off = releases only)',
+  'updates.module.idle': 'module: check for updates',
+  'updates.kernel.idle': 'kernel: check for updates',
+  'updates.module.noZip': 'module: no zip in the release',
+  'updates.module.notInstalled': 'not installed',
+  'updates.module.available': 'module: {current} → {tag}',
+  'updates.module.current': 'module: {current}, up to date',
+  'updates.kernel.available': 'kernel: {tag} available',
+  'updates.kernel.noBuild': 'kernel: no build in the release',
+  'updates.fullChangelog': 'Full changelog',
+  'updates.onlyLatest': 'Latest only',
+  'updates.checking': 'Checking for updates',
+  'updates.check': 'Check',
+  'updates.kernelDownload': 'Download kernel…',
+  'updates.moduleUpdate': 'Update module',
+  'updates.checkFirst': 'Check for updates first',
+  'updates.githubFailed': 'Could not load data from GitHub',
+  'updates.changelogFailed': 'Could not load the changelog',
+  'updates.checkFailed': 'Could not check for updates',
+
+  'download.startFailed': 'Could not start the download',
+  'download.cancelled': 'Download cancelled',
+  'download.failed': 'The download failed',
+  'download.exited': 'The download process ended unexpectedly',
+  'download.tooLong': 'The download took too long',
+
+  'install.moduleTitle': 'Updating the module',
+  'install.kernelTitle': 'Downloading the kernel',
+  'install.failedHeading': 'Failed',
+  'install.installFailed': 'Installation failed',
+  'install.ksuError': 'KernelSU returned an error',
+  'install.moduleDone': 'Module updated',
+  'install.moduleDoneHint': 'Reboot the phone to apply it',
+  'install.kernelDone': 'Kernel saved',
+  'install.kernelDoneHint': '{target}. Flash it through recovery',
+  'install.connecting': 'Connecting…',
+  'install.verifying': 'Verifying the checksum…',
+  'install.installing': 'KernelSU is installing the module…',
+  'install.progress': '{done} of {total} MB',
+  'install.barLabel': 'Download and install progress',
+  'install.stepDownload': 'Download',
+  'install.stepVerify': 'Verify',
+  'install.stepInstall': 'Install',
+  'install.cancel': 'Cancel',
+  'install.retry': 'Retry',
+  'install.done': 'Done',
+  'install.seconds': '~{seconds} s',
+  'install.minutes': '~{minutes} min {seconds} s',
+
+  'picker.title': 'Where to save the kernel',
+  'picker.up': 'Up',
+  'picker.cancel': 'Cancel',
+  'picker.select': 'Save here',
+  'picker.noFolders': 'No subfolders',
+
+  'tune.title': 'Kernel tuning',
+  'tune.hint': 'Values apply at once and are restored after boot. Items the kernel lacks are marked.',
+  'tune.helpOpen': 'Help',
+  'tune.helpBack': 'Back to the settings',
+  'tune.helpTitle': 'Tuning help',
+  'tune.helpIntro':
+    'Values apply at once and are kept: the module sets them again a few seconds after every boot. To get the old behaviour back, pick another value; after a reboot the value selected now is applied.',
+  'tune.unsupported': 'not supported by the kernel',
+  'tune.readFailed': 'Could not read the kernel settings. Open the tab again.',
+  'tune.advice': 'Tip: {text}',
+
+  'tune.io_scheduler.title': 'I/O scheduler',
+  'tune.io_scheduler.hint': 'The order of requests to the storage. Applies to every sd* disk.',
+  'tune.io_scheduler.about':
+    'Decides in which order the kernel sends read and write requests to the phone storage (UFS). It affects how fast apps start and how smooth the phone stays during background writes.',
+  'tune.io_scheduler.noop':
+    'No reordering and the least CPU work. Fits fast flash storage, but does not protect against delays during large writes.',
+  'tune.io_scheduler.deadline':
+    'Makes sure no request waits too long. A good balance for a phone; the default in this kernel.',
+  'tune.io_scheduler.cfq':
+    'Shares I/O fairly between processes. Heavier on the CPU and usually gives no gain on flash storage.',
+  'tune.io_scheduler.mq-deadline': 'The deadline scheduler for multi-queue devices. Only if the kernel has it.',
+  'tune.io_scheduler.kyber': 'Limits the queue depth for low latency. Only if the kernel has it.',
+  'tune.io_scheduler.bfq':
+    'Shares the bandwidth between apps. Needs more CPU time; only if the kernel has it.',
+  'tune.io_scheduler.advice': 'Keep deadline. Change it only if you measure the disk speed yourself.',
+
+  'tune.cpu_governor_little.title': 'CPU governor: little cores',
+  'tune.cpu_governor_little.hint': 'Cluster policy0 (cores 0–5).',
+  'tune.cpu_governor_little.about':
+    'The algorithm that picks the frequency of the efficient cores (Kryo Silver). They do most of the background work and the light tasks.',
+  'tune.cpu_governor_big.title': 'CPU governor: big cores',
+  'tune.cpu_governor_big.hint': 'Cluster policy6 (cores 6–7).',
+  'tune.cpu_governor_big.about':
+    'The two fast cores (Kryo Gold) take the heavy tasks: games, app launches, page rendering.',
+  'tune.cpu_governor.schedutil':
+    'The frequency follows the load the task scheduler sees. Smooth and efficient; the default in this kernel.',
+  'tune.cpu_governor.performance': 'Always the top frequency. The best responsiveness, but more heat and battery use.',
+  'tune.cpu_governor.powersave': 'Always the lowest frequency. The phone will be visibly slow.',
+  'tune.cpu_governor.ondemand': 'The classic algorithm: the frequency rises under load. Only if the kernel has it.',
+  'tune.cpu_governor.conservative': 'Like ondemand, but changes the frequency more gently. Only if the kernel has it.',
+  'tune.cpu_governor.userspace': 'A userspace program controls the frequency. Usually not needed.',
+  'tune.cpu_governor.advice':
+    'schedutil fits everyday use. Use performance for tests and games and watch the temperature.',
+
+  'tune.gpu_governor.title': 'GPU governor',
+  'tune.gpu_governor.hint': 'Adreno 618, kgsl devfreq.',
+  'tune.gpu_governor.about': 'The algorithm that picks the GPU frequency. It affects FPS in games and the heat.',
+  'tune.gpu_governor.msm-adreno-tz': 'Stock: the TrustZone firmware sets the frequency from the GPU load. The safe choice.',
+  'tune.gpu_governor.performance':
+    'Always the top GPU frequency. More FPS in heavy scenes, but more heat and battery use.',
+  'tune.gpu_governor.powersave': 'The lowest frequency. Graphics will lag.',
+  'tune.gpu_governor.simple_ondemand': 'The frequency rises and falls with the load. Only if the kernel has it.',
+  'tune.gpu_governor.advice': 'Keep msm-adreno-tz. performance while gaming is fine, but check the temperature.',
+
+  'tune.tcp_congestion.title': 'TCP congestion control',
+  'tune.tcp_congestion.hint': 'How connections adapt their speed. Applies to new connections.',
+  'tune.tcp_congestion.about':
+    'The algorithm that decides how fast to send data and when to slow down so the network is not overloaded.',
+  'tune.tcp_congestion.cubic': 'The Linux standard. Good on a stable network.',
+  'tune.tcp_congestion.bbr':
+    'Goes by the measured bandwidth and delay instead of packet loss. Often faster on Wi-Fi and on mobile networks with losses.',
+  'tune.tcp_congestion.reno': 'An old, conservative algorithm. Rarely needed.',
+  'tune.tcp_congestion.westwood': 'Estimates the available bandwidth from acknowledgements. Only if the kernel has it.',
+  'tune.tcp_congestion.advice':
+    'Try bbr on an unstable connection; if it gets worse, go back to cubic. Connections that are already open keep the old algorithm.',
+
+  'tune.thp.title': 'Transparent Huge Pages',
+  'tune.thp.hint': 'Large 2 MB memory pages.',
+  'tune.thp.about':
+    'The kernel can merge ordinary memory pages into large ones. That lowers the memory management overhead, but can raise RAM use and cause pauses while they are assembled.',
+  'tune.thp.always':
+    'The kernel merges pages by itself, for every app. A higher risk of wasted memory and delays.',
+  'tune.thp.madvise': 'Only for apps that ask for it. A safe compromise; the default in this kernel.',
+  'tune.thp.never':
+    'Off. Fewer delays and less memory use, but some heavy apps may lose a little speed.',
+  'tune.thp.advice': 'madvise fits a phone.',
+
+  'tune.swappiness.title': 'Swappiness',
+  'tune.swappiness.hint': 'How readily memory moves to zram.',
+  'tune.swappiness.about':
+    'A number from 0 to 100: how actively the kernel moves rarely used app data to compressed swap (zram) instead of dropping the file cache.',
+  'tune.swappiness.0':
+    'Swap only when really needed. Apps stay in RAM longer, but the file cache is dropped more often.',
+  'tune.swappiness.60': 'The Linux default.',
+  'tune.swappiness.100':
+    'App memory is swapped out as readily as the cache is dropped. This is the usual choice with zram.',
+  'tune.swappiness.advice':
+    'Start with 60–100. A very high value on a weak CPU adds needless compression load.',
+
+  'su.hint':
+    'Root for the apps on the KernelSU-Next list through a hidden character device. The device is created when you enable this and again after every boot.',
+  'su.switch': 'Enable sus_su',
+  'su.modeLoading': 'mode: ...',
+  'su.deviceLoading': 'device: ...',
+  'su.unsupported': 'kernel without sus_su',
+  'su.modeOn': 'mode: on',
+  'su.modeOff': 'mode: off',
+  'su.deviceReady': 'device: ready',
+  'su.deviceNo': 'device: none',
+  'su.on': 'sus_su enabled',
+  'su.off': 'sus_su disabled',
+};

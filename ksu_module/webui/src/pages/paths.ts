@@ -2,6 +2,7 @@ import { BIN, PATH_RE, confFile, quote } from '../core/config';
 import { byId } from '../core/dom';
 import { exec, run } from '../core/ksu';
 import { toast } from '../core/toast';
+import { t } from '../logic/i18n';
 
 async function readPaths(): Promise<string[]> {
   const result = await exec(`cat ${confFile('paths.txt')} 2>/dev/null`);
@@ -22,7 +23,7 @@ function renderPaths(list: string[]): void {
   if (list.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = 'Список пуст';
+    empty.textContent = t('paths.empty');
     box.append(empty);
     return;
   }
@@ -33,7 +34,7 @@ function renderPaths(list: string[]): void {
     code.textContent = path;
     const remove = document.createElement('m3e-button');
     remove.setAttribute('variant', 'text');
-    remove.textContent = 'Убрать';
+    remove.textContent = t('paths.remove');
     remove.addEventListener('click', () => {
       void removePath(path);
     });
@@ -50,17 +51,17 @@ export async function addPath(): Promise<void> {
   const input = byId<HTMLInputElement>('pathInput');
   const path = input.value.trim();
   if (!PATH_RE.test(path)) {
-    toast('Путь должен начинаться с / и содержать только латиницу, цифры, . _ - /');
+    toast(t('paths.invalid'));
     return;
   }
   const list = await readPaths();
   if (list.includes(path)) {
-    toast('Этот путь уже в списке');
+    toast(t('paths.duplicate'));
     return;
   }
   const exists = await exec(`[ -e ${quote(path)} ] && echo yes`);
   if (!exists.stdout.includes('yes')) {
-    toast('Файла или папки по этому пути нет');
+    toast(t('paths.missing'));
     return;
   }
   list.push(path);
@@ -69,20 +70,20 @@ export async function addPath(): Promise<void> {
   if (applied.errno !== 0) return;
   input.value = '';
   renderPaths(list);
-  toast('Путь добавлен');
+  toast(t('paths.added'));
 }
 
 export async function removePath(path: string): Promise<void> {
   const list = (await readPaths()).filter((item) => item !== path);
   await writePaths(list);
   renderPaths(list);
-  toast('Убрано из списка. В ядре путь скрыт до перезагрузки');
+  toast(t('paths.removed'));
 }
 
 export async function applyAll(): Promise<void> {
   const list = await readPaths();
   if (list.length === 0) {
-    toast('Список пуст');
+    toast(t('paths.empty'));
     return;
   }
   let failed = 0;
@@ -90,5 +91,5 @@ export async function applyAll(): Promise<void> {
     const result = await exec(`${quote(BIN)} add_sus_path ${quote(path)}`);
     if (result.errno !== 0) failed += 1;
   }
-  toast(failed ? `Не применено путей: ${failed}` : 'Пути применены');
+  toast(failed ? t('paths.failed', { count: failed }) : t('paths.applied'));
 }

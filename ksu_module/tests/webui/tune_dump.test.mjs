@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { setLanguage, t } from '../../webui/src/logic/i18n.ts';
 import { TUNE_DOCS } from '../../webui/src/logic/tuneDocs.ts';
 import { parseDump, rangeOf } from '../../webui/src/logic/tuneDump.ts';
 
@@ -65,15 +66,25 @@ test('help keys are unique', () => {
   assert.equal(new Set(keys).size, keys.length);
 });
 
-test('every help entry is fully written', () => {
+test('every help entry is fully written in every language', () => {
+  for (const language of ['ru', 'en']) {
+    setLanguage(language);
+    for (const doc of TUNE_DOCS) {
+      for (const field of ['title', 'hint', 'about', 'advice']) {
+        assert.ok(t(doc[field]).trim().length > 0, `${language}: ${doc.key}.${field} is empty`);
+      }
+      assert.ok(doc.values.length > 0, `${doc.key} documents no values`);
+      for (const { value, text } of doc.values) {
+        assert.ok(t(text).trim().length > 0, `${language}: ${doc.key}.${value} has no description`);
+        assert.ok(!/\s/.test(value), `${doc.key}.${value} contains whitespace and could never match an option`);
+      }
+    }
+  }
+});
+
+test('a value is documented once per setting', () => {
   for (const doc of TUNE_DOCS) {
-    for (const field of ['title', 'hint', 'about', 'advice']) {
-      assert.ok(doc[field].trim().length > 0, `${doc.key}.${field} is empty`);
-    }
-    assert.ok(Object.keys(doc.values).length > 0, `${doc.key} documents no values`);
-    for (const [value, description] of Object.entries(doc.values)) {
-      assert.ok(description.trim().length > 0, `${doc.key}.${value} has no description`);
-      assert.ok(!/\s/.test(value), `${doc.key}.${value} contains whitespace and could never match an option`);
-    }
+    const values = doc.values.map(({ value }) => value);
+    assert.equal(new Set(values).size, values.length, `${doc.key} repeats a value`);
   }
 });

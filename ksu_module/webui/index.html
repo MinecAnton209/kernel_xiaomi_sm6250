@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -10,20 +10,20 @@
     <div class="wrap">
       <header>
         <h1>Kernel Control</h1>
-        <p>SUSFS, обходная зарядка и тюнинг miatoll-ядра</p>
+        <p data-i18n="app.subtitle"></p>
       </header>
 
       <section class="card" id="noBridge" hidden>
-        <h2>Нет связи с KernelSU</h2>
-        <p class="hint">Открой страницу из менеджера KernelSU-Next, а не в браузере.</p>
+        <h2 data-i18n="app.noBridge.title"></h2>
+        <p class="hint" data-i18n="app.noBridge.hint"></p>
       </section>
 
       <div class="page" data-page="status">
         <section class="card">
-          <h2>Состояние</h2>
-          <p class="hint">Версия SUSFS и включённые функции берутся из ядра.</p>
+          <h2 data-i18n="status.title"></h2>
+          <p class="hint" data-i18n="status.hint"></p>
           <div class="chips" id="status">
-            <span class="chip" id="kernel">ядро: ...</span>
+            <span class="chip" id="kernel" data-i18n="status.kernelLoading"></span>
             <span class="chip" id="susfs">SUSFS: ...</span>
           </div>
           <div class="chips" id="features"></div>
@@ -32,76 +32,76 @@
 
       <div class="page" data-page="paths" hidden>
         <section class="card">
-          <h2>Скрытые пути</h2>
-          <p class="hint">Путь должен существовать. Список сохраняется и применяется после каждой загрузки.</p>
+          <h2 data-i18n="paths.title"></h2>
+          <p class="hint" data-i18n="paths.hint"></p>
           <div class="row">
             <input class="field" id="pathInput" placeholder="/system/xbin/su" autocomplete="off" spellcheck="false" />
-            <m3e-button id="addBtn" variant="filled">Добавить</m3e-button>
+            <m3e-button id="addBtn" variant="filled" data-i18n="paths.add"></m3e-button>
           </div>
           <div class="list" id="pathList"></div>
           <div class="row end">
-            <m3e-button id="applyBtn" variant="tonal">Применить сейчас</m3e-button>
+            <m3e-button id="applyBtn" variant="tonal" data-i18n="paths.apply"></m3e-button>
           </div>
         </section>
       </div>
 
       <div class="page" data-page="system" hidden>
         <section class="card">
-          <h2>Логи SUSFS</h2>
-          <p class="hint">Записи о работе SUSFS в лог ядра.</p>
+          <h2 data-i18n="logs.title"></h2>
+          <p class="hint" data-i18n="logs.hint"></p>
           <div class="switch-row">
-            <span>Писать в лог ядра</span>
+            <span data-i18n="logs.switch"></span>
             <m3e-switch id="logSwitch"></m3e-switch>
           </div>
         </section>
 
         <section class="card">
-          <h2>Обходная зарядка</h2>
-          <p class="hint">Отключает зарядку батареи, система питается от USB. Нужен блок не слабее 2 А, иначе батарея будет понемногу разряжаться. Состояние восстанавливается после каждой загрузки.</p>
+          <h2 data-i18n="bypass.title"></h2>
+          <p class="hint" data-i18n="bypass.hint"></p>
           <div class="switch-row">
-            <span>Отключить зарядку батареи</span>
+            <span data-i18n="bypass.switch"></span>
             <m3e-switch id="bypassSwitch"></m3e-switch>
           </div>
           <div class="chips">
-            <span class="chip" id="bypassState" hidden>обходная зарядка: ...</span>
+            <span class="chip" id="bypassState" data-i18n="bypass.chipLoading" hidden></span>
           </div>
           <div class="chips" id="batteryInfo"></div>
         </section>
 
         <section class="card">
-          <h2>Зарядка</h2>
-          <p class="hint">Что ограничивает ток: тип зарядника, лимит входа и температурный уровень драйвера (0 — без температурного ограничения). Обновляется само.</p>
+          <h2 data-i18n="charge.title"></h2>
+          <p class="hint" data-i18n="charge.hint"></p>
           <div class="chips" id="chargeInfo"></div>
         </section>
 
         <section class="card">
           <h2>Try umount</h2>
-          <p class="hint">Размонтирует пути для текущего mnt namespace прямо сейчас.</p>
-          <m3e-button id="umountBtn" variant="outlined">Размонтировать сейчас</m3e-button>
+          <p class="hint" data-i18n="umount.hint"></p>
+          <m3e-button id="umountBtn" variant="outlined" data-i18n="umount.button"></m3e-button>
         </section>
 
         <section class="card">
-          <h2>Обновления</h2>
-          <p class="hint">Проверка по GitHub. Модуль ставится через KernelSU, ядро скачивается в Загрузки и прошивается через recovery.</p>
+          <h2 data-i18n="updates.title"></h2>
+          <p class="hint" data-i18n="updates.hint"></p>
           <div class="switch-row">
-            <span>CI-сборки (выкл. = только релизы)</span>
+            <span data-i18n="updates.ciSwitch"></span>
             <m3e-switch id="channelSwitch"></m3e-switch>
           </div>
           <div class="chips">
-            <span class="chip" id="moduleStatus">модуль: проверьте обновления</span>
-            <span class="chip" id="kernelStatus">ядро: проверьте обновления</span>
+            <span class="chip" id="moduleStatus" data-i18n="updates.module.idle"></span>
+            <span class="chip" id="kernelStatus" data-i18n="updates.kernel.idle"></span>
           </div>
           <div class="notes" id="updateNotes"></div>
           <div class="row end">
-            <m3e-button id="fullChangelogBtn" variant="text">Полный changelog</m3e-button>
+            <m3e-button id="fullChangelogBtn" variant="text" data-i18n="updates.fullChangelog"></m3e-button>
             <span class="check-group">
-              <m3e-loading-indicator id="checkSpinner" hidden aria-label="Проверка обновлений"></m3e-loading-indicator>
-              <m3e-button id="checkUpdatesBtn" variant="tonal">Проверить</m3e-button>
+              <m3e-loading-indicator id="checkSpinner" hidden data-i18n-aria-label="updates.checking"></m3e-loading-indicator>
+              <m3e-button id="checkUpdatesBtn" variant="tonal" data-i18n="updates.check"></m3e-button>
             </span>
           </div>
           <div class="row end" id="actionsRow" hidden>
-            <m3e-button id="kernelDownloadBtn" variant="outlined" hidden>Скачать ядро…</m3e-button>
-            <m3e-button id="moduleUpdateBtn" variant="filled" hidden>Обновить модуль</m3e-button>
+            <m3e-button id="kernelDownloadBtn" variant="outlined" data-i18n="updates.kernelDownload" hidden></m3e-button>
+            <m3e-button id="moduleUpdateBtn" variant="filled" data-i18n="updates.moduleUpdate" hidden></m3e-button>
           </div>
           <div class="install" id="installPanel" data-state="running" hidden aria-live="polite">
             <div class="install-head">
@@ -116,30 +116,30 @@
               </div>
               <span class="install-pct" id="installPct"></span>
             </div>
-            <m3e-linear-progress-indicator id="installBar" variant="wavy" mode="query" aria-label="Прогресс загрузки и установки"></m3e-linear-progress-indicator>
+            <m3e-linear-progress-indicator id="installBar" variant="wavy" mode="query" data-i18n-aria-label="install.barLabel"></m3e-linear-progress-indicator>
             <p class="install-meta" id="installMeta"></p>
             <ol class="steps" id="installSteps">
-              <li data-step="download"><span class="dot"></span>Загрузка</li>
-              <li data-step="verify"><span class="dot"></span>Проверка</li>
-              <li data-step="install"><span class="dot"></span>Установка</li>
+              <li data-step="download"><span class="dot"></span><span data-i18n="install.stepDownload"></span></li>
+              <li data-step="verify"><span class="dot"></span><span data-i18n="install.stepVerify"></span></li>
+              <li data-step="install"><span class="dot"></span><span data-i18n="install.stepInstall"></span></li>
             </ol>
             <pre class="install-log" id="installLog" hidden></pre>
             <div class="row end">
-              <m3e-button id="installCancel" variant="text">Отмена</m3e-button>
-              <m3e-button id="installRetry" variant="tonal" hidden>Повторить</m3e-button>
-              <m3e-button id="installDone" variant="filled" hidden>Готово</m3e-button>
+              <m3e-button id="installCancel" variant="text" data-i18n="install.cancel"></m3e-button>
+              <m3e-button id="installRetry" variant="tonal" data-i18n="install.retry" hidden></m3e-button>
+              <m3e-button id="installDone" variant="filled" data-i18n="install.done" hidden></m3e-button>
             </div>
           </div>
         </section>
 
         <section class="card" id="folderPicker" hidden>
-          <h2>Куда сохранить ядро</h2>
+          <h2 data-i18n="picker.title"></h2>
           <p class="hint" id="pickerPath"></p>
           <div class="list" id="pickerList"></div>
           <div class="row end">
-            <m3e-button id="pickerUp" variant="text">Вверх</m3e-button>
-            <m3e-button id="pickerCancel" variant="text">Отмена</m3e-button>
-            <m3e-button id="pickerSelect" variant="filled">Сохранить сюда</m3e-button>
+            <m3e-button id="pickerUp" variant="text" data-i18n="picker.up"></m3e-button>
+            <m3e-button id="pickerCancel" variant="text" data-i18n="picker.cancel"></m3e-button>
+            <m3e-button id="pickerSelect" variant="filled" data-i18n="picker.select"></m3e-button>
           </div>
         </section>
       </div>
@@ -147,17 +147,17 @@
       <div class="page" data-page="tune" hidden>
         <section class="card" id="tuneMain">
           <div class="card-head">
-            <h2>Тюнинг ядра</h2>
-            <button class="help-btn" id="tuneHelpBtn" type="button" aria-label="Справка">?</button>
+            <h2 data-i18n="tune.title"></h2>
+            <button class="help-btn" id="tuneHelpBtn" type="button" data-i18n-aria-label="tune.helpOpen">?</button>
           </div>
-          <p class="hint">Значения применяются сразу и восстанавливаются после загрузки. Пункты, которых нет в ядре, помечены.</p>
+          <p class="hint" data-i18n="tune.hint"></p>
           <div class="tune-list" id="tuneList"></div>
         </section>
 
         <section class="card" id="tuneHelp" hidden>
           <div class="card-head">
-            <h2>Справка по тюнингу</h2>
-            <button class="help-btn" id="tuneHelpBack" type="button" aria-label="Назад к настройкам">×</button>
+            <h2 data-i18n="tune.helpTitle"></h2>
+            <button class="help-btn" id="tuneHelpBack" type="button" data-i18n-aria-label="tune.helpBack">×</button>
           </div>
           <div class="help-body" id="tuneHelpBody"></div>
         </section>
@@ -166,47 +166,47 @@
       <div class="page" data-page="su" hidden>
         <section class="card">
           <h2>sus_su</h2>
-          <p class="hint">Root для приложений из списка KernelSU-Next через скрытое символьное устройство. Устройство создаётся при включении и пересоздаётся после загрузки.</p>
+          <p class="hint" data-i18n="su.hint"></p>
           <div class="switch-row">
-            <span>Включить sus_su</span>
+            <span data-i18n="su.switch"></span>
             <m3e-switch id="susSuSwitch"></m3e-switch>
           </div>
           <div class="chips" id="susSuStatus">
-            <span class="chip" id="susSuMode">режим: ...</span>
-            <span class="chip" id="susSuReady">устройство: ...</span>
+            <span class="chip" id="susSuMode" data-i18n="su.modeLoading"></span>
+            <span class="chip" id="susSuReady" data-i18n="su.deviceLoading"></span>
           </div>
         </section>
       </div>
     </div>
 
     <div class="ptr" id="ptr" aria-hidden="true">
-      <m3e-loading-indicator id="ptrIndicator" variant="contained" hidden aria-label="Обновление"></m3e-loading-indicator>
+      <m3e-loading-indicator id="ptrIndicator" variant="contained" hidden data-i18n-aria-label="ptr.label"></m3e-loading-indicator>
     </div>
 
-    <nav class="navbar" aria-label="Разделы">
+    <nav class="navbar" data-i18n-aria-label="nav.label">
       <button class="nav-item active" type="button" data-tab="status" aria-current="page">
         <span class="nav-ind">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-6h2Zm0-8h-2V7h2Z"/></svg>
         </span>
-        <span class="nav-label">Статус</span>
+        <span class="nav-label" data-i18n="nav.status"></span>
       </button>
       <button class="nav-item" type="button" data-tab="paths">
         <span class="nav-ind">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2Z"/></svg>
         </span>
-        <span class="nav-label">Пути</span>
+        <span class="nav-label" data-i18n="nav.paths"></span>
       </button>
       <button class="nav-item" type="button" data-tab="system">
         <span class="nav-ind">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17v2h6v-2H3Zm0-12v2h10V5H3Zm10 16v-2h8v-2h-8v-2h-2v6h2ZM7 9v2H3v2h4v2h2V9H7Zm14 4v-2H11v2h10Zm-6-4h2V7h4V5h-4V3h-2v6Z"/></svg>
         </span>
-        <span class="nav-label">Система</span>
+        <span class="nav-label" data-i18n="nav.system"></span>
       </button>
       <button class="nav-item" type="button" data-tab="tune">
         <span class="nav-ind">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.38 8.57-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.27-10.43Zm-9.79 6.84a2 2 0 0 0 2.83 0l5.66-8.49-8.49 5.66a2 2 0 0 0 0 2.83Z"/></svg>
         </span>
-        <span class="nav-label">Тюнинг</span>
+        <span class="nav-label" data-i18n="nav.tune"></span>
       </button>
       <button class="nav-item" type="button" data-tab="su">
         <span class="nav-ind">

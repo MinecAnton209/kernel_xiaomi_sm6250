@@ -1,3 +1,4 @@
+import { t } from '../logic/i18n';
 import { createRunner, type ExecResult, type Registry, type SpawnBridge } from './spawnExec';
 import { toast } from './toast';
 
@@ -61,7 +62,7 @@ export function warmUp(): void {
 export async function run(command: string, okMessage?: string): Promise<ExecResult> {
   const result = await exec(command);
   if (result.errno !== 0) {
-    toast(result.stderr.trim() || 'Команда не выполнена');
+    toast(result.stderr.trim() || t('common.commandFailed'));
   } else if (okMessage) {
     toast(okMessage);
   }

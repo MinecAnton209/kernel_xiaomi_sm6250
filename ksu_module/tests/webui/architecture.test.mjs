@@ -8,14 +8,14 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'webui', '
 
 /**
  * Which folders each folder may import from. A folder always may import from itself.
- *   core   the bridge to the manager and what every file shares
+ *   core   the bridge to the manager and what every file shares; it may use the texts in logic
  *   logic  pure functions and data, with no DOM: this is what the Node tests exercise
  *   ui     widgets that pages share
  *   pages  one file per tab
  *   (root) main.ts and nav.ts, the app shell, which may use everything
  */
 const MAY_IMPORT = {
-  core: ['core'],
+  core: ['core', 'logic'],
   logic: ['logic'],
   ui: ['core', 'logic', 'ui'],
   pages: ['core', 'logic', 'ui', 'pages'],

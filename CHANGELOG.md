@@ -67,6 +67,11 @@ for release tags (`vX.Y.Z`).
 - Kernel Control: the M3E components follow the dark theme. Their system
   colours defaulted to the light scheme, which left the select panel white
   with dark text; they now use the palette of the page.
+- Kernel Control: every text of the WebUI comes from a message catalog instead
+  of being written into the code. Russian and English are included and the
+  language follows the one of the phone (English for any other). The tuning
+  help, the charging chips, the toasts and the update panel are translated as
+  well. The download log lines written by `fetch.sh` are still Russian.
 - Kernel Control: the loading indicator of the update check is no longer
   squeezed by its flex row (it shrank from 38 to 32 px on a phone and its
   round container cut the corners off the shapes); the spinner and the check

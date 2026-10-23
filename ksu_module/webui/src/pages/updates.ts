@@ -2,6 +2,7 @@ import { MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confFile, quote } from '../cor
 import { byId, busy, type SwitchElement, type Togglable } from '../core/dom';
 import { exec, run } from '../core/ksu';
 import { toast } from '../core/toast';
+import { t } from '../logic/i18n';
 import { parseProgress } from '../logic/progressMath';
 import { closePanel, initPanel, openPanel, setProgress, setStep, showError, showSuccess, type Step } from '../ui/install';
 import { renderMarkdown } from '../ui/markdown';
@@ -63,7 +64,7 @@ let pickerDir = DEFAULT_DIR;
 async function getText(url: string): Promise<string> {
   const result = await exec(`curl -fsSL --retry 2 -H 'Accept: application/json' ${quote(url)}`);
   if (result.errno !== 0) {
-    throw new Error(result.stderr.trim() || 'Не удалось загрузить данные с GitHub');
+    throw new Error(result.stderr.trim() || t('updates.githubFailed'));
   }
   return result.stdout;
 }
@@ -121,7 +122,7 @@ function renderNotes(): void {
   const notes = byId('updateNotes');
   const source = showingFull ? fullChangelog : current?.changelog ?? null;
   notes.innerHTML = source ? renderMarkdown(source) : '';
-  byId('fullChangelogBtn').textContent = showingFull ? 'Только последнее' : 'Полный changelog';
+  byId('fullChangelogBtn').textContent = showingFull ? t('updates.onlyLatest') : t('updates.fullChangelog');
 }
 
 async function toggleFullChangelog(): Promise<void> {
@@ -129,7 +130,7 @@ async function toggleFullChangelog(): Promise<void> {
     try {
       fullChangelog = await getText(`https://raw.githubusercontent.com/${REPO}/${CI_BRANCH}/CHANGELOG.md`);
     } catch (error) {
-      toast(error instanceof Error ? error.message : 'Не удалось загрузить changelog');
+      toast(error instanceof Error ? error.message : t('updates.changelogFailed'));
       return;
     }
   }
@@ -164,7 +165,7 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
   try {
     loaded = await loadRelease(channel);
   } catch (error) {
-    if (showErrors) toast(error instanceof Error ? error.message : 'Не удалось проверить обновления');
+    if (showErrors) toast(error instanceof Error ? error.message : t('updates.checkFailed'));
     return;
   } finally {
     setChecking(false);
@@ -180,13 +181,15 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
   const moduleAsset = findAsset(loaded, MODULE_ASSET_RE);
   let moduleUpdate = false;
   if (!moduleAsset) {
-    setChip('moduleStatus', 'модуль: в релизе нет zip', 'off');
+    setChip('moduleStatus', t('updates.module.noZip'), 'off');
   } else {
     moduleUpdate = channel === 'ci' ? version.build !== moduleAsset.name : version.version !== loaded.tag;
-    const label = version.version || 'не установлен';
+    const label = version.version || t('updates.module.notInstalled');
     setChip(
       'moduleStatus',
-      moduleUpdate ? `модуль: ${label} → ${loaded.tag}` : `модуль: ${label}, актуален`,
+      moduleUpdate
+        ? t('updates.module.available', { current: label, tag: loaded.tag })
+        : t('updates.module.current', { current: label }),
       moduleUpdate ? 'update' : 'ok',
     );
   }
@@ -194,7 +197,7 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
   const kernelAsset = findAsset(loaded, /^miatoll-default-.*\.zip$/);
   setChip(
     'kernelStatus',
-    kernelAsset ? `ядро: ${loaded.tag} доступно` : 'ядро: в релизе нет сборки',
+    kernelAsset ? t('updates.kernel.available', { tag: loaded.tag }) : t('updates.kernel.noBuild'),
     kernelAsset ? 'update' : 'off',
   );
   setActions(moduleUpdate, Boolean(kernelAsset));
@@ -250,7 +253,7 @@ async function download(asset: ManifestAsset, target: string, steps: readonly St
     `( sh ${quote(FETCH)} ${quote(asset.url)} ${quote(target)} ${THREADS}${sha} ) </dev/null >${quote(`${target}.log`)} 2>&1 &`,
   );
   if (launch.errno !== 0) {
-    return { ok: false, cancelled: false, message: launch.stderr.trim() || 'Не удалось запустить загрузку' };
+    return { ok: false, cancelled: false, message: launch.stderr.trim() || t('download.startFailed') };
   }
 
   const startedAt = Date.now();
@@ -262,7 +265,7 @@ async function download(asset: ManifestAsset, target: string, steps: readonly St
     if (cancelRequested) {
       await killTransfer(target);
       await cleanupTransfer(target, true);
-      return { ok: false, cancelled: true, message: 'Загрузка отменена' };
+      return { ok: false, cancelled: true, message: t('download.cancelled') };
     }
 
     const status = (
@@ -284,15 +287,15 @@ async function download(asset: ManifestAsset, target: string, steps: readonly St
     if (state === 'done') return { ok: true };
     if (state === 'error') {
       const log = (await exec(`tail -n 3 ${quote(`${target}.log`)} 2>/dev/null`)).stdout.trim();
-      return { ok: false, cancelled: false, message: log || 'Загрузка не удалась' };
+      return { ok: false, cancelled: false, message: log || t('download.failed') };
     }
     const died = alive !== '1' && (seenAlive || Date.now() - startedAt > STARTUP_GRACE_MS);
     if (died) {
-      return { ok: false, cancelled: false, message: 'Процесс загрузки завершился неожиданно' };
+      return { ok: false, cancelled: false, message: t('download.exited') };
     }
   }
   await killTransfer(target);
-  return { ok: false, cancelled: false, message: 'Загрузка заняла слишком много времени' };
+  return { ok: false, cancelled: false, message: t('download.tooLong') };
 }
 
 function lastLines(text: string, count: number): string {
@@ -305,19 +308,19 @@ function failTransfer(result: Extract<TransferResult, { ok: false }>): void {
     toast(result.message);
     return;
   }
-  showError('Не удалось', result.message, '', true);
+  showError(t('install.failedHeading'), result.message, '', true);
 }
 
 async function updateModule(): Promise<void> {
   const asset = current ? findAsset(current, MODULE_ASSET_RE) : undefined;
   if (!asset || transferring) {
-    if (!asset) toast('Сначала проверьте обновления');
+    if (!asset) toast(t('updates.checkFirst'));
     return;
   }
   const steps: readonly Step[] = ['download', 'verify', 'install'];
   setLocked(true);
   openPanel({
-    title: 'Обновление модуля',
+    title: t('install.moduleTitle'),
     subtitle: asset.name,
     steps,
     onCancel: () => {
@@ -336,11 +339,16 @@ async function updateModule(): Promise<void> {
     const install = await exec(`${quote(KSUD)} module install ${quote(MODULE_ZIP)} 2>&1`);
     await cleanupTransfer(MODULE_ZIP, true);
     if (install.errno !== 0) {
-      showError('Установка не удалась', 'KernelSU вернул ошибку', lastLines(install.stdout || install.stderr, 8), true);
+      showError(
+        t('install.installFailed'),
+        t('install.ksuError'),
+        lastLines(install.stdout || install.stderr, 8),
+        true,
+      );
       return;
     }
     await run(`printf '%s' ${quote(asset.name)} > ${confFile('module_build')}`);
-    showSuccess('Модуль обновлён', 'Перезагрузите телефон, чтобы применить');
+    showSuccess(t('install.moduleDone'), t('install.moduleDoneHint'));
   } finally {
     setLocked(false);
   }
@@ -364,7 +372,7 @@ function renderPicker(): void {
     if (folders.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty';
-      empty.textContent = 'Вложенных папок нет';
+      empty.textContent = t('picker.noFolders');
       list.append(empty);
       return;
     }
@@ -407,7 +415,7 @@ async function downloadKernel(asset: ManifestAsset, target: string): Promise<voi
   const steps: readonly Step[] = asset.sha256 ? ['download', 'verify'] : ['download'];
   setLocked(true);
   openPanel({
-    title: 'Загрузка ядра',
+    title: t('install.kernelTitle'),
     subtitle: asset.name,
     steps,
     onCancel: () => {
@@ -422,7 +430,7 @@ async function downloadKernel(asset: ManifestAsset, target: string): Promise<voi
       return;
     }
     await cleanupTransfer(target, false);
-    showSuccess('Ядро сохранено', `${target}. Прошейте его через recovery`);
+    showSuccess(t('install.kernelDone'), t('install.kernelDoneHint', { target }));
   } finally {
     setLocked(false);
   }
@@ -443,7 +451,7 @@ function pickerUp(): void {
 function kernelButtonClicked(): void {
   const asset = current ? findAsset(current, /^miatoll-default-.*\.zip$/) : undefined;
   if (!asset) {
-    toast('Сначала проверьте обновления');
+    toast(t('updates.checkFirst'));
     return;
   }
   openPicker(asset);
@@ -457,8 +465,8 @@ async function setChannel(ci: boolean): Promise<void> {
   showingFull = false;
   renderNotes();
   setActions(false, false);
-  setChip('moduleStatus', 'модуль: проверьте обновления', 'off');
-  setChip('kernelStatus', 'ядро: проверьте обновления', 'off');
+  setChip('moduleStatus', t('updates.module.idle'), 'off');
+  setChip('kernelStatus', t('updates.kernel.idle'), 'off');
 }
 
 export function initUpdates(channelSaved: Channel): void {

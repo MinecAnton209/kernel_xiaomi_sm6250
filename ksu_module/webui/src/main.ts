@@ -8,6 +8,7 @@ import '@m3e/web/select';
 import '@m3e/web/option';
 import './style.css';
 import { byId, busy, type Togglable, type SwitchElement } from './core/dom';
+import { browserLanguages } from './core/lang';
 import { hasBridge, warmUp } from './core/ksu';
 import { prefetchPages, refreshCurrentPage, savedTab, showPage } from './nav';
 import { addPath, applyAll } from './pages/paths';
@@ -15,9 +16,14 @@ import { setSusSu } from './pages/su';
 import { runUmount, setBypass, setLog, startLivePolling } from './pages/system';
 import { initTuneHelp } from './pages/tune';
 import { initUpdates, loadChannel } from './pages/updates';
+import { pickLanguage, setLanguage } from './logic/i18n';
 import { initPullToRefresh } from './ui/pull';
+import { translateDocument } from './ui/staticText';
 
 function init(): void {
+  setLanguage(pickLanguage(browserLanguages()));
+  translateDocument();
+
   document.querySelectorAll<HTMLElement>('.nav-item').forEach((button) => {
     button.addEventListener('click', () => showPage(button.dataset['tab'] ?? 'status'));
   });

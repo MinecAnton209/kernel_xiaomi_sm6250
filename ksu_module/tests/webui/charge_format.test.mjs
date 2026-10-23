@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { buildBatteryChips, buildChargeChips, bypassOf, parseInfo } from '../../webui/src/logic/chargeFormat.ts';
+import { setLanguage } from '../../webui/src/logic/i18n.ts';
+
+// The expectations below are the Russian texts; tests/webui/i18n.test.mjs covers English.
+setLanguage('ru');
 
 const FULL = [
   'usb_real_type=USB_PD',

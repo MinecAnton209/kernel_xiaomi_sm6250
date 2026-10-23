@@ -2,6 +2,7 @@ import { BIN, CHARGE, confFile, quote } from '../core/config';
 import { byId, type SwitchElement } from '../core/dom';
 import { exec, run } from '../core/ksu';
 import { buildBatteryChips, buildChargeChips, bypassOf, parseInfo } from '../logic/chargeFormat';
+import { t } from '../logic/i18n';
 import { createChipList, type ChipList } from '../ui/chipList';
 
 export async function loadLog(): Promise<void> {
@@ -11,11 +12,11 @@ export async function loadLog(): Promise<void> {
 
 export async function setLog(on: boolean): Promise<void> {
   await run(`printf '%s' ${on ? 1 : 0} > ${confFile('log')}`);
-  await run(`${quote(BIN)} enable_log ${on ? 1 : 0}`, on ? 'Лог включён' : 'Лог выключен');
+  await run(`${quote(BIN)} enable_log ${on ? 1 : 0}`, on ? t('logs.on') : t('logs.off'));
 }
 
 export async function runUmount(): Promise<void> {
-  await run(`${quote(BIN)} run_umount`, 'Try umount выполнен');
+  await run(`${quote(BIN)} run_umount`, t('umount.done'));
 }
 
 let batteryChips: ChipList | undefined;
@@ -31,7 +32,7 @@ function applyBypass(found: { path: string; on: boolean } | undefined): void {
   if (!found) {
     toggle.checked = false;
     toggle.disabled = true;
-    chip.textContent = 'ядро без bypass_charging';
+    chip.textContent = t('bypass.unsupported');
     chip.className = 'chip off';
     chip.hidden = false;
     return;
@@ -71,7 +72,7 @@ export async function setBypass(on: boolean): Promise<void> {
   try {
     const applied = await run(
       `printf '%s' ${on ? 1 : 0} > ${quote(bypassPath)}`,
-      on ? 'Обходная зарядка включена' : 'Обходная зарядка выключена',
+      on ? t('bypass.on') : t('bypass.off'),
     );
     if (applied.errno !== 0) {
       toggle.checked = !on;

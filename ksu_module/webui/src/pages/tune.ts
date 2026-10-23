@@ -1,6 +1,7 @@
 import { TUNE, quote } from '../core/config';
 import { byId } from '../core/dom';
 import { exec, run } from '../core/ksu';
+import { t } from '../logic/i18n';
 import { TUNE_DOCS, type TuneDoc } from '../logic/tuneDocs';
 import { parseDump, rangeOf, type TuneState } from '../logic/tuneDump';
 import { hideSkeleton, showSkeleton } from '../ui/skeleton';
@@ -96,7 +97,7 @@ async function apply(doc: TuneDoc, control: Control): Promise<void> {
   try {
     const result = await run(
       `${quote(TUNE)} set ${doc.key} ${quote(control.value)}`,
-      `${doc.title}: ${control.value}`,
+      `${t(doc.title)}: ${control.value}`,
     );
     const state = cache?.get(doc.key);
     if (result.errno === 0) {
@@ -117,13 +118,13 @@ function renderRow(doc: TuneDoc, state: TuneState | undefined): HTMLElement {
   row.className = 'tune-row';
 
   const title = document.createElement('strong');
-  title.textContent = doc.title;
-  row.append(title, note(doc.hint));
+  title.textContent = t(doc.title);
+  row.append(title, note(t(doc.hint)));
 
   if (!state || state.options.length === 0) {
     const chip = document.createElement('span');
     chip.className = 'chip off';
-    chip.textContent = 'ядро не поддерживает';
+    chip.textContent = t('tune.unsupported');
     row.append(chip);
     return row;
   }
@@ -151,7 +152,7 @@ export async function loadTune(force = false): Promise<void> {
     const states = await readAll(force);
     list.replaceChildren(...TUNE_DOCS.map((doc) => renderRow(doc, states.get(doc.key))));
   } catch {
-    list.replaceChildren(note('Не удалось прочитать настройки ядра. Откройте вкладку ещё раз.'));
+    list.replaceChildren(note(t('tune.readFailed')));
   } finally {
     hideSkeleton('tuneList');
   }
@@ -164,34 +165,30 @@ export function reloadTune(): Promise<void> {
 
 function renderHelp(): void {
   const body = byId('tuneHelpBody');
-  const nodes: HTMLElement[] = [
-    note(
-      'Значения применяются сразу и сохраняются: после каждой загрузки модуль возвращает их через несколько секунд. Чтобы вернуть прежнее поведение, выберите другое значение; после перезагрузки применится то, что выбрано сейчас.',
-    ),
-  ];
+  const nodes: HTMLElement[] = [note(t('tune.helpIntro'))];
 
   for (const doc of TUNE_DOCS) {
     const item = document.createElement('div');
     item.className = 'help-item';
 
     const heading = document.createElement('h3');
-    heading.textContent = doc.title;
+    heading.textContent = t(doc.title);
     const about = document.createElement('p');
-    about.textContent = doc.about;
+    about.textContent = t(doc.about);
 
     const values = document.createElement('dl');
     values.className = 'help-values';
-    for (const [value, description] of Object.entries(doc.values)) {
+    for (const { value, text } of doc.values) {
       const term = document.createElement('dt');
       term.textContent = value;
       const detail = document.createElement('dd');
-      detail.textContent = description;
+      detail.textContent = t(text);
       values.append(term, detail);
     }
 
     const advice = document.createElement('p');
     advice.className = 'help-advice';
-    advice.textContent = `Совет: ${doc.advice}`;
+    advice.textContent = t('tune.advice', { text: t(doc.advice) });
 
     item.append(heading, about, values, advice);
     nodes.push(item);

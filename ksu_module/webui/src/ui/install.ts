@@ -1,4 +1,5 @@
 import { byId } from '../core/dom';
+import { t } from '../logic/i18n';
 import { barState, type BarState, type Progress } from '../logic/progressMath';
 
 export type Step = 'download' | 'verify' | 'install';
@@ -30,9 +31,8 @@ function formatMib(bytes: number): string {
 
 function formatEta(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '';
-  if (seconds < 60) return `~${Math.max(1, Math.round(seconds))} с`;
-  const minutes = Math.floor(seconds / 60);
-  return `~${minutes} мин ${Math.round(seconds % 60)} с`;
+  if (seconds < 60) return t('install.seconds', { seconds: Math.max(1, Math.round(seconds)) });
+  return t('install.minutes', { minutes: Math.floor(seconds / 60), seconds: Math.round(seconds % 60) });
 }
 
 function setState(state: PanelState): void {
@@ -92,7 +92,7 @@ export function openPanel(options: PanelOptions): void {
   byId('installTitle').textContent = options.title;
   byId('installSub').textContent = options.subtitle;
   byId('installPct').textContent = '0%';
-  byId('installMeta').textContent = 'Подключение…';
+  byId('installMeta').textContent = t('install.connecting');
   byId('installLog').hidden = true;
   byId('installLog').textContent = '';
   setSteps(options.steps[0] ?? null, options.steps);
@@ -105,11 +105,11 @@ export function setStep(step: Step, steps: readonly Step[]): void {
   setSteps(step, steps);
   if (step === 'verify') {
     setIndicator({ mode: 'indeterminate' });
-    byId('installMeta').textContent = 'Проверяем контрольную сумму…';
+    byId('installMeta').textContent = t('install.verifying');
     byId('installPct').textContent = '100%';
   } else if (step === 'install') {
     setIndicator({ mode: 'indeterminate' });
-    byId('installMeta').textContent = 'KernelSU устанавливает модуль…';
+    byId('installMeta').textContent = t('install.installing');
     byId('installPct').textContent = '';
     setButtons(false, false, false);
   }
@@ -128,13 +128,13 @@ export function setProgress(progress: Progress, threads: number): void {
 
   if (total <= 0) {
     byId('installPct').textContent = done > 0 ? `${formatMib(done)} MB` : '';
-    byId('installMeta').textContent = done > 0 ? `${formatMib(done)} MB · ${formatMib(speed)} MB/s` : 'Подключение…';
+    byId('installMeta').textContent = done > 0 ? `${formatMib(done)} MB · ${formatMib(speed)} MB/s` : t('install.connecting');
     return;
   }
 
   const fraction = done / total;
   byId('installPct').textContent = `${Math.floor(fraction * 100)}%`;
-  const parts = [`${formatMib(done)} из ${formatMib(total)} MB`];
+  const parts = [t('install.progress', { done: formatMib(done), total: formatMib(total) })];
   if (speed > 0) {
     parts.push(`${formatMib(speed)} MB/s`);
     const eta = formatEta((total - done) / speed);

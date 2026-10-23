@@ -1,110 +1,110 @@
-export interface TuneDoc {
-  key: string;
-  title: string;
-  hint: string;
-  about: string;
-  values: Record<string, string>;
-  advice: string;
+import type { MessageKey } from './i18n';
+
+export interface TuneValueDoc {
+  /** The value as the kernel spells it, which is what the option is matched against. */
+  value: string;
+  text: MessageKey;
 }
 
-const CPU_GOVERNORS: Record<string, string> = {
-  schedutil: 'Частота подстраивается под нагрузку, которую видит планировщик задач. Плавно и экономично; по умолчанию в этом ядре.',
-  performance: 'Всегда максимальная частота. Максимальная отзывчивость, но выше нагрев и расход заряда.',
-  powersave: 'Всегда минимальная частота. Телефон будет заметно тормозить.',
-  ondemand: 'Классический алгоритм: частота растёт при нагрузке. Только если есть в ядре.',
-  conservative: 'Как ondemand, но меняет частоту плавнее. Только если есть в ядре.',
-  userspace: 'Частотой управляет программа в userspace. Обычно не нужен.',
-};
+export interface TuneDoc {
+  key: string;
+  title: MessageKey;
+  hint: MessageKey;
+  about: MessageKey;
+  values: readonly TuneValueDoc[];
+  advice: MessageKey;
+}
 
-const CPU_ADVICE =
-  'schedutil подходит для повседневной работы. performance включайте на время тестов и игр и следите за температурой.';
+const CPU_GOVERNORS: readonly TuneValueDoc[] = [
+  { value: 'schedutil', text: 'tune.cpu_governor.schedutil' },
+  { value: 'performance', text: 'tune.cpu_governor.performance' },
+  { value: 'powersave', text: 'tune.cpu_governor.powersave' },
+  { value: 'ondemand', text: 'tune.cpu_governor.ondemand' },
+  { value: 'conservative', text: 'tune.cpu_governor.conservative' },
+  { value: 'userspace', text: 'tune.cpu_governor.userspace' },
+];
 
 /** Keys must match `tune.sh keys`; tests/webui/tune_dump.test.mjs fails when they drift apart. */
 export const TUNE_DOCS: readonly TuneDoc[] = [
   {
     key: 'io_scheduler',
-    title: 'Планировщик ввода-вывода',
-    hint: 'Порядок обращений к накопителю. Применяется ко всем дискам sd*.',
-    about:
-      'Решает, в каком порядке ядро отправляет запросы чтения и записи в память телефона (UFS). Влияет на скорость запуска приложений и плавность при фоновых записях.',
-    values: {
-      noop: 'Без переупорядочивания, минимум работы процессора. Подходит для быстрой флеш-памяти, но не защищает от задержек при большой записи.',
-      deadline: 'Следит, чтобы ни один запрос не ждал слишком долго. Хороший баланс для телефона; по умолчанию в этом ядре.',
-      cfq: 'Делит ввод-вывод между процессами по справедливости. Тяжелее для процессора, на флеш-памяти обычно не даёт выигрыша.',
-      'mq-deadline': 'Версия deadline для многоочередных устройств. Только если есть в ядре.',
-      kyber: 'Ограничивает глубину очереди ради низких задержек. Только если есть в ядре.',
-      bfq: 'Распределяет пропускную способность между приложениями. Требует больше процессорного времени; только если есть в ядре.',
-    },
-    advice: 'Оставьте deadline. Меняйте, только если сами замеряете скорость диска.',
+    title: 'tune.io_scheduler.title',
+    hint: 'tune.io_scheduler.hint',
+    about: 'tune.io_scheduler.about',
+    values: [
+      { value: 'noop', text: 'tune.io_scheduler.noop' },
+      { value: 'deadline', text: 'tune.io_scheduler.deadline' },
+      { value: 'cfq', text: 'tune.io_scheduler.cfq' },
+      { value: 'mq-deadline', text: 'tune.io_scheduler.mq-deadline' },
+      { value: 'kyber', text: 'tune.io_scheduler.kyber' },
+      { value: 'bfq', text: 'tune.io_scheduler.bfq' },
+    ],
+    advice: 'tune.io_scheduler.advice',
   },
   {
     key: 'cpu_governor_little',
-    title: 'Governor CPU: малые ядра',
-    hint: 'Кластер policy0 (ядра 0–5).',
-    about:
-      'Алгоритм, который выбирает частоту энергоэффективных ядер (Kryo Silver). Они выполняют основную фоновую работу и лёгкие задачи.',
+    title: 'tune.cpu_governor_little.title',
+    hint: 'tune.cpu_governor_little.hint',
+    about: 'tune.cpu_governor_little.about',
     values: CPU_GOVERNORS,
-    advice: CPU_ADVICE,
+    advice: 'tune.cpu_governor.advice',
   },
   {
     key: 'cpu_governor_big',
-    title: 'Governor CPU: большие ядра',
-    hint: 'Кластер policy6 (ядра 6–7).',
-    about: 'Два быстрых ядра (Kryo Gold) включаются под тяжёлые задачи: игры, запуск приложений, сборку страниц.',
+    title: 'tune.cpu_governor_big.title',
+    hint: 'tune.cpu_governor_big.hint',
+    about: 'tune.cpu_governor_big.about',
     values: CPU_GOVERNORS,
-    advice: CPU_ADVICE,
+    advice: 'tune.cpu_governor.advice',
   },
   {
     key: 'gpu_governor',
-    title: 'Governor GPU',
-    hint: 'Adreno 618, kgsl devfreq.',
-    about: 'Алгоритм, выбирающий частоту графического процессора. Влияет на FPS в играх и на нагрев.',
-    values: {
-      'msm-adreno-tz': 'Штатный: частотой управляет прошивка TrustZone по загрузке GPU. Безопасный выбор.',
-      performance: 'Максимальная частота GPU всегда. Больше FPS на тяжёлых сценах, но растут нагрев и расход заряда.',
-      powersave: 'Минимальная частота. Графика будет тормозить.',
-      simple_ondemand: 'Частота растёт и падает по загрузке. Только если есть в ядре.',
-    },
-    advice: 'Оставьте msm-adreno-tz. performance на время игры допустим, но проверьте температуру.',
+    title: 'tune.gpu_governor.title',
+    hint: 'tune.gpu_governor.hint',
+    about: 'tune.gpu_governor.about',
+    values: [
+      { value: 'msm-adreno-tz', text: 'tune.gpu_governor.msm-adreno-tz' },
+      { value: 'performance', text: 'tune.gpu_governor.performance' },
+      { value: 'powersave', text: 'tune.gpu_governor.powersave' },
+      { value: 'simple_ondemand', text: 'tune.gpu_governor.simple_ondemand' },
+    ],
+    advice: 'tune.gpu_governor.advice',
   },
   {
     key: 'tcp_congestion',
-    title: 'Управление перегрузкой TCP',
-    hint: 'Как соединения подстраивают скорость. Действует на новые соединения.',
-    about: 'Алгоритм, который решает, насколько быстро отправлять данные и когда притормозить, чтобы не перегружать сеть.',
-    values: {
-      cubic: 'Стандарт Linux. Хорош в стабильной сети.',
-      bbr: 'Ориентируется на измеренную пропускную способность и задержку, а не на потерю пакетов. Часто быстрее на Wi-Fi и мобильной сети с потерями.',
-      reno: 'Старый консервативный алгоритм. Нужен редко.',
-      westwood: 'Оценивает доступную полосу по подтверждениям. Только если есть в ядре.',
-    },
-    advice:
-      'bbr можно попробовать при нестабильном соединении; если станет хуже, вернитесь на cubic. Уже открытые соединения продолжат со старым алгоритмом.',
+    title: 'tune.tcp_congestion.title',
+    hint: 'tune.tcp_congestion.hint',
+    about: 'tune.tcp_congestion.about',
+    values: [
+      { value: 'cubic', text: 'tune.tcp_congestion.cubic' },
+      { value: 'bbr', text: 'tune.tcp_congestion.bbr' },
+      { value: 'reno', text: 'tune.tcp_congestion.reno' },
+      { value: 'westwood', text: 'tune.tcp_congestion.westwood' },
+    ],
+    advice: 'tune.tcp_congestion.advice',
   },
   {
     key: 'thp',
-    title: 'Transparent Huge Pages',
-    hint: 'Крупные страницы памяти по 2 МБ.',
-    about:
-      'Ядро может объединять обычные страницы памяти в крупные. Это снижает накладные расходы на управление памятью, но может увеличить расход ОЗУ и вызывать паузы при их сборке.',
-    values: {
-      always: 'Ядро объединяет страницы само, для всех приложений. Выше риск лишнего расхода памяти и задержек.',
-      madvise: 'Только для приложений, которые сами попросили. Безопасный компромисс; по умолчанию в этом ядре.',
-      never: 'Выключено. Меньше задержек и расход памяти, но некоторые тяжёлые приложения могут терять немного скорости.',
-    },
-    advice: 'Для телефона подходит madvise.',
+    title: 'tune.thp.title',
+    hint: 'tune.thp.hint',
+    about: 'tune.thp.about',
+    values: [
+      { value: 'always', text: 'tune.thp.always' },
+      { value: 'madvise', text: 'tune.thp.madvise' },
+      { value: 'never', text: 'tune.thp.never' },
+    ],
+    advice: 'tune.thp.advice',
   },
   {
     key: 'swappiness',
-    title: 'Swappiness',
-    hint: 'Насколько охотно память уходит в zram.',
-    about:
-      'Число от 0 до 100: насколько активно ядро выгружает редко используемые данные приложений в сжатый swap (zram) вместо сброса файлового кэша.',
-    values: {
-      '0': 'Swap только при крайней необходимости. Приложения дольше остаются в ОЗУ, но файловый кэш сбрасывается чаще.',
-      '60': 'Значение по умолчанию в Linux.',
-      '100': 'Память приложений выгружается так же охотно, как сбрасывается кэш. Это обычный выбор при zram.',
-    },
-    advice: 'Начните со значений 60–100. Очень высокое значение на слабом процессоре даёт лишнюю нагрузку на сжатие.',
+    title: 'tune.swappiness.title',
+    hint: 'tune.swappiness.hint',
+    about: 'tune.swappiness.about',
+    values: [
+      { value: '0', text: 'tune.swappiness.0' },
+      { value: '60', text: 'tune.swappiness.60' },
+      { value: '100', text: 'tune.swappiness.100' },
+    ],
+    advice: 'tune.swappiness.advice',
   },
 ];
