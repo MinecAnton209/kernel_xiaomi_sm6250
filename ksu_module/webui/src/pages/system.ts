@@ -111,5 +111,8 @@ export function startLivePolling(): void {
 }
 
 export async function loadSystem(): Promise<void> {
-  await Promise.all([loadLog(), loadLive(), loadLogger()]);
+  // The log and history cards fill in on their own; only the card with placeholders is awaited.
+  void loadLog().catch(() => undefined);
+  void loadLogger().catch(() => undefined);
+  await loadLive();
 }

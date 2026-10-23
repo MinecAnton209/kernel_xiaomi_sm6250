@@ -56,7 +56,7 @@
               <span data-i18n="status.memory"></span>
               <span id="memoryText"></span>
             </div>
-            <div class="meter-track"><div class="meter-fill" id="memoryFill"></div></div>
+            <m3e-linear-progress-indicator id="memoryFill" max="100" value="0" data-i18n-aria-label="status.memory"></m3e-linear-progress-indicator>
           </div>
         </section>
         <section class="card">
@@ -106,22 +106,43 @@
           </div>
         </section>
 
-        <section class="card">
-          <h2 data-i18n="logger.title"></h2>
-          <p class="hint" data-i18n="logger.hint"></p>
-          <div class="switch-row">
-            <span data-i18n="logger.enabled"></span>
-            <m3e-switch id="loggerEnabled"></m3e-switch>
+        <section class="card logger-card">
+          <div class="logger-head">
+            <div>
+              <h2 data-i18n="logger.title"></h2>
+              <p class="hint" id="loggerState"></p>
+            </div>
+            <m3e-switch id="loggerEnabled" data-i18n-aria-label="logger.enabled"></m3e-switch>
           </div>
-          <div class="row end" id="loggerIntervals">
+
+          <h3 class="sub" data-i18n="logger.intervalTitle"></h3>
+          <div class="segmented" id="loggerIntervals">
             <m3e-button id="loggerInterval-5" variant="outlined" data-i18n="logger.interval5"></m3e-button>
             <m3e-button id="loggerInterval-60" variant="outlined" data-i18n="logger.interval60"></m3e-button>
           </div>
-          <div class="row">
+
+          <h3 class="sub" data-i18n="logger.keepTitle"></h3>
+          <div class="segmented wrap" id="retentionPresets"></div>
+          <div class="field-row">
             <input class="field" id="loggerDays" type="number" min="1" max="365" inputmode="numeric" data-i18n-aria-label="logger.daysLabel" />
+            <span class="unit" data-i18n="logger.daysUnit"></span>
           </div>
-          <div class="chips" id="retentionPresets"></div>
-          <div class="chips" id="loggerInfo"></div>
+
+          <dl class="stats">
+            <div>
+              <dt data-i18n="logger.statCount"></dt>
+              <dd id="loggerCount">0</dd>
+            </div>
+            <div>
+              <dt data-i18n="logger.statSize"></dt>
+              <dd id="loggerSize">0 KB</dd>
+            </div>
+            <div>
+              <dt data-i18n="logger.statOldest"></dt>
+              <dd id="loggerOldest">—</dd>
+            </div>
+          </dl>
+
           <div class="row end">
             <m3e-button id="loggerClear" variant="outlined" data-i18n="logger.clear"></m3e-button>
             <m3e-button id="loggerSave" variant="filled" data-i18n="logger.save"></m3e-button>

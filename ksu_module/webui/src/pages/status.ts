@@ -69,5 +69,8 @@ export async function loadStatus(): Promise<void> {
   featureChips ??= createChipList(byId('features'));
   featureChips.update(featureSpecs(features));
 
-  await Promise.all([loadSensors(), loadHistory(), loadProfile()]);
+  // Each block fills in as its own shell finishes, so a slow one does not hold the whole page back.
+  void loadSensors().catch(() => undefined);
+  void loadHistory().catch(() => undefined);
+  void loadProfile().catch(() => undefined);
 }

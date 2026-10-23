@@ -1185,26 +1185,87 @@ m3e-skeleton {
 
 
 /* Retention presets are chips that can be tapped; the one matching the field is filled. */
-/* The active preset morphs from a rounded square into a pill, the expressive shape change. */
-.chip.preset {
-  border: 0;
-  font: inherit;
-  cursor: pointer;
-  border-radius: 12px;
-  transition:
-    border-radius 0.5s var(--spring),
-    background 0.4s var(--standard),
-    transform 0.3s var(--spring);
+/* Measurement history: one column of sections, each with a small heading, and the actions at the end. */
+.logger-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.chip.preset:active {
-  transform: scale(0.92);
+.logger-head h2 {
+  margin-bottom: 2px;
 }
 
-.chip.preset.active {
-  background: var(--primary);
-  color: var(--surface);
-  border-radius: 999px;
+.logger-head .hint {
+  margin-bottom: 0;
+}
+
+.sub {
+  margin: 18px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+
+.segmented {
+  display: flex;
+  gap: 8px;
+}
+
+.segmented > * {
+  flex: 1;
+}
+
+.segmented.wrap {
+  flex-wrap: wrap;
+}
+
+.segmented.wrap > * {
+  flex: 1 1 auto;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.field-row .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.unit {
+  color: var(--on-surface-variant);
+  font-size: 14px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0 0;
+}
+
+.stats > div {
+  padding: 12px 10px;
+  border-radius: 18px;
+  background: var(--surface-highest);
+}
+
+.stats dt {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.stats dd {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1212,8 +1273,7 @@ m3e-skeleton {
   .core,
   .tile-fill,
   .core-fill,
-  .meter-fill,
-  .chip.preset {
+  .meter-fill {
     animation: none !important;
     transition: none !important;
   }

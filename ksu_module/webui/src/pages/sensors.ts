@@ -2,11 +2,18 @@ import { SENSORS, quote } from '../core/config';
 import { byId } from '../core/dom';
 import { exec } from '../core/ksu';
 import { t, type MessageKey } from '../logic/i18n';
-import { fraction, hottest, memoryUsed, parseSensors, tempLevel, type Sensors } from '../logic/sensorsFormat';
+import { fraction, hottest, memoryUsed, parseSensors, tempLevel, type Sensors, type TempLevel } from '../logic/sensorsFormat';
 
 const SENSOR_INTERVAL_MS = 5000;
 /** Temperatures are drawn on a 0 to 100 degree bar, so a full bar means the chip is at its limit. */
 const TEMP_SCALE_C = 100;
+
+/** The M3E indicator takes its colour from the primary role, so each band overrides that role. */
+const LEVEL_COLOR: Record<TempLevel, string> = {
+  cool: 'var(--success)',
+  warm: 'var(--warning)',
+  hot: 'var(--error)',
+};
 
 let sensorsBusy = false;
 
@@ -25,7 +32,7 @@ interface Built {
 
 /**
  * Returns the element for a key, building its parts once. A refresh only changes text and the bar
- * fill, so the CSS transition moves the bar instead of replacing it.
+ * value, so the indicator animates to the new reading instead of being replaced.
  */
 function slot(box: HTMLElement, key: string, className: string, build: (root: HTMLElement) => Built): Built {
   for (const child of Array.from(box.children) as HTMLElement[]) {
@@ -51,14 +58,20 @@ function part(root: HTMLElement, name: string, className: string): HTMLElement {
   return node;
 }
 
+/** An M3E linear progress indicator that reports its value as a percentage of 100. */
+function progress(root: HTMLElement, name: string): HTMLElement {
+  const node = document.createElement('m3e-linear-progress-indicator');
+  node.dataset['part'] = name;
+  node.setAttribute('max', '100');
+  node.setAttribute('value', '0');
+  root.append(node);
+  return node;
+}
+
 function buildTile(root: HTMLElement): Built {
   const label = part(root, 'label', 'tile-label');
   const value = part(root, 'value', 'tile-value');
-  const track = part(root, 'track', 'tile-track');
-  const fill = document.createElement('span');
-  fill.dataset['part'] = 'fill';
-  fill.className = 'tile-fill';
-  track.append(fill);
+  const fill = progress(root, 'fill');
   return { root, label, value, fill };
 }
 
@@ -73,7 +86,13 @@ function buildCore(root: HTMLElement): Built {
   return { root, label, value, fill };
 }
 
-function setFill(node: HTMLElement, value: number | undefined): void {
+/** Sets a progress indicator to a fraction from 0 to 1; a missing reading leaves it at zero. */
+function setProgress(node: HTMLElement, value: number | undefined): void {
+  node.setAttribute('value', String(Math.round((value ?? 0) * 100)));
+}
+
+/** Sets a vertical core bar; there is no vertical M3E indicator, so this one is drawn with the same tokens. */
+function setCoreFill(node: HTMLElement, value: number | undefined): void {
   node.style.setProperty('--fill', String(value ?? 0));
 }
 
@@ -88,10 +107,12 @@ function renderTiles(specs: readonly TileSpec[]): void {
   removeMissing(box, new Set(specs.map((spec) => spec.key)));
   for (const spec of specs) {
     const built = slot(box, spec.key, 'tile', buildTile);
-    built.root.className = `tile tile-${tempLevel(spec.celsius)}`;
+    const level = tempLevel(spec.celsius);
+    built.root.className = `tile tile-${level}`;
+    built.fill.style.setProperty('--md-sys-color-primary', LEVEL_COLOR[level]);
     built.label.textContent = t(spec.label);
     built.value.textContent = `${spec.celsius.toFixed(1)} °C`;
-    setFill(built.fill, fraction(spec.celsius, TEMP_SCALE_C));
+    setProgress(built.fill, fraction(spec.celsius, TEMP_SCALE_C));
   }
 }
 
@@ -103,8 +124,8 @@ function renderCores(sensors: Sensors): void {
   for (const core of cores) {
     const built = slot(box, `cpu${core.core}`, 'core', buildCore);
     built.label.textContent = `cpu${core.core}`;
-    built.value.textContent = `${core.mhz} MHz`;
-    setFill(built.fill, fraction(core.mhz, core.maxMhz ?? top));
+    built.value.textContent = `${core.mhz}`;
+    setCoreFill(built.fill, fraction(core.mhz, core.maxMhz ?? top));
   }
 }
 
@@ -117,7 +138,7 @@ function renderMemory(sensors: Sensors): void {
     free: (sensors.memAvailMb / 1024).toFixed(1),
     total: (sensors.memTotalMb / 1024).toFixed(1),
   });
-  setFill(byId('memoryFill'), used);
+  setProgress(byId('memoryFill'), used);
 }
 
 function tileSpecs(sensors: Sensors): TileSpec[] {
