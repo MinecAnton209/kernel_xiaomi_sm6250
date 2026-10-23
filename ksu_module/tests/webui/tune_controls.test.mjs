@@ -32,6 +32,13 @@ test('the select components are registered by the app shell', () => {
   }
 });
 
+test('the M3E system colours the select reads follow the page palette, not the light default', () => {
+  const css = read('style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const token of ['on-surface', 'on-surface-variant', 'surface-container', 'tertiary-container', 'on-tertiary-container', 'outline']) {
+    assert.match(css, new RegExp(`--md-sys-color-${token}:\\s*var\\(--[a-z-]+\\)`), `${token} is not mapped`);
+  }
+});
+
 test('the form field of a select fills the card width', () => {
   const css = read('style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   const rule = css.match(/\.tune-select\s*\{([^}]*)\}/);

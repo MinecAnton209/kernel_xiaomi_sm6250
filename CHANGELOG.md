@@ -64,6 +64,9 @@ for release tags (`vX.Y.Z`).
 - Kernel Control: the Tuning settings with a list of values (scheduler,
   governor and the like) use the M3E select in an outlined form field instead
   of the native dropdown. Settings with a numeric range keep a number input.
+- Kernel Control: the M3E components follow the dark theme. Their system
+  colours defaulted to the light scheme, which left the select panel white
+  with dark text; they now use the palette of the page.
 - Kernel Control: the loading indicator of the update check is no longer
   squeezed by its flex row (it shrank from 38 to 32 px on a phone and its
   round container cut the corners off the shapes); the spinner and the check

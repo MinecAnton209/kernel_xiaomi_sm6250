@@ -49,6 +49,32 @@
   color-scheme: dark;
 }
 
+/* M3E reads its own system colours, which default to the light scheme; point them at the page
+   palette so the select panel, options and outline follow the dark theme too. var() resolves where
+   it is used, so one rule covers the light, dark and forced-theme blocks above. */
+:root {
+  --md-sys-color-primary: var(--primary);
+  --md-sys-color-primary-container: var(--primary-container);
+  --md-sys-color-on-primary-container: var(--on-primary-container);
+  --md-sys-color-tertiary-container: var(--primary-container);
+  --md-sys-color-on-tertiary-container: var(--on-primary-container);
+  --md-sys-color-surface: var(--surface);
+  --md-sys-color-surface-container: var(--surface-high);
+  --md-sys-color-surface-container-high: var(--surface-high);
+  --md-sys-color-surface-container-highest: var(--surface-highest);
+  --md-sys-color-on-surface: var(--on-surface);
+  --md-sys-color-on-surface-variant: var(--on-surface-variant);
+  --md-sys-color-outline: var(--outline);
+  --md-sys-color-outline-variant: var(--outline);
+  --md-sys-color-error: var(--error);
+  --md-sys-color-on-primary: var(--surface);
+  --md-sys-color-secondary-container: var(--primary-container);
+  --md-sys-color-on-secondary-container: var(--on-primary-container);
+  --md-sys-color-surface-variant: var(--surface-highest);
+  --md-sys-color-background: var(--surface);
+  --md-sys-color-on-background: var(--on-surface);
+}
+
 * {
   box-sizing: border-box;
 }
