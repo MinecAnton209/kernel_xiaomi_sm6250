@@ -17,6 +17,18 @@ for release tags (`vX.Y.Z`).
 - A Zygisk hook in the module changes `GL_RENDERER` for the chosen apps. It
   needs NeoZygisk, and the Device tab turns the switch on only when it is
   installed.
+- Device tab: an Advanced mode hides the settings that can stop apps or the
+  system from working (hardware and board names, device and product names,
+  the CPU and GPU data, the memory size, the device tree and the system
+  properties switch). Turning it on asks for confirmation every time.
+- Kernel Control: a bug report on the Status tab collects the module, kernel,
+  device identity settings and the last flash log as text to copy. It holds no
+  serial number, account or list of installed apps.
+- Kernel Control: the changelog is kept in the browser, so the notes of the
+  last release show at once and refresh in the background, and stay visible
+  when GitHub cannot be reached.
+- Kernel Control: a changed value on a Status or System chip is highlighted
+  briefly. The battery card moved to the Status tab.
 - The kernel stores its build version and reports it through
   `ksu_susfs show_build`: `1.0.0` on a `v*` release and `1.0.0-<commit>` on
   every other build. The WebUI status tab shows it next to SUSFS, and the
