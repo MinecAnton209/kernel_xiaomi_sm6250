@@ -1,10 +1,37 @@
-import { BIN, quote } from '../core/config';
-import { byId } from '../core/dom';
+import { BIN, DEBUG, quote } from '../core/config';
+import { busy, byId, type Togglable } from '../core/dom';
 import { exec } from '../core/ksu';
 import { joinCommands, splitSections } from '../core/shellOut';
+import { toast } from '../core/toast';
 import { t } from '../logic/i18n';
 import { buildLabel, featureSpecs } from '../logic/statusFormat';
 import { createChipList, type ChipList } from '../ui/chipList';
+
+/** Runs debug.sh and shows its report, which the user can copy into a bug report. */
+export function initDebugReport(): void {
+  byId('debugReportBtn').addEventListener('click', () => {
+    const button = byId<Togglable>('debugReportBtn');
+    void busy(button, buildDebugReport);
+  });
+  byId('debugReportCopy').addEventListener('click', () => void copyDebugReport());
+}
+
+async function buildDebugReport(): Promise<void> {
+  const result = await exec(`sh ${quote(DEBUG)} 2>&1`);
+  const output = byId('debugReportText');
+  output.textContent = result.stdout.trim() || t('status.debugFailed');
+  output.hidden = false;
+  byId('debugReportCopy').hidden = false;
+}
+
+async function copyDebugReport(): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(byId('debugReportText').textContent ?? '');
+    toast(t('status.debugCopied'));
+  } catch {
+    toast(t('status.debugCopyFailed'));
+  }
+}
 
 let featureChips: ChipList | undefined;
 

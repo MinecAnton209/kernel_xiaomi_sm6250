@@ -468,6 +468,19 @@ m3e-skeleton {
   border-top: 1px solid var(--surface-highest);
 }
 
+.debug-report {
+  margin: 12px 0 0;
+  padding: 12px;
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 12px;
+  border-radius: 12px;
+  background: var(--surface-high);
+  color: var(--on-surface);
+}
+
 .dialog-check {
   display: flex;
   align-items: center;

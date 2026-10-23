@@ -20,6 +20,14 @@ export const en: Record<MessageKey, string> = {
   'status.kernelLoading': 'kernel: ...',
   'status.kernel': 'kernel: {version}',
   'status.build': 'build: {build}',
+  'status.debugTitle': 'Bug report',
+  'status.debugHint':
+    'Collects the module, kernel, device identity and last flash log into text you can copy into a bug report. It contains no serial number, account or list of apps.',
+  'status.debugBuild': 'Build report',
+  'status.debugCopy': 'Copy',
+  'status.debugFailed': 'The report could not be built',
+  'status.debugCopied': 'Report copied',
+  'status.debugCopyFailed': 'Could not copy: select the text and copy it by hand',
   'status.susfsNoReply': 'SUSFS: the kernel does not answer',
 
   'paths.title': 'Hidden paths',

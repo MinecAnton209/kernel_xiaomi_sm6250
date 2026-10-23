@@ -29,6 +29,15 @@
           </div>
           <div class="chips" id="features"></div>
         </section>
+        <section class="card">
+          <h2 data-i18n="status.debugTitle"></h2>
+          <p class="hint" data-i18n="status.debugHint"></p>
+          <div class="row end">
+            <m3e-button id="debugReportBtn" variant="tonal" data-i18n="status.debugBuild"></m3e-button>
+            <m3e-button id="debugReportCopy" variant="outlined" data-i18n="status.debugCopy" hidden></m3e-button>
+          </div>
+          <pre class="debug-report" id="debugReportText" hidden></pre>
+        </section>
       </div>
 
       <div class="page" data-page="paths" hidden>

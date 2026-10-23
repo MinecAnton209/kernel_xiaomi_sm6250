@@ -18,6 +18,14 @@ export const ru = {
   'status.kernelLoading': 'ядро: ...',
   'status.kernel': 'ядро: {version}',
   'status.build': 'сборка: {build}',
+  'status.debugTitle': 'Отчёт об ошибке',
+  'status.debugHint':
+    'Собирает модуль, ядро, данные подмены устройства и последний лог прошивки в текст, который можно скопировать в описание ошибки. В нём нет серийного номера, аккаунтов и списка приложений.',
+  'status.debugBuild': 'Собрать отчёт',
+  'status.debugCopy': 'Копировать',
+  'status.debugFailed': 'Не удалось собрать отчёт',
+  'status.debugCopied': 'Отчёт скопирован',
+  'status.debugCopyFailed': 'Не удалось скопировать: выделите текст и скопируйте вручную',
   'status.susfsNoReply': 'SUSFS: нет ответа от ядра',
 
   'paths.title': 'Скрытые пути',
