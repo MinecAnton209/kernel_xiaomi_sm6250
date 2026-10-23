@@ -20,6 +20,8 @@ export const en: Record<MessageKey, string> = {
   'status.kernelLoading': 'kernel: ...',
   'status.kernel': 'kernel: {version}',
   'status.build': 'build: {build}',
+  'status.sensorsTitle': 'Sensors and clocks',
+  'status.sensorsHint': 'Refreshes every 5 seconds while this tab is open.',
   'status.debugTitle': 'Bug report',
   'status.debugHint':
     'Collects the module, kernel, device identity and last flash log into text you can copy into a bug report. It contains no serial number, account or list of apps.',

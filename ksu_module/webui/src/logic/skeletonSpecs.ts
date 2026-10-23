@@ -18,6 +18,7 @@ export const REGIONS = {
   features: { kind: 'chips', widths: [92, 104, 80, 118, 96, 88, 110, 100] },
   pathList: { kind: 'items', count: 3 },
   batteryInfo: { kind: 'chips', widths: [118, 96, 104, 150] },
+  sensorChips: { kind: 'chips', widths: [140, 120, 150, 130, 110, 124] },
   chargeInfo: { kind: 'chips', widths: [132, 96, 140, 170, 168, 160, 150, 190] },
   susSuStatus: { kind: 'chips', widths: [140, 132] },
   tuneList: { kind: 'rows', count: 7 },
@@ -28,7 +29,7 @@ export type RegionId = keyof typeof REGIONS;
 
 /** The regions a tab fills when it loads. The Tuning tab and the update notes manage their own. */
 export const PAGE_REGIONS: Readonly<Record<string, readonly RegionId[]>> = {
-  status: ['status', 'features', 'batteryInfo'],
+  status: ['status', 'features', 'batteryInfo', 'sensorChips'],
   paths: ['pathList'],
   system: ['chargeInfo'],
   su: ['susSuStatus'],

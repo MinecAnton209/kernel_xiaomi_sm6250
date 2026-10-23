@@ -18,7 +18,7 @@ import { setSusSu } from './pages/su';
 import { runUmount, setBypass, setLog, startLivePolling } from './pages/system';
 import { initTuneActions, initTuneHelp } from './pages/tune';
 import { initDevice } from './pages/device';
-import { initDebugReport } from './pages/status';
+import { initDebugReport, initSensorPolling } from './pages/status';
 import { initUname } from './pages/uname';
 import { initUpdates, loadChannel } from './pages/updates';
 import { pickLanguage, setLanguage } from './logic/i18n';
@@ -37,6 +37,7 @@ function init(): void {
   initTuneActions();
   initDevice();
   initDebugReport();
+  initSensorPolling();
   initUname();
 
   if (!hasBridge()) {
