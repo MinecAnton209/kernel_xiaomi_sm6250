@@ -3,6 +3,7 @@ import { byId, busy, type SwitchElement, type Togglable } from '../core/dom';
 import { exec, rebootPhone, run } from '../core/ksu';
 import { toast } from '../core/toast';
 import { describeOffer, installedBuild, kernelStatus, moduleIsCurrent } from '../logic/buildInfo';
+import { cachedChangelogOf, parseChangelogCache, type ChangelogCache } from '../logic/changelogCache';
 import { resolveSha256 } from '../logic/checksum';
 import { flashOutcome, lastLogLine, parseFlashPoll } from '../logic/flashStatus';
 import { t } from '../logic/i18n';
@@ -74,6 +75,8 @@ interface Loaded {
 }
 
 let current: Loaded | null = null;
+/** The notes from the cache while the first check of this channel is still running. */
+let cachedChangelog: string | null = null;
 let fullChangelog: string | null = null;
 let showingFull = false;
 let pendingKernel: ManifestAsset | null = null;
@@ -170,20 +173,51 @@ function setChip(id: string, text: string, state: 'ok' | 'off' | 'update'): void
   chip.className = state === 'ok' ? 'chip ok' : state === 'update' ? 'chip' : 'chip off';
 }
 
+/**
+ * The notes of the last release seen on each channel, and the full CHANGELOG, kept in this browser so
+ * the page can show them before GitHub answers and still show something when it does not.
+ */
+const CHANGELOG_CACHE = 'kernelControl.changelogCache';
+
+function readChangelogCache(): ChangelogCache {
+  try {
+    return parseChangelogCache(localStorage.getItem(CHANGELOG_CACHE));
+  } catch {
+    return parseChangelogCache(null);
+  }
+}
+
+function writeChangelogCache(cache: ChangelogCache): void {
+  try {
+    localStorage.setItem(CHANGELOG_CACHE, JSON.stringify(cache));
+  } catch {
+    // The notes still show from the network; only the cache is lost.
+  }
+}
+
+function cachedNotes(channel: Channel): string | null {
+  return cachedChangelogOf(readChangelogCache(), channel);
+}
+
 function renderNotes(): void {
   const notes = byId('updateNotes');
-  const source = showingFull ? fullChangelog : current?.changelog ?? null;
+  const source = showingFull ? fullChangelog : (current?.changelog ?? cachedChangelog);
   notes.innerHTML = source ? renderMarkdown(source) : '';
   byId('fullChangelogBtn').textContent = showingFull ? t('updates.onlyLatest') : t('updates.fullChangelog');
 }
 
 async function toggleFullChangelog(): Promise<void> {
   if (!showingFull && fullChangelog === null) {
+    const cache = readChangelogCache();
     try {
       fullChangelog = await getText(`https://raw.githubusercontent.com/${REPO}/${CI_BRANCH}/CHANGELOG.md`);
+      writeChangelogCache({ ...cache, full: fullChangelog });
     } catch (error) {
-      toast(error instanceof Error ? error.message : t('updates.changelogFailed'));
-      return;
+      if (typeof cache.full !== 'string') {
+        toast(error instanceof Error ? error.message : t('updates.changelogFailed'));
+        return;
+      }
+      fullChangelog = cache.full;
     }
   }
   showingFull = !showingFull;
@@ -212,6 +246,10 @@ let checkGeneration = 0;
 async function checkUpdates(showErrors: boolean): Promise<void> {
   const channel: Channel = byId<SwitchElement>('channelSwitch').checked ? 'ci' : 'release';
   const generation = ++checkGeneration;
+  if (!current) {
+    cachedChangelog = cachedNotes(channel);
+    renderNotes();
+  }
   setChecking(true);
   let loaded: Loaded;
   try {
@@ -225,7 +263,10 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
   // The channel was switched while the request was in flight.
   if (generation !== checkGeneration) return;
   current = loaded;
+  cachedChangelog = null;
   showingFull = false;
+  const cache = readChangelogCache();
+  writeChangelogCache({ ...cache, releases: { ...cache.releases, [channel]: { tag: loaded.tag, changelog: loaded.changelog } } });
   renderNotes();
   await run(`printf '%s' ${Date.now()} > ${confFile('last_check')}`);
 
@@ -596,6 +637,7 @@ async function setChannel(ci: boolean): Promise<void> {
   checkGeneration++;
   await run(`printf '%s' ${ci ? 'ci' : 'release'} > ${confFile('update_channel')}`);
   current = null;
+  cachedChangelog = cachedNotes(ci ? 'ci' : 'release');
   fullChangelog = null;
   showingFull = false;
   renderNotes();
