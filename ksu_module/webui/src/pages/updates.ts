@@ -2,6 +2,7 @@ import { FLASH_KERNEL, FLASH_OUT, MODULE_ASSET_RE, MODULE_DIR, MODULE_ZIP, confF
 import { byId, busy, type SwitchElement, type Togglable } from '../core/dom';
 import { exec, run } from '../core/ksu';
 import { toast } from '../core/toast';
+import { installedBuild, moduleIsCurrent, rollingBuildNumber } from '../logic/buildInfo';
 import { resolveSha256 } from '../logic/checksum';
 import { flashOutcome, lastLogLine, parseFlashPoll } from '../logic/flashStatus';
 import { t } from '../logic/i18n';
@@ -116,11 +117,18 @@ async function loadRelease(channel: Channel): Promise<Loaded> {
   };
 }
 
-async function installed(): Promise<{ version: string; build: string }> {
+async function installed(): Promise<{ version: string; build: number | undefined }> {
   const prop = (await exec(`cat ${quote(`${MODULE_DIR}/module.prop`)} 2>/dev/null`)).stdout;
   const version = prop.match(/^version=(.*)$/m)?.[1]?.trim() ?? '';
-  const build = (await exec(`cat ${confFile('module_build')} 2>/dev/null`)).stdout.trim();
-  return { version, build };
+  // CI writes build= into module.prop; the name recorded after a WebUI update covers older builds.
+  const recorded = (await exec(`cat ${confFile('module_build')} 2>/dev/null`)).stdout;
+  return { version, build: installedBuild(prop, recorded) };
+}
+
+/** A tag says which version it is; the rolling pre-release's tag does not, so its run number is shown. */
+function offeredName(tag: string, assetName: string): string {
+  const number = rollingBuildNumber(tag, assetName);
+  return number === undefined ? tag : t('updates.build', { number });
 }
 
 export async function loadChannel(): Promise<Channel> {
@@ -203,12 +211,18 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
   if (!moduleAsset) {
     setChip('moduleStatus', t('updates.module.noZip'), 'off');
   } else {
-    moduleUpdate = channel === 'ci' ? version.build !== moduleAsset.name : version.version !== loaded.tag;
+    moduleUpdate = !moduleIsCurrent({
+      channel,
+      version: version.version,
+      build: version.build,
+      tag: loaded.tag,
+      assetName: moduleAsset.name,
+    });
     const label = version.version || t('updates.module.notInstalled');
     setChip(
       'moduleStatus',
       moduleUpdate
-        ? t('updates.module.available', { current: label, tag: loaded.tag })
+        ? t('updates.module.available', { current: label, tag: offeredName(loaded.tag, moduleAsset.name) })
         : t('updates.module.current', { current: label }),
       moduleUpdate ? 'update' : 'ok',
     );
@@ -217,7 +231,7 @@ async function checkUpdates(showErrors: boolean): Promise<void> {
   const kernelAsset = findAsset(loaded, /^miatoll-default-.*\.zip$/);
   setChip(
     'kernelStatus',
-    kernelAsset ? t('updates.kernel.available', { tag: loaded.tag }) : t('updates.kernel.noBuild'),
+    kernelAsset ? t('updates.kernel.available', { tag: offeredName(loaded.tag, kernelAsset.name) }) : t('updates.kernel.noBuild'),
     kernelAsset ? 'update' : 'off',
   );
   setActions(moduleUpdate, Boolean(kernelAsset));

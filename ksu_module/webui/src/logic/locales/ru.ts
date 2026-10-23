@@ -78,6 +78,7 @@ export const ru = {
   'updates.ciSwitch': 'CI-сборки (выкл. = только релизы)',
   'updates.module.idle': 'модуль: проверьте обновления',
   'updates.kernel.idle': 'ядро: проверьте обновления',
+  'updates.build': 'сборка {number}',
   'updates.module.noZip': 'модуль: в релизе нет zip',
   'updates.module.notInstalled': 'не установлен',
   'updates.module.available': 'модуль: {current} → {tag}',

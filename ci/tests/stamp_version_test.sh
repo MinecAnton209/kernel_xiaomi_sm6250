@@ -71,6 +71,34 @@ bash "$SCRIPT" "$WORK/missing.prop" "$SHA" 2> /dev/null
 check 'a missing file fails' '1' "$?"
 check 'and leaves no temporary file behind' '1' "$(ls "$WORK" | wc -l | tr -d ' ')"
 
+fresh
+bash "$SCRIPT" "$WORK/module.prop" "$SHA"
+check 'without a run number no build line is written' '0' "$(grep -c '^build=' "$WORK/module.prop")"
+
+fresh
+bash "$SCRIPT" "$WORK/module.prop" "$SHA" 48
+check 'a run number is written as build=' 'build=48' "$(grep '^build=' "$WORK/module.prop")"
+check 'together with the stamped version' 'version=v1.1.0-e34731a' "$(version)"
+check 'and the other lines stay in place' \
+  $'id=kernel_control\nname=Kernel Control\nversion=v1.1.0-e34731a\nversionCode=2\nauthor=x\nbuild=48' "$(cat "$WORK/module.prop")"
+
+bash "$SCRIPT" "$WORK/module.prop" "$SHA" 49
+check 'stamping again replaces the build line instead of adding one' '1' "$(grep -c '^build=' "$WORK/module.prop")"
+check 'with the new number' 'build=49' "$(grep '^build=' "$WORK/module.prop")"
+
+bash "$SCRIPT" "$WORK/module.prop" "$SHA"
+check 'stamping again without a run number keeps the build line' 'build=49' "$(grep '^build=' "$WORK/module.prop")"
+
+fresh
+bash "$SCRIPT" "$WORK/module.prop" "$SHA" abc 2> /dev/null
+check 'a run number with letters fails' '1' "$?"
+bash "$SCRIPT" "$WORK/module.prop" "$SHA" '1;reboot' 2> /dev/null
+check 'a run number with shell syntax fails' '1' "$?"
+bash "$SCRIPT" "$WORK/module.prop" "$SHA" 1234567890 2> /dev/null
+check 'a run number of ten digits fails' '1' "$?"
+check 'and none of them touched the file' 'version=v1.1.0' "$(version)"
+check 'or added a build line' '0' "$(grep -c '^build=' "$WORK/module.prop")"
+
 cp "$REAL_PROP" "$WORK/module.prop"
 bash "$SCRIPT" "$WORK/module.prop" "$SHA"
 check 'the real module.prop is stamped' "$(grep '^version=' "$REAL_PROP")-e34731a" "$(version)"

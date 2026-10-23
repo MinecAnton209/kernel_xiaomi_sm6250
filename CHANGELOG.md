@@ -110,6 +110,12 @@ for release tags (`vX.Y.Z`).
   a third argument and checks it on its own copy of the zip, right before
   that copy is flashed, so a file that changed after the download is refused;
   the confirmation dialog says whether a checksum is known.
+- Kernel Control: the update chips on the CI channel no longer show the tag
+  `unreleased` as if it were a version; they show the build (`module:
+  v1.1.0-85e8d5f → build 48`). CI also writes `build=<run number>` into
+  `module.prop`, and the WebUI compares that number with the one in the name
+  of the offered zip. Before, a module installed by hand was always offered
+  an update, because the WebUI only knew a build it had installed itself.
 - CI: a module built from anything but a release tag gets the first seven
   characters of the commit appended to its version (`v1.1.0-e34731a`), so the
   module on a phone can be traced to its commit. A release keeps the plain

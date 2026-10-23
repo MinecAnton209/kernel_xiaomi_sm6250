@@ -173,6 +173,8 @@ test('the stamp step runs the script on the module.prop that gets zipped, with t
   const run = stampStep.find((line) => line.trim().startsWith('run:'));
   assert.ok(run, 'the step has no run line');
   assert.match(run, /ci\/stamp-module-version\.sh ksu_module\/kernel_control\/module\.prop "\$GITHUB_SHA"/);
+  // The zip is named kernel_control-<run number>.zip, so the same number goes into module.prop.
+  assert.ok(run.includes('"${{ github.run_number }}"'), 'the run number must be passed to the script');
 });
 
 test('only a build that is not a release gets the commit in its version', () => {

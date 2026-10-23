@@ -81,6 +81,7 @@ export const en: Record<MessageKey, string> = {
   'updates.ciSwitch': 'CI builds (off = releases only)',
   'updates.module.idle': 'module: check for updates',
   'updates.kernel.idle': 'kernel: check for updates',
+  'updates.build': 'build {number}',
   'updates.module.noZip': 'module: no zip in the release',
   'updates.module.notInstalled': 'not installed',
   'updates.module.available': 'module: {current} → {tag}',
