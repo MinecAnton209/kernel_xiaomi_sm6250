@@ -11,6 +11,12 @@
   --success: #146c2e;
   --error: #b3261e;
   --warning: #8a5a00;
+  --success-container: #c4eed0;
+  --on-success-container: #002110;
+  --warning-container: #ffdea8;
+  --on-warning-container: #2a1a00;
+  --error-container: #f9dedc;
+  --on-error-container: #410e0b;
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --series-3: #1baf7a;
@@ -38,6 +44,12 @@
     --series-1: #3987e5;
     --series-2: #d95926;
     --series-3: #199e70;
+    --success-container: #1f5130;
+    --on-success-container: #c4eed0;
+    --warning-container: #5a4000;
+    --on-warning-container: #ffdea8;
+    --error-container: #8c1d18;
+    --on-error-container: #f9dedc;
     color-scheme: dark;
   }
 }
@@ -58,6 +70,12 @@
   --series-1: #3987e5;
   --series-2: #d95926;
   --series-3: #199e70;
+  --success-container: #1f5130;
+  --on-success-container: #c4eed0;
+  --warning-container: #5a4000;
+  --on-warning-container: #ffdea8;
+  --error-container: #8c1d18;
+  --on-error-container: #f9dedc;
   color-scheme: dark;
 }
 
@@ -981,36 +999,51 @@ m3e-skeleton {
   gap: 10px;
 }
 
+/* Expressive tiles: each temperature band is a tonal container, pressed tiles spring slightly. */
 .tile {
   --level: var(--success);
+  --tile-bg: var(--success-container);
+  --tile-ink: var(--on-success-container);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px;
-  border-radius: var(--radius-m);
-  background: var(--surface-highest);
+  gap: 8px;
+  padding: 16px;
+  border-radius: 24px;
+  background: var(--tile-bg);
+  color: var(--tile-ink);
   animation: chip-in 0.45s var(--spring) both;
-  transition: background 0.4s var(--standard);
+  transition:
+    background 0.5s var(--standard),
+    transform 0.4s var(--spring);
+}
+
+.tile:active {
+  transform: scale(0.96);
 }
 
 .tile-warm {
   --level: var(--warning);
+  --tile-bg: var(--warning-container);
+  --tile-ink: var(--on-warning-container);
 }
 
 .tile-hot {
   --level: var(--error);
+  --tile-bg: var(--error-container);
+  --tile-ink: var(--on-error-container);
 }
 
 .tile-label {
-  font-size: 12px;
-  color: var(--on-surface-variant);
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.85;
 }
 
 .tile-value {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.05;
   font-variant-numeric: tabular-nums;
-  color: var(--on-surface);
 }
 
 .tile-track,
@@ -1023,6 +1056,10 @@ m3e-skeleton {
 
 .tile-track {
   height: 6px;
+}
+
+.tile .tile-track {
+  background: color-mix(in srgb, var(--tile-ink) 18%, transparent);
 }
 
 .tile-fill {
@@ -1110,142 +1147,73 @@ m3e-skeleton {
   transition: width 0.8s var(--standard);
 }
 
-/* History: one line per part, drawn on arrival; the pointer shows a cursor and the values under it. */
+/* History: uPlot draws the lines and the legend; these rules only give it the page's colours and type. */
 .chart {
-  position: relative;
-  margin: 6px 0 12px;
+  margin: 8px 0 12px;
   touch-action: pan-y;
-}
-
-#historyChart {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-
-.chart-grid {
-  stroke: var(--outline);
-  stroke-opacity: 0.35;
-  stroke-width: 1;
-}
-
-.chart-axis {
-  font-size: 10px;
-  fill: var(--on-surface-variant);
-}
-
-.chart-line {
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-  animation: draw-line 0.9s var(--standard) both;
-}
-
-.chart-cursor {
-  stroke: var(--on-surface-variant);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-}
-
-.series-cpu {
-  --series: var(--series-1);
-}
-
-.series-gpu {
-  --series: var(--series-2);
-}
-
-.series-battery {
-  --series: var(--series-3);
-}
-
-.chart-line.series-cpu,
-.chart-line.series-gpu,
-.chart-line.series-battery {
-  stroke: var(--series);
-}
-
-@keyframes draw-line {
-  from {
-    stroke-dashoffset: 1;
-  }
-}
-
-.chart-tip {
-  position: absolute;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   background: var(--surface-highest);
-  color: var(--on-surface);
-  font-size: 12px;
-  pointer-events: none;
-  transition: left 0.15s var(--standard);
+  padding: 12px 8px 4px;
+  overflow: hidden;
 }
 
-.tip-row::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: var(--series);
+.chart .u-axis {
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--on-surface-variant);
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
+.chart .u-legend {
   font-size: 13px;
   color: var(--on-surface);
+  text-align: left;
+  padding: 6px 8px 2px;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.chart .u-legend .u-series {
+  padding: 2px 0;
 }
 
-.legend-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  background: var(--series);
-}
-
-.legend-item strong {
+.chart .u-legend .u-value {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
 
+.chart .u-cursor-pt {
+  border-radius: 50%;
+}
+
+
 /* Retention presets are chips that can be tapped; the one matching the field is filled. */
+/* The active preset morphs from a rounded square into a pill, the expressive shape change. */
 .chip.preset {
   border: 0;
   font: inherit;
   cursor: pointer;
+  border-radius: 12px;
+  transition:
+    border-radius 0.5s var(--spring),
+    background 0.4s var(--standard),
+    transform 0.3s var(--spring);
+}
+
+.chip.preset:active {
+  transform: scale(0.92);
 }
 
 .chip.preset.active {
   background: var(--primary);
   color: var(--surface);
+  border-radius: 999px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .tile,
   .core,
-  .chart-line,
   .tile-fill,
   .core-fill,
   .meter-fill,
-  .chart-tip {
+  .chip.preset {
     animation: none !important;
     transition: none !important;
   }

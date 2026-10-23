@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { nearestPoint, parseSeries, plot, yDomain } from '../../webui/src/logic/seriesFormat.ts';
-
-const GEOMETRY = { width: 300, height: 100, left: 0, right: 0, top: 0, bottom: 0 };
+import { parseSeries, toColumns, valuesOf, yDomain } from '../../webui/src/logic/seriesFormat.ts';
 
 test('parseSeries reads bucket time and the three temperatures, and sorts by time', () => {
   const points = parseSeries('1000|41.0|39.5|31.8|2208|600|2823\n900|40.0|||||');
@@ -37,41 +35,27 @@ test('yDomain falls back to a sensible range when there are no values', () => {
   assert.deepEqual(yDomain([]), [20, 60]);
 });
 
-test('plot maps the first and last times to the left and right edges', () => {
-  const points = parseSeries('0|10.0\n100|20.0');
-  const [cpu] = plot(points, ['cpu'], [0, 20], GEOMETRY);
-  assert.deepEqual(cpu?.paths, ['M0.0,50.0L300.0,0.0']);
-  assert.equal(cpu?.last, 20);
+test('toColumns puts the time first and one column per requested series', () => {
+  const points = parseSeries('0|10.0|20.0|30.0\n100|11.0|21.0|31.0');
+  assert.deepEqual(toColumns(points, ['gpu', 'cpu']), [
+    [0, 100],
+    [20, 21],
+    [10, 11],
+  ]);
 });
 
-test('plot starts a new path after a missing bucket instead of drawing to zero', () => {
+test('toColumns writes null where a bucket has no value so the chart leaves a gap', () => {
   const points = parseSeries('0|10.0\n50|\n100|20.0');
-  const [cpu] = plot(points, ['cpu'], [0, 20], GEOMETRY);
-  assert.equal(cpu?.paths.length, 2);
+  assert.deepEqual(toColumns(points, ['cpu'])[1], [10, null, 20]);
 });
 
-test('plot gives a series with no values no paths and no last value', () => {
-  const [gpu] = plot(parseSeries('0|10.0'), ['gpu'], [0, 20], GEOMETRY);
-  assert.deepEqual(gpu?.paths, []);
-  assert.equal(gpu?.last, undefined);
+test('toColumns with no series keeps only the time column', () => {
+  assert.deepEqual(toColumns(parseSeries('5|1.0'), []), [[5]]);
 });
 
-test('plot returns the series in the order it is asked for', () => {
-  const plotted = plot(parseSeries('0|1.0|2.0|3.0'), ['battery', 'cpu'], [0, 5], GEOMETRY);
-  assert.deepEqual(
-    plotted.map((item) => item.key),
-    ['battery', 'cpu'],
-  );
-});
-
-test('plot keeps a single point visible at the left edge', () => {
-  const [cpu] = plot(parseSeries('42|25.0'), ['cpu'], [0, 50], GEOMETRY);
-  assert.deepEqual(cpu?.paths, ['M0.0,50.0']);
-});
-
-test('nearestPoint finds the bucket closest to a time', () => {
-  const points = parseSeries('0|1.0\n100|2.0\n200|3.0');
-  assert.equal(nearestPoint(points, 140)?.ts, 100);
-  assert.equal(nearestPoint(points, 180)?.ts, 200);
-  assert.equal(nearestPoint([], 10), undefined);
+test('valuesOf collects the values of the asked series and skips the gaps', () => {
+  const points = parseSeries('0|10.0|20.0\n100|||30.0');
+  assert.deepEqual(valuesOf(points, ['cpu', 'battery']), [10, 30]);
+  assert.deepEqual(valuesOf(points, ['gpu']), [20]);
+  assert.deepEqual(valuesOf(parseSeries('0|||'), ['cpu', 'gpu', 'battery']), []);
 });
