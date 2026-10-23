@@ -3,6 +3,18 @@ export type LoggerInterval = (typeof LOGGER_INTERVALS)[number];
 
 export const LOGGER_MAX_DAYS = 365;
 
+/** Quick choices next to the retention field, in days. */
+export const RETENTION_PRESETS = [1, 7, 30, 90, 365] as const;
+
+/** Time ranges of the history chart; `points` keeps every range at a readable density. */
+export const CHART_RANGES = [
+  { key: 'hour', seconds: 3600, points: 60 },
+  { key: 'day', seconds: 86400, points: 96 },
+  { key: 'week', seconds: 604800, points: 168 },
+] as const;
+
+export type ChartRange = (typeof CHART_RANGES)[number];
+
 export interface LoggerStatus {
   enabled: boolean;
   interval: LoggerInterval;

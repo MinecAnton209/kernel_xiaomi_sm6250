@@ -356,6 +356,39 @@ static void dump(sqlite3 *db)
 	sqlite3_finalize(stmt);
 }
 
+/*
+ * Averages the samples of the last SINCE_SECONDS into POINTS buckets, so a chart gets a fixed number of
+ * points whatever the interval. A bucket with no samples is not printed, which leaves a gap in the chart.
+ */
+static void series(sqlite3 *db, long since_seconds, long points)
+{
+	sqlite3_stmt *stmt;
+	long long now = (long long)time(NULL);
+	long long start = now - since_seconds;
+	long long width = (since_seconds + points - 1) / points;
+	int i;
+
+	if (sqlite3_prepare_v2(db,
+			       "SELECT (ts - ?1) / ?2, AVG(cpu_temp), AVG(gpu_temp), AVG(battery_temp),"
+			       " AVG(cpu_mhz), AVG(gpu_mhz), AVG(mem_avail_mb)"
+			       " FROM samples WHERE ts >= ?1 GROUP BY 1 ORDER BY 1",
+			       -1, &stmt, NULL) != SQLITE_OK)
+		die_sql(db, "prepare series");
+	sqlite3_bind_int64(stmt, 1, start);
+	sqlite3_bind_int64(stmt, 2, width);
+	while (sqlite3_step(stmt) == SQLITE_ROW) {
+		printf("%lld", start + sqlite3_column_int64(stmt, 0) * width);
+		for (i = 1; i < 7; i++) {
+			putchar('|');
+			if (sqlite3_column_type(stmt, i) == SQLITE_NULL)
+				continue;
+			printf("%.1f", sqlite3_column_double(stmt, i));
+		}
+		putchar('\n');
+	}
+	sqlite3_finalize(stmt);
+}
+
 static void usage(void)
 {
 	fprintf(stderr,
@@ -366,6 +399,7 @@ static void usage(void)
 		"  kc_logger clear DB\n"
 		"  kc_logger stats DB\n"
 		"  kc_logger dump DB\n"
+		"  kc_logger series DB SINCE_SECONDS POINTS\n"
 		"The sysfs and procfs root is taken from KC_ROOT (empty on the phone).\n");
 	exit(1);
 }
@@ -431,6 +465,14 @@ int main(int argc, char **argv)
 	if (strcmp(argv[1], "stats") == 0 && argc == 3) {
 		db = open_db(argv[2]);
 		stats(db);
+		sqlite3_close(db);
+		return 0;
+	}
+	if (strcmp(argv[1], "series") == 0 && argc == 5) {
+		long since = parse_positive(argv[3], 365L * 86400L);
+		long points = parse_positive(argv[4], 1000);
+		db = open_db(argv[2]);
+		series(db, since, points);
 		sqlite3_close(db);
 		return 0;
 	}

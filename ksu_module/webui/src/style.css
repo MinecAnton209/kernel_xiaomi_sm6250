@@ -10,6 +10,10 @@
   --outline: #79747e;
   --success: #146c2e;
   --error: #b3261e;
+  --warning: #8a5a00;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
   --radius-l: 28px;
   --radius-m: 20px;
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -30,6 +34,10 @@
     --outline: #938f99;
     --success: #a8dbb0;
     --error: #f2b8b5;
+    --warning: #f0c36d;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
     color-scheme: dark;
   }
 }
@@ -46,6 +54,10 @@
   --outline: #938f99;
   --success: #a8dbb0;
   --error: #f2b8b5;
+  --warning: #f0c36d;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
   color-scheme: dark;
 }
 
@@ -960,4 +972,281 @@ m3e-skeleton {
 
 [hidden] {
   display: none !important;
+}
+
+/* Temperatures: each tile fills to its reading and turns amber, then red, as the part heats up. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  --level: var(--success);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: var(--radius-m);
+  background: var(--surface-highest);
+  animation: chip-in 0.45s var(--spring) both;
+  transition: background 0.4s var(--standard);
+}
+
+.tile-warm {
+  --level: var(--warning);
+}
+
+.tile-hot {
+  --level: var(--error);
+}
+
+.tile-label {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.tile-value {
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface);
+}
+
+.tile-track,
+.core-track,
+.meter-track {
+  background: var(--surface-high);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.tile-track {
+  height: 6px;
+}
+
+.tile-fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--fill, 0) * 100%);
+  border-radius: 6px;
+  background: var(--level);
+  transition:
+    width 0.8s var(--standard),
+    background 0.6s var(--standard);
+}
+
+/* Cores: one column per core, the bar rising with the clock against the core's own maximum. */
+.cores {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  height: 132px;
+  margin-bottom: 16px;
+}
+
+.core {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  animation: chip-in 0.45s var(--spring) both;
+}
+
+.core-track {
+  flex: 1;
+  width: 100%;
+  max-width: 28px;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 10px;
+}
+
+.core-fill {
+  display: block;
+  width: 100%;
+  height: calc(var(--fill, 0) * 100%);
+  border-radius: 10px;
+  background: var(--primary);
+  transition: height 0.8s var(--standard);
+}
+
+.core-name {
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+
+.core-value {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface);
+}
+
+.meter {
+  margin-top: 4px;
+}
+
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--on-surface-variant);
+}
+
+.meter-track {
+  height: 10px;
+  border-radius: 5px;
+}
+
+.meter-fill {
+  height: 100%;
+  width: calc(var(--fill, 0) * 100%);
+  border-radius: 5px;
+  background: var(--primary);
+  transition: width 0.8s var(--standard);
+}
+
+/* History: one line per part, drawn on arrival; the pointer shows a cursor and the values under it. */
+.chart {
+  position: relative;
+  margin: 6px 0 12px;
+  touch-action: pan-y;
+}
+
+#historyChart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart-grid {
+  stroke: var(--outline);
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+}
+
+.chart-axis {
+  font-size: 10px;
+  fill: var(--on-surface-variant);
+}
+
+.chart-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: draw-line 0.9s var(--standard) both;
+}
+
+.chart-cursor {
+  stroke: var(--on-surface-variant);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.series-cpu {
+  --series: var(--series-1);
+}
+
+.series-gpu {
+  --series: var(--series-2);
+}
+
+.series-battery {
+  --series: var(--series-3);
+}
+
+.chart-line.series-cpu,
+.chart-line.series-gpu,
+.chart-line.series-battery {
+  stroke: var(--series);
+}
+
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+.chart-tip {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--surface-highest);
+  color: var(--on-surface);
+  font-size: 12px;
+  pointer-events: none;
+  transition: left 0.15s var(--standard);
+}
+
+.tip-row::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--series);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 13px;
+  color: var(--on-surface);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--series);
+}
+
+.legend-item strong {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Retention presets are chips that can be tapped; the one matching the field is filled. */
+.chip.preset {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.chip.preset.active {
+  background: var(--primary);
+  color: var(--surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile,
+  .core,
+  .chart-line,
+  .tile-fill,
+  .core-fill,
+  .meter-fill,
+  .chart-tip {
+    animation: none !important;
+    transition: none !important;
+  }
 }

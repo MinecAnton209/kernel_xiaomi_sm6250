@@ -1,14 +1,15 @@
-import { BIN, DEBUG, SENSORS, quote } from '../core/config';
+import { BIN, DEBUG, quote } from '../core/config';
 import { busy, byId, type Togglable } from '../core/dom';
 import { exec } from '../core/ksu';
 import { joinCommands, splitSections } from '../core/shellOut';
 import { toast } from '../core/toast';
 import { t } from '../logic/i18n';
 import { buildLabel, featureSpecs } from '../logic/statusFormat';
-import { parseSensors, sensorSpecs } from '../logic/sensorsFormat';
-import { loadProfile } from './profile';
-import { loadLogger } from './logger';
 import { createChipList, type ChipList } from '../ui/chipList';
+import { loadHistory } from './history';
+import { loadLogger } from './logger';
+import { loadProfile } from './profile';
+import { loadSensors } from './sensors';
 
 /** Runs debug.sh and shows its report, which the user can copy into a bug report. */
 export function initDebugReport(): void {
@@ -37,33 +38,6 @@ async function copyDebugReport(): Promise<void> {
 }
 
 let featureChips: ChipList | undefined;
-let sensorChips: ChipList | undefined;
-let sensorsBusy = false;
-
-const SENSOR_INTERVAL_MS = 5000;
-
-export async function loadSensors(): Promise<void> {
-  const result = await exec(`${quote(SENSORS)} info`);
-  sensorChips ??= createChipList(byId('sensorChips'));
-  sensorChips.update(sensorSpecs(parseSensors(result.stdout)));
-}
-
-function statusTabOpen(): boolean {
-  return document.querySelector('.nav-item[data-tab="status"][aria-current="page"]') !== null;
-}
-
-/** Only polls while the Status tab is on screen, so a hidden page does not keep starting root shells. */
-export function initSensorPolling(): void {
-  window.setInterval(() => {
-    if (sensorsBusy || document.hidden || !statusTabOpen()) return;
-    sensorsBusy = true;
-    loadSensors()
-      .catch(() => undefined)
-      .finally(() => {
-        sensorsBusy = false;
-      });
-  }, SENSOR_INTERVAL_MS);
-}
 
 export async function loadStatus(): Promise<void> {
   const { stdout } = await exec(
@@ -96,5 +70,5 @@ export async function loadStatus(): Promise<void> {
   featureChips ??= createChipList(byId('features'));
   featureChips.update(featureSpecs(features));
 
-  await Promise.all([loadSensors(), loadProfile(), loadLogger()]);
+  await Promise.all([loadSensors(), loadHistory(), loadProfile(), loadLogger()]);
 }

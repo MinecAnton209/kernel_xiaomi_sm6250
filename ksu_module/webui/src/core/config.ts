@@ -13,6 +13,8 @@ export const DEBUG = `${MODULE_DIR}/bin/debug.sh`;
 export const SENSORS = `${MODULE_DIR}/bin/sensors.sh`;
 export const PROFILE = `${MODULE_DIR}/bin/profile.sh`;
 export const LOGGER = `${MODULE_DIR}/bin/logger.sh`;
+export const KC_LOGGER = `${MODULE_DIR}/bin/kc_logger`;
+export const LOGGER_DB = `${CONF}/logger/history.db`;
 export const FLASH_KERNEL = `${MODULE_DIR}/bin/flash_kernel.sh`;
 /** Prefix of the .log, .state and .pid files that flash_kernel.sh writes. */
 export const FLASH_OUT = `/data/local/tmp/${MODULE_ID}_flash`;

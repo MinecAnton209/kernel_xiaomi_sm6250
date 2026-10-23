@@ -43,9 +43,36 @@
           </div>
         </section>
         <section class="card">
-          <h2 data-i18n="status.sensorsTitle"></h2>
-          <p class="hint" data-i18n="status.sensorsHint"></p>
-          <div class="chips" id="sensorChips"></div>
+          <h2 data-i18n="status.tempTitle"></h2>
+          <p class="hint" data-i18n="status.tempHint"></p>
+          <div class="tiles" id="tempTiles"></div>
+        </section>
+        <section class="card">
+          <h2 data-i18n="status.coresTitle"></h2>
+          <p class="hint" data-i18n="status.coresHint"></p>
+          <div class="cores" id="coreBars"></div>
+          <div class="meter" id="memoryMeter">
+            <div class="meter-head">
+              <span data-i18n="status.memory"></span>
+              <span id="memoryText"></span>
+            </div>
+            <div class="meter-track"><div class="meter-fill" id="memoryFill"></div></div>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-i18n="history.title"></h2>
+          <p class="hint" data-i18n="history.hint"></p>
+          <div class="row" id="rangeButtons">
+            <m3e-button id="range-hour" variant="outlined" data-i18n="history.hour"></m3e-button>
+            <m3e-button id="range-day" variant="outlined" data-i18n="history.day"></m3e-button>
+            <m3e-button id="range-week" variant="outlined" data-i18n="history.week"></m3e-button>
+          </div>
+          <div class="chart" id="chartBox">
+            <svg id="historyChart" role="img" data-i18n-aria-label="history.chartLabel" viewBox="0 0 320 180"></svg>
+            <div class="chart-tip" id="chartTip" hidden></div>
+          </div>
+          <div class="legend" id="historyLegend"></div>
+          <p class="hint" id="historyEmpty" hidden data-i18n="history.empty"></p>
         </section>
         <section class="card">
           <h2 data-i18n="logger.title"></h2>
@@ -61,6 +88,7 @@
           <div class="row">
             <input class="field" id="loggerDays" type="number" min="1" max="365" inputmode="numeric" data-i18n-aria-label="logger.daysLabel" />
           </div>
+          <div class="chips" id="retentionPresets"></div>
           <div class="chips" id="loggerInfo"></div>
           <div class="row end">
             <m3e-button id="loggerClear" variant="outlined" data-i18n="logger.clear"></m3e-button>

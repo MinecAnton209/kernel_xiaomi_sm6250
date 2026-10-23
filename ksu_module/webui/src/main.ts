@@ -18,7 +18,9 @@ import { setSusSu } from './pages/su';
 import { runUmount, setBypass, setLog, startLivePolling } from './pages/system';
 import { initTuneActions, initTuneHelp } from './pages/tune';
 import { initDevice } from './pages/device';
-import { initDebugReport, initSensorPolling } from './pages/status';
+import { initDebugReport } from './pages/status';
+import { initSensorPolling } from './pages/sensors';
+import { initHistory } from './pages/history';
 import { initProfiles } from './pages/profile';
 import { initLogger } from './pages/logger';
 import { initUname } from './pages/uname';
@@ -42,6 +44,7 @@ function init(): void {
   initSensorPolling();
   initProfiles();
   initLogger();
+  initHistory();
   initUname();
 
   if (!hasBridge()) {

@@ -91,6 +91,21 @@ logger prune "$DB" 7
 check 'pruning removes rows older than the retention' 'rows=1' "$(logger stats "$DB" | cut -d' ' -f1)"
 check 'pruning keeps the recent sample' '1' "$(logger dump "$DB" | wc -l | tr -d ' ')"
 
+new_tree series
+DB="$WORK/series.db"
+logger sample "$DB"
+logger sample "$DB"
+python3 -c 'import sqlite3, sys, time
+con = sqlite3.connect(sys.argv[1])
+con.execute("INSERT INTO samples(ts, cpu_temp) VALUES (?, ?)", (int(time.time()) - 2 * 86400, 99.0))
+con.commit()' "$DB"
+check 'series returns one line per bucket with samples' '1' "$(logger series "$DB" 3600 4 | wc -l | tr -d ' ' | awk '{print ($1 >= 1) ? 1 : 0}')"
+check 'series averages the recent CPU temperature' '1' "$(logger series "$DB" 3600 4 | grep -c '|41.0|')"
+check 'series leaves out samples older than the range' '0' "$(logger series "$DB" 3600 4 | grep -c '99.0')"
+check 'series prints the bucket time and six values per line' '7' "$(logger series "$DB" 3600 4 | head -n 1 | tr -cd '|' | wc -c | awk '{print $1 + 1}')"
+check 'series rejects a number of points of zero' '1' "$(logger series "$DB" 3600 0 > /dev/null 2>&1; echo $?)"
+check 'series rejects a range above a year' '1' "$(logger series "$DB" 40000000 10 > /dev/null 2>&1; echo $?)"
+
 new_tree clear
 DB="$WORK/clear.db"
 logger sample "$DB"

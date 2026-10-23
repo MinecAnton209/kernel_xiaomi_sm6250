@@ -22,6 +22,8 @@ cpu() {
 		freq=$(cat "$core/cpufreq/scaling_cur_freq" 2> /dev/null) || continue
 		[ -n "$freq" ] || continue
 		printf 'cpu_freq=%s|%s\n' "${core##*/cpu}" "$freq"
+		max=$(cat "$core/cpufreq/cpuinfo_max_freq" 2> /dev/null)
+		[ -n "$max" ] && printf 'cpu_max=%s|%s\n' "${core##*/cpu}" "$max"
 	done
 }
 

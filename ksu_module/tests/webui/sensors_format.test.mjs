@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseSensors, sensorSpecs, thermalGroup } from '../../webui/src/logic/sensorsFormat.ts';
+import {
+  fraction,
+  hottest,
+  memoryUsed,
+  parseSensors,
+  tempLevel,
+  thermalGroup,
+} from '../../webui/src/logic/sensorsFormat.ts';
 
 const FULL = [
   'thermal=gpuss-0-usr|39500',
@@ -10,6 +17,8 @@ const FULL = [
   'thermal=quiet_therm|35000',
   'cpu_freq=7|2208000',
   'cpu_freq=0|1804800',
+  'cpu_max=0|1804800',
+  'cpu_max=7|2400000',
   'gpu_freq=600000000',
   'gpu_max_freq=950000000',
   'mem_total_kb=5731008',
@@ -27,8 +36,7 @@ test('thermalGroup puts CPU, GPU and RAM sensors into their groups by name', () 
 });
 
 test('parseSensors converts thermal milli degrees to degrees and keeps the group', () => {
-  const sensors = parseSensors(FULL);
-  const cpu = sensors.thermal.find((zone) => zone.name === 'cpu0-silver-usr');
+  const cpu = parseSensors(FULL).thermal.find((zone) => zone.name === 'cpu0-silver-usr');
   assert.deepEqual(cpu, { name: 'cpu0-silver-usr', celsius: 41, group: 'cpu' });
 });
 
@@ -38,10 +46,22 @@ test('parseSensors sorts thermal zones by name and cores by number', () => {
     sensors.thermal.map((zone) => zone.name),
     ['cpu0-silver-usr', 'cpu7-gold-usr', 'ddr-usr', 'gpuss-0-usr', 'quiet_therm'],
   );
-  assert.deepEqual(sensors.cores, [
-    { core: 0, mhz: 1805 },
-    { core: 7, mhz: 2208 },
+  assert.deepEqual(
+    sensors.cores.map((core) => core.core),
+    [0, 7],
+  );
+});
+
+test('parseSensors attaches each core its maximum frequency in MHz', () => {
+  assert.deepEqual(parseSensors(FULL).cores, [
+    { core: 0, mhz: 1805, maxMhz: 1805 },
+    { core: 7, mhz: 2208, maxMhz: 2400 },
   ]);
+});
+
+test('parseSensors leaves a core without a maximum undefined', () => {
+  const sensors = parseSensors('cpu_freq=3|1000000');
+  assert.equal(sensors.cores[0]?.maxMhz, undefined);
 });
 
 test('parseSensors reports GPU clocks in MHz and memory in MB', () => {
@@ -62,45 +82,48 @@ test('parseSensors keeps a negative battery temperature', () => {
 
 test('parseSensors skips lines it cannot read instead of failing', () => {
   const sensors = parseSensors(
-    ['thermal=|41000', 'thermal=cpu0|abc', 'cpu_freq=x|1000', 'gpu_freq=', 'no equals here', 'mem_total_kb=12'].join('\n'),
+    ['thermal=|41000', 'thermal=cpu0|abc', 'cpu_freq=x|1000', 'cpu_max=x|1000', 'gpu_freq=', 'no equals here'].join('\n'),
   );
   assert.deepEqual(sensors.thermal, []);
   assert.deepEqual(sensors.cores, []);
   assert.equal(sensors.gpuMhz, undefined);
-  assert.equal(sensors.memTotalMb, 0);
 });
 
 test('parseSensors treats empty output as nothing to show', () => {
   assert.deepEqual(parseSensors(''), { thermal: [], cores: [] });
 });
 
-test('sensorSpecs shows group summaries first and then every raw zone', () => {
-  const specs = sensorSpecs(parseSensors(FULL));
-  const keys = specs.map((spec) => spec.key);
-  assert.deepEqual(keys.slice(0, 4), ['sum-cpu', 'sum-gpu', 'sum-ram', 'sum-battery']);
-  assert.ok(keys.includes('zone-quiet_therm'));
-  assert.ok(keys.includes('cpu-0'));
-  assert.ok(keys.includes('gpu-clock'));
+test('hottest returns the highest zone of a group and nothing for an absent group', () => {
+  const zones = parseSensors(FULL).thermal;
+  assert.equal(hottest(zones, 'cpu'), 43.25);
+  assert.equal(hottest(zones, 'gpu'), 39.5);
+  assert.equal(hottest(zones, 'ram'), 36);
+  assert.equal(hottest([], 'cpu'), undefined);
 });
 
-test('sensorSpecs formats the hottest CPU zone as the CPU summary', () => {
-  const spec = sensorSpecs(parseSensors(FULL)).find((item) => item.key === 'sum-cpu');
-  assert.equal(spec?.text, 'cpu temp: 43.3 °C');
+test('tempLevel is cool below 45 degrees, warm below 60 and hot from there on', () => {
+  assert.equal(tempLevel(30), 'cool');
+  assert.equal(tempLevel(44.9), 'cool');
+  assert.equal(tempLevel(45), 'warm');
+  assert.equal(tempLevel(59.9), 'warm');
+  assert.equal(tempLevel(60), 'hot');
+  assert.equal(tempLevel(80), 'hot');
 });
 
-test('sensorSpecs leaves out groups the kernel has no sensor for', () => {
-  const specs = sensorSpecs(parseSensors('thermal=quiet_therm|35000'));
-  assert.deepEqual(
-    specs.map((spec) => spec.key),
-    ['zone-quiet_therm'],
-  );
+test('fraction is the value over the maximum, clamped to the range from 0 to 1', () => {
+  assert.equal(fraction(50, 100), 0.5);
+  assert.equal(fraction(150, 100), 1);
+  assert.equal(fraction(-5, 100), 0);
 });
 
-test('sensorSpecs shows the GPU maximum only when the kernel reports it', () => {
-  const without = sensorSpecs(parseSensors('gpu_freq=600000000')).find((item) => item.key === 'gpu-clock');
-  assert.equal(without?.text, 'gpu: 600 MHz');
-  const withMax = sensorSpecs(parseSensors('gpu_freq=600000000\ngpu_max_freq=950000000')).find(
-    (item) => item.key === 'gpu-clock',
-  );
-  assert.equal(withMax?.text, 'gpu: 600 MHz (max 950 MHz)');
+test('fraction is undefined when a side is unknown or the maximum is not positive', () => {
+  assert.equal(fraction(undefined, 100), undefined);
+  assert.equal(fraction(50, undefined), undefined);
+  assert.equal(fraction(50, 0), undefined);
+});
+
+test('memoryUsed is the part of total memory that is not available', () => {
+  const used = memoryUsed(parseSensors(FULL));
+  assert.ok(Math.abs((used ?? 0) - (5597 - 2823) / 5597) < 1e-9);
+  assert.equal(memoryUsed(parseSensors('')), undefined);
 });

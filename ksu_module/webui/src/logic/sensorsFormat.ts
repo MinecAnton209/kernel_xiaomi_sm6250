@@ -1,5 +1,3 @@
-import type { ChipSpec } from './chargeFormat';
-
 export type ThermalGroup = 'cpu' | 'gpu' | 'ram' | 'other';
 
 export interface ThermalZone {
@@ -11,6 +9,7 @@ export interface ThermalZone {
 export interface CoreClock {
   core: number;
   mhz: number;
+  maxMhz?: number;
 }
 
 export interface Sensors {
@@ -22,6 +21,8 @@ export interface Sensors {
   memAvailMb?: number;
   batteryCelsius?: number;
 }
+
+export type TempLevel = 'cool' | 'warm' | 'hot';
 
 /** Sensor names come from the vendor tree, so the group is a guess from the name; the raw name is always shown. */
 export function thermalGroup(name: string): ThermalGroup {
@@ -39,6 +40,7 @@ function count(value: string | undefined): number | undefined {
 /** Reads the `key=value` lines that bin/sensors.sh prints; a line it cannot read is skipped. */
 export function parseSensors(text: string): Sensors {
   const sensors: Sensors = { thermal: [], cores: [] };
+  const maxByCore = new Map<number, number>();
 
   for (const line of text.split('\n')) {
     const separator = line.indexOf('=');
@@ -46,15 +48,18 @@ export function parseSensors(text: string): Sensors {
     const key = line.slice(0, separator);
     const value = line.slice(separator + 1).trim();
 
-    if (key === 'thermal' || key === 'cpu_freq') {
+    if (key === 'thermal' || key === 'cpu_freq' || key === 'cpu_max') {
       const [name = '', raw] = value.split('|');
       const number = count(raw);
       if (!name || number === undefined) continue;
-      if (key === 'cpu_freq' && !/^\d+$/.test(name)) continue;
       if (key === 'thermal') {
         sensors.thermal.push({ name, celsius: number / 1000, group: thermalGroup(name) });
-      } else {
+      } else if (!/^\d+$/.test(name)) {
+        continue;
+      } else if (key === 'cpu_freq') {
         sensors.cores.push({ core: Number(name), mhz: Math.round(number / 1000) });
+      } else {
+        maxByCore.set(Number(name), Math.round(number / 1000));
       }
       continue;
     }
@@ -80,46 +85,35 @@ export function parseSensors(text: string): Sensors {
     }
   }
 
+  for (const core of sensors.cores) {
+    core.maxMhz = maxByCore.get(core.core);
+  }
   sensors.thermal.sort((a, b) => a.name.localeCompare(b.name));
   sensors.cores.sort((a, b) => a.core - b.core);
   return sensors;
 }
 
-function hottest(zones: readonly ThermalZone[], group: ThermalGroup): number | undefined {
+/** The hottest zone of a group, or undefined when the kernel reports no zone for it. */
+export function hottest(zones: readonly ThermalZone[], group: ThermalGroup): number | undefined {
   const temps = zones.filter((zone) => zone.group === group).map((zone) => zone.celsius);
   return temps.length === 0 ? undefined : Math.max(...temps);
 }
 
-function degrees(value: number): string {
-  return `${value.toFixed(1)} °C`;
+/** Below 45 °C is cool, below 60 °C warm, and anything hotter is hot; the thresholds match where the phone starts to throttle. */
+export function tempLevel(celsius: number): TempLevel {
+  if (celsius < 45) return 'cool';
+  if (celsius < 60) return 'warm';
+  return 'hot';
 }
 
-/** Summary chips first, then every raw thermal zone, so nothing the kernel reports is hidden. */
-export function sensorSpecs(sensors: Sensors): ChipSpec[] {
-  const specs: ChipSpec[] = [];
-  const add = (key: string, text: string): void => {
-    specs.push({ key, text, state: 'ok' });
-  };
+/** A value as a fraction of the maximum, clamped to 0..1; undefined when either side is unknown or the maximum is not positive. */
+export function fraction(value: number | undefined, max: number | undefined): number | undefined {
+  if (value === undefined || max === undefined || max <= 0) return undefined;
+  return Math.min(1, Math.max(0, value / max));
+}
 
-  for (const group of ['cpu', 'gpu', 'ram'] as const) {
-    const max = hottest(sensors.thermal, group);
-    if (max !== undefined) add(`sum-${group}`, `${group} temp: ${degrees(max)}`);
-  }
-  if (sensors.batteryCelsius !== undefined) {
-    add('sum-battery', `battery: ${degrees(sensors.batteryCelsius)}`);
-  }
-  for (const core of sensors.cores) {
-    add(`cpu-${core.core}`, `cpu${core.core}: ${core.mhz} MHz`);
-  }
-  if (sensors.gpuMhz !== undefined) {
-    const max = sensors.gpuMaxMhz !== undefined ? ` (max ${sensors.gpuMaxMhz} MHz)` : '';
-    add('gpu-clock', `gpu: ${sensors.gpuMhz} MHz${max}`);
-  }
-  if (sensors.memTotalMb !== undefined && sensors.memAvailMb !== undefined) {
-    add('ram', `ram: ${sensors.memAvailMb} / ${sensors.memTotalMb} MB free`);
-  }
-  for (const zone of sensors.thermal) {
-    add(`zone-${zone.name}`, `${zone.name}: ${degrees(zone.celsius)}`);
-  }
-  return specs;
+/** Memory in use, as a fraction of the total. */
+export function memoryUsed(sensors: Sensors): number | undefined {
+  if (sensors.memTotalMb === undefined || sensors.memAvailMb === undefined) return undefined;
+  return fraction(sensors.memTotalMb - sensors.memAvailMb, sensors.memTotalMb);
 }
