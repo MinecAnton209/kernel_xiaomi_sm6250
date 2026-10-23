@@ -4,6 +4,7 @@ import { exec, run } from '../core/ksu';
 import { buildBatteryChips, buildChargeChips, bypassOf, parseInfo } from '../logic/chargeFormat';
 import { t } from '../logic/i18n';
 import { createChipList, type ChipList } from '../ui/chipList';
+import { loadLogger } from './logger';
 
 export async function loadLog(): Promise<void> {
   const saved = (await exec(`cat ${confFile('log')} 2>/dev/null`)).stdout.trim();
@@ -110,5 +111,5 @@ export function startLivePolling(): void {
 }
 
 export async function loadSystem(): Promise<void> {
-  await Promise.all([loadLog(), loadLive()]);
+  await Promise.all([loadLog(), loadLive(), loadLogger()]);
 }

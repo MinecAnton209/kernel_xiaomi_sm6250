@@ -7,7 +7,6 @@ import { t } from '../logic/i18n';
 import { buildLabel, featureSpecs } from '../logic/statusFormat';
 import { createChipList, type ChipList } from '../ui/chipList';
 import { loadHistory } from './history';
-import { loadLogger } from './logger';
 import { loadProfile } from './profile';
 import { loadSensors } from './sensors';
 
@@ -70,5 +69,5 @@ export async function loadStatus(): Promise<void> {
   featureChips ??= createChipList(byId('features'));
   featureChips.update(featureSpecs(features));
 
-  await Promise.all([loadSensors(), loadHistory(), loadProfile(), loadLogger()]);
+  await Promise.all([loadSensors(), loadHistory(), loadProfile()]);
 }

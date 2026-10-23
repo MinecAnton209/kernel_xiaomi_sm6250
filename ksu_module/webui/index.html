@@ -71,27 +71,6 @@
           <p class="hint" id="historyEmpty" hidden data-i18n="history.empty"></p>
         </section>
         <section class="card">
-          <h2 data-i18n="logger.title"></h2>
-          <p class="hint" data-i18n="logger.hint"></p>
-          <div class="switch-row">
-            <span data-i18n="logger.enabled"></span>
-            <m3e-switch id="loggerEnabled"></m3e-switch>
-          </div>
-          <div class="row end" id="loggerIntervals">
-            <m3e-button id="loggerInterval-5" variant="outlined" data-i18n="logger.interval5"></m3e-button>
-            <m3e-button id="loggerInterval-60" variant="outlined" data-i18n="logger.interval60"></m3e-button>
-          </div>
-          <div class="row">
-            <input class="field" id="loggerDays" type="number" min="1" max="365" inputmode="numeric" data-i18n-aria-label="logger.daysLabel" />
-          </div>
-          <div class="chips" id="retentionPresets"></div>
-          <div class="chips" id="loggerInfo"></div>
-          <div class="row end">
-            <m3e-button id="loggerClear" variant="outlined" data-i18n="logger.clear"></m3e-button>
-            <m3e-button id="loggerSave" variant="filled" data-i18n="logger.save"></m3e-button>
-          </div>
-        </section>
-        <section class="card">
           <h2 data-i18n="status.debugTitle"></h2>
           <p class="hint" data-i18n="status.debugHint"></p>
           <div class="row end">
@@ -124,6 +103,28 @@
           <div class="switch-row">
             <span data-i18n="logs.switch"></span>
             <m3e-switch id="logSwitch"></m3e-switch>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-i18n="logger.title"></h2>
+          <p class="hint" data-i18n="logger.hint"></p>
+          <div class="switch-row">
+            <span data-i18n="logger.enabled"></span>
+            <m3e-switch id="loggerEnabled"></m3e-switch>
+          </div>
+          <div class="row end" id="loggerIntervals">
+            <m3e-button id="loggerInterval-5" variant="outlined" data-i18n="logger.interval5"></m3e-button>
+            <m3e-button id="loggerInterval-60" variant="outlined" data-i18n="logger.interval60"></m3e-button>
+          </div>
+          <div class="row">
+            <input class="field" id="loggerDays" type="number" min="1" max="365" inputmode="numeric" data-i18n-aria-label="logger.daysLabel" />
+          </div>
+          <div class="chips" id="retentionPresets"></div>
+          <div class="chips" id="loggerInfo"></div>
+          <div class="row end">
+            <m3e-button id="loggerClear" variant="outlined" data-i18n="logger.clear"></m3e-button>
+            <m3e-button id="loggerSave" variant="filled" data-i18n="logger.save"></m3e-button>
           </div>
         </section>
 
