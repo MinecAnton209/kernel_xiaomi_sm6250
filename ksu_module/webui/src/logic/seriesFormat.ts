@@ -52,3 +52,19 @@ export function toColumns(points: readonly SeriesPoint[], keys: readonly SeriesK
 export function valuesOf(points: readonly SeriesPoint[], keys: readonly SeriesKey[]): number[] {
   return points.flatMap((point) => keys.map((key) => point[key]).filter((value): value is number => value !== undefined));
 }
+
+export interface SeriesStats {
+  min: number;
+  max: number;
+  avg: number;
+  last: number;
+}
+
+/** Lowest, highest, mean and most recent value of one series over the range; undefined when it has no values. */
+export function statsOf(points: readonly SeriesPoint[], key: SeriesKey): SeriesStats | undefined {
+  const values = valuesOf(points, [key]);
+  if (values.length === 0) return undefined;
+  const sum = values.reduce((total, value) => total + value, 0);
+  const last = [...points].reverse().find((point) => point[key] !== undefined)?.[key] ?? values[values.length - 1] ?? 0;
+  return { min: Math.min(...values), max: Math.max(...values), avg: sum / values.length, last };
+}

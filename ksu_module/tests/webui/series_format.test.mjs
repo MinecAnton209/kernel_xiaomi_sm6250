@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseSeries, toColumns, valuesOf, yDomain } from '../../webui/src/logic/seriesFormat.ts';
+import { parseSeries, statsOf, toColumns, valuesOf, yDomain } from '../../webui/src/logic/seriesFormat.ts';
 
 test('parseSeries reads bucket time and the three temperatures, and sorts by time', () => {
   const points = parseSeries('1000|41.0|39.5|31.8|2208|600|2823\n900|40.0|||||');
@@ -58,4 +58,15 @@ test('valuesOf collects the values of the asked series and skips the gaps', () =
   assert.deepEqual(valuesOf(points, ['cpu', 'battery']), [10, 30]);
   assert.deepEqual(valuesOf(points, ['gpu']), [20]);
   assert.deepEqual(valuesOf(parseSeries('0|||'), ['cpu', 'gpu', 'battery']), []);
+});
+
+test('statsOf gives the lowest, highest, mean and latest value of a series', () => {
+  const points = parseSeries('0|10.0\n100|30.0\n200|20.0');
+  assert.deepEqual(statsOf(points, 'cpu'), { min: 10, max: 30, avg: 20, last: 20 });
+});
+
+test('statsOf ignores gaps and returns nothing for a series with no values', () => {
+  const points = parseSeries('0|10.0\n100|\n200|14.0');
+  assert.deepEqual(statsOf(points, 'cpu'), { min: 10, max: 14, avg: 12, last: 14 });
+  assert.equal(statsOf(points, 'gpu'), undefined);
 });

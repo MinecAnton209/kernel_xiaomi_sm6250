@@ -1163,24 +1163,78 @@ m3e-skeleton {
   color: var(--on-surface-variant);
 }
 
-.chart .u-legend {
+.chart .u-cursor-pt {
+  border-radius: 50%;
+}
+
+.legend-time {
+  margin: 12px 0 6px;
   font-size: 13px;
+  font-weight: 600;
   color: var(--on-surface);
-  text-align: left;
-  padding: 6px 8px 2px;
-}
-
-.chart .u-legend .u-series {
-  padding: 2px 0;
-}
-
-.chart .u-legend .u-value {
   font-variant-numeric: tabular-nums;
+}
+
+/* Legend table: the series, the value under the cursor, then the lowest, average and highest of the range. */
+.chart-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.legend-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  border-radius: 12px;
+  color: var(--on-surface);
+}
+
+.legend-row > span:not(.legend-name) {
+  text-align: right;
+}
+
+.legend-row.legend-head {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.legend-row[data-series] {
+  background: var(--surface-highest);
+}
+
+.legend-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 600;
 }
 
-.chart .u-cursor-pt {
-  border-radius: 50%;
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--series, var(--outline));
+}
+
+.legend-at {
+  font-weight: 700;
+}
+
+.series-cpu {
+  --series: var(--series-1);
+}
+
+.series-gpu {
+  --series: var(--series-2);
+}
+
+.series-battery {
+  --series: var(--series-3);
 }
 
 
