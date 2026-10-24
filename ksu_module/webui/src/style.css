@@ -999,6 +999,11 @@ m3e-skeleton {
   gap: 10px;
 }
 
+/* An odd tile out takes the full row, so it does not sit alone on the left. */
+.tiles > .tile:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
 /* Expressive tiles: each temperature band is a tonal container, pressed tiles spring slightly. */
 .tile {
   --level: var(--success);
@@ -1155,6 +1160,19 @@ m3e-skeleton {
   background: var(--surface-highest);
   padding: 12px 8px 4px;
   overflow: hidden;
+}
+
+/* The empty history keeps the chart's height, so the card does not jump when the first data arrives. */
+#historyEmpty:not([hidden]) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  margin: 8px 0 12px;
+  padding: 16px;
+  border-radius: var(--radius-m);
+  background: var(--surface-highest);
+  text-align: center;
 }
 
 .chart .u-axis {
