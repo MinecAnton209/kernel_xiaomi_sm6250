@@ -31,6 +31,11 @@ export function getLanguage(): Language {
   return current;
 }
 
+/** The BCP 47 tag for dates and times, so they follow the interface language rather than the phone's. */
+export function localeTag(): string {
+  return current === 'ru' ? 'ru-RU' : 'en-US';
+}
+
 /** Replaces each `{name}` with the matching parameter; a name without a parameter stays as written. */
 export function format(template: string, params?: Params): string {
   if (!params) return template;

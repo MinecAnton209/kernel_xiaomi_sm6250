@@ -23,6 +23,7 @@ export const en: Record<MessageKey, string> = {
   'logger.title': 'Measurement history',
   'logger.intervalTitle': 'How often to record',
   'logger.keepTitle': 'How long to keep it',
+  'logger.orOwn': 'Or your own number of days',
   'logger.daysUnit': 'days',
   'logger.statCount': 'Measurements',
   'logger.statSize': 'Size',

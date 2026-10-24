@@ -2,7 +2,7 @@ import { LOGGER, quote } from '../core/config';
 import { busy, byId, type Togglable } from '../core/dom';
 import { exec, run } from '../core/ksu';
 import { toast } from '../core/toast';
-import { t } from '../logic/i18n';
+import { localeTag, t } from '../logic/i18n';
 import { formatBytes, LOGGER_INTERVALS, parseLoggerStatus, RETENTION_PRESETS, validRetention, type LoggerInterval, type LoggerStatus } from '../logic/loggerFormat';
 import { showDialog } from '../ui/dialog';
 
@@ -50,7 +50,7 @@ function renderStats(status: LoggerStatus): void {
   byId('loggerCount').textContent = String(status.rows);
   byId('loggerSize').textContent = formatBytes(status.bytes);
   byId('loggerOldest').textContent =
-    status.oldest === undefined ? '—' : new Date(status.oldest * 1000).toLocaleDateString([], { day: 'numeric', month: 'short' });
+    status.oldest === undefined ? '—' : new Date(status.oldest * 1000).toLocaleDateString(localeTag(), { day: 'numeric', month: 'short' });
 }
 
 /** Shows the saved settings and the state of the history; the System tab calls it on every load. */

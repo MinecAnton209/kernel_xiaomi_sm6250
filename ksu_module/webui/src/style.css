@@ -1271,12 +1271,22 @@ m3e-skeleton {
   flex: 1;
 }
 
+/* Presets lay out in equal columns: as many as fit in a row, so no button is left alone on its line. */
 .segmented.wrap {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 8px;
 }
 
 .segmented.wrap > * {
-  flex: 1 1 auto;
+  flex: none;
+  min-width: 0;
+}
+
+.field-caption {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  color: var(--on-surface-variant);
 }
 
 .field-row {

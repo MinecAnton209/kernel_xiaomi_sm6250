@@ -21,6 +21,7 @@ export const ru = {
   'logger.title': 'История замеров',
   'logger.intervalTitle': 'Как часто писать',
   'logger.keepTitle': 'Сколько хранить',
+  'logger.orOwn': 'Или своё число дней',
   'logger.daysUnit': 'дн.',
   'logger.statCount': 'Замеров',
   'logger.statSize': 'Размер',

@@ -3,7 +3,7 @@ import 'uplot/dist/uPlot.min.css';
 import { KC_LOGGER, LOGGER_DB, quote } from '../core/config';
 import { byId, type Togglable } from '../core/dom';
 import { exec } from '../core/ksu';
-import { t, type MessageKey } from '../logic/i18n';
+import { localeTag, t, type MessageKey } from '../logic/i18n';
 import { CHART_RANGES, type ChartRange } from '../logic/loggerFormat';
 import {
   SERIES_KEYS,
@@ -45,16 +45,16 @@ const SERIES_LABEL: Record<SeriesKey, MessageKey> = {
 /** Hour and day ranges show clock times; the week range shows dates, which fit between its ticks. */
 function axisTime(ts: number): string {
   const date = new Date(ts * 1000);
-  if (range.key === 'week') return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (range.key === 'week') return date.toLocaleDateString(localeTag(), { day: 'numeric', month: 'short' });
+  return date.toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' });
 }
 
 /** Full time for the legend header, with the date added for the week range. */
 function fullTime(ts: number): string {
   const date = new Date(ts * 1000);
-  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const time = date.toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' });
   if (range.key !== 'week') return time;
-  return `${date.toLocaleDateString([], { day: 'numeric', month: 'short' })} ${time}`;
+  return `${date.toLocaleDateString(localeTag(), { day: 'numeric', month: 'short' })} ${time}`;
 }
 
 function options(width: number): uPlot.Options {
