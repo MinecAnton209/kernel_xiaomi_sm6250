@@ -12,14 +12,13 @@ name: Build miatoll kernel
 #   [skip module] or [skip module build]  skips the Kernel Control module build
 #   [skip ci], [skip-ci], [ci skip], [no ci]  skips everything
 # When only one build ran, the pre-release is still updated with it: the other build's files
-# stay in the release and the manifest lists both. Pull requests, manual runs and v* tags
-# always build everything.
+# stay in the release and the manifest lists both. Manual runs and v* tags always build
+# everything. Pushes to other branches and pull requests do not start a build.
 
 on:
   push:
-    branches: ["**"]
+    branches: ["16.0"]
     tags: ["v*"]
-  pull_request:
   workflow_dispatch:
 
 concurrency:
