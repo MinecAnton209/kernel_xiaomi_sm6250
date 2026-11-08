@@ -3380,10 +3380,9 @@ static int qg_load_battery_profile(struct qpnp_qg *chip)
 			rc = power_supply_get_property(chip->max_verify_psy,
 						POWER_SUPPLY_PROP_PAGE0_DATA, &pval);
 			if (rc < 0) {
-				pr_err("qg_load_battery_profile : get page0 error.\n");
-				pr_err("[Battery Stress Test]:read page0 error\n");
+				pr_err("qg_load_battery_profile: failed to read page0, rc=%d\n", rc);
 			} else {
-				pr_err("[Battery Stress Test]:page0 content[%c]\n", pval.arrayval[0]);
+				pr_info("qg_load_battery_profile: page0 letter '%c'\n", pval.arrayval[0]);
 				if ((pval.arrayval[0] == 'S') || (pval.arrayval[0] == 'X')) {
 					profile_node = of_batterydata_get_best_profile(chip->batt_node,
 						chip->batt_id_ohm / 1000, "j6b-sunwoda-5020mah");
@@ -3422,6 +3421,9 @@ static int qg_load_battery_profile(struct qpnp_qg *chip)
 		pr_err("Failed to detect battery type rc:%d\n", rc);
 		return rc;
 	}
+
+	pr_info("qg_load_battery_profile: batt_id=%u kohm, profile=%s\n",
+			chip->batt_id_ohm / 1000, chip->bp.batt_type_str);
 
 	if (board_33w_supported) {
 	if (chip->profile_loaded == false) {
